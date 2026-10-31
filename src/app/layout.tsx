@@ -1,0 +1,25 @@
+import type { Metadata } from "next";
+import "@/styles/globals.css";
+export const metadata: Metadata = {
+  title: {
+    default: "Impulso Cero · Espacio de aprendizaje",
+    template: "%s · Impulso Cero",
+  },
+  description:
+    "Interfaces iniciales del sistema de alumnos. Acceso real aún no habilitado.",
+  robots: { index: false, follow: false },
+};
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <html lang="es">
+      <body>
+        <a className="skip-link" href="#main-content">
+          Saltar al contenido
+        </a>
+        {children}
+      </body>
+    </html>
+  );
+}

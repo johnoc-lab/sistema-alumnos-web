@@ -1,0 +1,258 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 0;
+}
+.search {
+  position: relative;
+  flex: 1;
+  max-width: 290px;
+}
+.search svg {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  color: #8096b0;
+}
+.search input {
+  width: 100%;
+  background: #111b2b;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px 12px 10px 38px;
+  font-size: 12px;
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #0c1422;
+}
+.tabs button {
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  padding: 7px 11px;
+  color: #8da1bc;
+  font-size: 11px;
+}
+.tabs button[aria-pressed="true"] {
+  background: #223146;
+  color: #edf2fa;
+}
+.count {
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 15px;
+}
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: #ffffff02;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+  text-align: left;
+  font-size: 12px;
+}
+.table th {
+  padding: 14px 20px;
+  background: #ffffff02;
+  border-bottom: 1px solid var(--border);
+  font-family: Consolas, monospace;
+  letter-spacing: 1px;
+  font-size: 9px;
+  color: #8c9fb8;
+  font-weight: 400;
+}
+.table td {
+  padding: 20px;
+  border-bottom: 1px solid #ffffff06;
+}
+.table tr:last-child td {
+  border-bottom: 0;
+}
+.table tbody tr:hover {
+  background: #ffffff02;
+}
+.person {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.avatar {
+  height: 35px;
+  width: 35px;
+  display: grid;
+  place-items: center;
+  background: #60d4ec0d;
+  border: 1px solid #60d4ec20;
+  color: #8bddec;
+  border-radius: 10px;
+  font-size: 10px;
+}
+.table tr:nth-child(2n) .avatar {
+  background: #ac9af80e;
+  border-color: #ac9af822;
+  color: #b5a4ef;
+}
+.name {
+  font-weight: 500;
+  font-size: 12px;
+}
+.email,
+.muted {
+  color: #8fa2ba;
+  font-size: 11px;
+}
+.email {
+  font-size: 10px;
+}
+.rowButton {
+  background: transparent;
+  border: 1px solid #30415b;
+  border-radius: 7px;
+  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #b6c7db;
+  font-size: 10px;
+}
+.rowButton:hover {
+  background: #ffffff06;
+  border-color: #60d4ec55;
+}
+.note {
+  padding: 17px 0;
+  font-size: 11px;
+  color: #7e93ae;
+  line-height: 1.8;
+}
+.titleCell {
+  min-width: 220px;
+}
+.titleCell small {
+  display: block;
+  font-family: Consolas, monospace;
+  letter-spacing: 0.7px;
+  font-size: 8px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.empty {
+  padding: 45px !important;
+  text-align: center;
+  color: var(--muted);
+}
+.dialog {
+  padding: 0;
+  color: var(--text);
+  background: #111b2c;
+  border: 1px solid #34445f;
+  border-radius: 16px;
+  width: min(510px, calc(100vw - 32px));
+  max-height: 85svh;
+  box-shadow: 0 30px 100px #0007;
+}
+.dialog::backdrop {
+  background: #040a15ba;
+  backdrop-filter: blur(5px);
+}
+.dialogHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.dialogHeader h2 {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.5px;
+}
+.close {
+  display: flex;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  padding: 5px;
+}
+.dialogBody {
+  padding: 24px;
+}
+.dialogDescription {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 12px 0 22px;
+}
+.fields {
+  display: grid;
+  gap: 16px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.fields label {
+  display: grid;
+  gap: 7px;
+  font-size: 11px;
+  color: #b6c4d7;
+}
+.fields input,
+.fields textarea {
+  background: #0b1321;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  width: 100%;
+  color: #a8b9ce;
+  resize: vertical;
+}
+.dialogFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 24px;
+}
+.disabledAction {
+  border: 1px solid var(--border);
+  background: #26354b;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 11px;
+}
+.dialogFooter span {
+  font-size: 10px;
+  color: var(--muted);
+}
+@media (max-width: 700px) {
+  .toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .search {
+    max-width: none;
+  }
+  .tabs {
+    align-self: flex-start;
+  }
+  .table th,
+  .table td {
+    padding: 15px;
+  }
+  .dialogHeader,
+  .dialogBody {
+    padding: 20px;
+  }
+}
