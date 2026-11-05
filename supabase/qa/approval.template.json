@@ -1,0 +1,46 @@
+{
+  "payload": {
+    "version": 1,
+    "scope": "pending_review",
+    "approval_state": "pending",
+    "project_ref": "rnxgrunnrdlgjsbsrjev",
+    "approval_ref": null,
+    "operator_ref": null,
+    "operation_id": null,
+    "organization": {
+      "id": null,
+      "slug": "qa-sistema-alumnos-01",
+      "name": "QA Sistema Alumnos",
+      "timezone": "America/Lima"
+    },
+    "people": [
+      {
+        "auth_user_id": null,
+        "profile_id": null,
+        "membership_id": null,
+        "activation_request_id": null,
+        "idempotency_key": null,
+        "role": "admin",
+        "display_name": "QA Administrador",
+        "first_name": "QA Administrador",
+        "last_name": "",
+        "verified_contact": null,
+        "verified_at": null
+      },
+      {
+        "auth_user_id": null,
+        "profile_id": null,
+        "membership_id": null,
+        "activation_request_id": null,
+        "idempotency_key": null,
+        "role": "student",
+        "display_name": "QA Alumno",
+        "first_name": "QA Alumno",
+        "last_name": "",
+        "verified_contact": null,
+        "verified_at": null
+      }
+    ]
+  },
+  "payload_sha256": null
+}

@@ -1,10 +1,12 @@
-export const integrationState = Object.freeze({
+export const integrationState = {
   enabled: false,
-  reason: "Supabase no está conectado en la fase 3.",
-} as const);
+  reason: "Los repositorios académicos y CRUD siguen sin conexión en fase 5A.",
+} as const;
 export class IntegrationUnavailableError extends Error {
   constructor() {
-    super(integrationState.reason);
+    super(
+      "Configura y habilita explícitamente Supabase Auth para este entorno.",
+    );
     this.name = "IntegrationUnavailableError";
   }
 }

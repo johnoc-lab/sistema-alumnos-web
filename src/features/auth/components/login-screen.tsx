@@ -1,15 +1,16 @@
+import { authConfig } from "@/lib/supabase/config";
+import { AuthForm, Notice } from "./auth-form";
 import Link from "next/link";
-import {
-  Orbit,
-  ArrowRight,
-  LockKeyhole,
-  BookOpen,
-  Building2,
-  Eye,
-} from "lucide-react";
+import { Orbit, ArrowRight, BookOpen, Building2, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/primitives";
 import styles from "./login.module.css";
-export function LoginScreen() {
+export function LoginScreen({
+  next,
+  notice,
+}: {
+  next?: string | undefined;
+  notice?: string | undefined;
+}) {
   return (
     <div className={styles.page}>
       <header className={styles.top}>
@@ -20,7 +21,9 @@ export function LoginScreen() {
             <span>ESPACIO DE APRENDIZAJE</span>
           </div>
         </div>
-        <Badge tone="amber">Acceso en preparación</Badge>
+        <Badge tone="amber">
+          {authConfig() ? "Acceso seguro" : "Acceso en preparación"}
+        </Badge>
       </header>
       <main id="main-content" className={styles.main}>
         <section className={styles.intro}>
@@ -52,44 +55,13 @@ export function LoginScreen() {
           </div>
         </section>
         <section className={styles.card} aria-labelledby="login-title">
-          <Badge tone="cyan">Nueva plataforma · Fase 3</Badge>
+          <Badge tone="cyan">Espacio de aprendizaje</Badge>
           <h2 id="login-title">Bienvenido a tu espacio</h2>
           <p className={styles.description}>
-            El ingreso real estará disponible al integrar Supabase Auth.
+            Accede con la cuenta habilitada por tu organización.
           </p>
-          <fieldset
-            className={styles.fields}
-            disabled
-            aria-label="Formulario de acceso aún no habilitado"
-          >
-            <label htmlFor="email">
-              Correo electrónico
-              <input
-                id="email"
-                type="email"
-                placeholder="tu@correo.com"
-                autoComplete="username"
-              />
-            </label>
-            <label htmlFor="password">
-              Contraseña
-              <input
-                id="password"
-                type="password"
-                placeholder="Tu contraseña"
-                autoComplete="current-password"
-              />
-            </label>
-          </fieldset>
-          <button className={styles.submit} disabled type="button">
-            <LockKeyhole size={15} />
-            Ingreso no habilitado
-          </button>
-          <p className={styles.note}>
-            No introduzcas credenciales reales.
-            <br />
-            Este formulario no autentica ni envía información.
-          </p>
+          <Notice code={notice} />
+          <AuthForm next={next} />
           <div className={styles.divider}>REVISA LAS INTERFACES</div>
           <Link className={styles.preview} href="/demo">
             <Eye size={17} />
@@ -101,7 +73,11 @@ export function LoginScreen() {
             <br />
             No crea una sesión ni concede permisos.
           </p>
-          <p className={styles.footer}>Sin conexión a servicios externos</p>
+          <p className={styles.footer}>
+            {authConfig()
+              ? "Acceso académico sujeto a membresía vigente"
+              : "Acceso real no configurado"}
+          </p>
         </section>
       </main>
     </div>

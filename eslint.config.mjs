@@ -4,7 +4,7 @@ import tseslint from "typescript-eslint";
 import nextPlugin from "@next/eslint-plugin-next";
 import hooks from "eslint-plugin-react-hooks";
 export default defineConfig([
-  globalIgnores([".next/**", "coverage/**", "next-env.d.ts"]),
+  globalIgnores([".next/**", "coverage/**", "next-env.d.ts", "exports/**"]),
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

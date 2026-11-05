@@ -1,0 +1,87 @@
+.section {
+  margin: 24px 0;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #ffffff02;
+}
+.form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+  margin: 18px 0;
+  align-items: end;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #111b2b;
+  color: #eef3fa;
+  font: inherit;
+}
+.field textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+.wide {
+  grid-column: 1/-1;
+}
+.row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.card {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+.card:last-child {
+  border-bottom: 0;
+}
+.card h3 {
+  margin: 10px 0;
+}
+.card p {
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.card summary {
+  cursor: pointer;
+  padding: 10px 0;
+  color: #8de4f3;
+}
+.hint {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+.metrics a {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.metrics strong {
+  display: block;
+  font-size: 26px;
+  margin: 8px 0;
+}

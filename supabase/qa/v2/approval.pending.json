@@ -1,0 +1,61 @@
+{
+  "envelope": {
+    "payload": {
+      "version": 2,
+      "scope": "cloud_qa_institutional",
+      "approval_state": "pending",
+      "project_ref": "rnxgrunnrdlgjsbsrjev",
+      "approval_ref": null,
+      "operator_ref": null,
+      "operation_id": "2387aa0e-d1c6-4604-ad26-1ddbe0b28b5b",
+      "organization": {
+        "id": "211f6de1-5f3f-45ac-bbb1-d8363d715d01",
+        "slug": "qa-sistema-alumnos-01",
+        "name": "QA Sistema Alumnos",
+        "timezone": "America/Lima"
+      },
+      "people": [
+        {
+          "auth_user_id": "6cabd8d2-55d0-401c-b4f6-a20040215134",
+          "profile_id": "5c68dac3-31fe-4a70-a823-45fa69f3c058",
+          "membership_id": "6e4260d4-b596-4158-8663-91b73a382f7a",
+          "activation_request_id": "be8296d9-c5d8-45da-8ab1-e49647ea47a6",
+          "idempotency_key": "54705112-8dc9-49c5-af0a-fe14c3e5da22",
+          "role": "admin",
+          "display_name": "QA admin",
+          "first_name": "QA",
+          "last_name": "admin",
+          "login_identifier": "u-000002@cuentas.sistema-alumnos.invalid",
+          "assignment_verified_at": null,
+          "assignment_by_ref": null,
+          "assignment_evidence_ref": null,
+          "mailbox_status": "not_applicable"
+        },
+        {
+          "auth_user_id": "55d355b9-21d7-46af-8d6d-650a528743eb",
+          "profile_id": "44dd96cb-0732-4760-b0c5-6dfe8de276af",
+          "membership_id": "80e5b784-8c98-481d-9fc7-c761db51b7b9",
+          "activation_request_id": "c21b0da4-5a6e-4664-b9d5-328e9055b014",
+          "idempotency_key": "b61d3471-c13e-47a6-94c1-db6d0688050f",
+          "role": "student",
+          "display_name": "QA student",
+          "first_name": "QA",
+          "last_name": "student",
+          "login_identifier": "u-000001@cuentas.sistema-alumnos.invalid",
+          "assignment_verified_at": null,
+          "assignment_by_ref": null,
+          "assignment_evidence_ref": null,
+          "mailbox_status": "not_applicable"
+        }
+      ]
+    },
+    "payload_sha256": null
+  },
+  "evidence": {
+    "manual_logins": "reported_by_user",
+    "independently_verified": false,
+    "auth_confirmation_method": "requires_operator_record",
+    "assignment": "pending",
+    "mailbox": "not_applicable"
+  }
+}
