@@ -27,7 +27,7 @@ describe("integración deshabilitada y sin fallback ficticio", () => {
       status: "unconfigured",
       user: null,
     }));
-  it("no inicializa clientes ni contacta red aunque existan variables", () => {
+  it("no inicializa clientes ni contacta red aunque existan variables", async () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.test");
     vi.stubEnv(
       "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
@@ -35,7 +35,9 @@ describe("integración deshabilitada y sin fallback ficticio", () => {
     );
     try {
       expect(integrationState.enabled).toBe(false);
-      expect(createServerSupabaseClient).toThrow(IntegrationUnavailableError);
+      await expect(createServerSupabaseClient()).rejects.toThrow(
+        IntegrationUnavailableError,
+      );
       expect(createBrowserSupabaseClient).toThrow(IntegrationUnavailableError);
     } finally {
       vi.unstubAllEnvs();

@@ -14,10 +14,21 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run db:test && npm run db:test:preflight && npm run db:types:check && npm run build",
     "check:routes": "node scripts/check-routes.mjs",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "db:doctor": "node scripts/database/local.mjs doctor",
+    "db:local:start": "node scripts/database/local.mjs start",
+    "db:local:reset": "node scripts/database/local.mjs reset",
+    "db:test": "node scripts/database/test-embedded.mjs",
+    "db:test:native": "node scripts/database/test-native.mjs",
+    "db:test:pgtap": "node scripts/database/local.mjs pgtap",
+    "db:types": "node scripts/database/generate-types.mjs",
+    "db:types:check": "node scripts/database/generate-types.mjs --check",
+    "db:test:preflight": "node scripts/database/test-preflight.mjs",
+    "check:auth-routes": "node scripts/check-auth-routes.mjs",
+    "db:test:academic": "node scripts/database/test-academic.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
@@ -29,17 +40,20 @@
     "server-only": "0.0.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.14",
+    "@eslint/js": "10.0.1",
+    "@next/eslint-plugin-next": "16.4.3",
     "@types/node": "26.6.6",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "eslint": "10.14.0",
-    "typescript": "5.9.3",
-    "vitest": "5.0.5",
-    "@eslint/js": "10.0.1",
-    "@next/eslint-plugin-next": "16.4.3",
-    "typescript-eslint": "8.72.1",
     "eslint-plugin-react-hooks": "7.1.1",
-    "prettier": "3.6.2"
+    "pg": "8.23.1",
+    "prettier": "3.6.2",
+    "supabase": "3.0.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1",
+    "vitest": "5.0.5"
   },
   "type": "module"
 }

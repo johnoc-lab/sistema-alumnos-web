@@ -1,0 +1,133 @@
+.page {
+  --bg: #f4f7f8;
+  --surface: #fff;
+  --surface-raised: #edf4f4;
+  --text: #192e3c;
+  --muted: #526674;
+  --border: #d8e2e6;
+  --accent: #09685f;
+  --on-accent: #fff;
+  --accent-hover: #07564e;
+  --purple: #5b4b8a;
+  --green: #176447;
+  --amber: #87560c;
+  --notice-text: #705018;
+  --page-background: #f4f7f8;
+  color-scheme: light;
+  color: var(--text);
+  background: var(--bg);
+  min-height: 100svh;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.page :focus-visible {
+  outline: 3px solid #137c91;
+  outline-offset: 3px;
+}
+.page button,
+.page input,
+.page select {
+  min-height: 42px;
+}
+.header {
+  min-height: 76px;
+  background: #112f40;
+  border-bottom: 3px solid #278878;
+  color: #fff;
+  padding: 14px max(24px, calc((100vw - 1320px) / 2));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.header button {
+  color: #fff;
+  border-color: #ffffff60;
+  background: #ffffff0a;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+.mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: #e4f2ee;
+  color: #09685f;
+  flex-shrink: 0;
+}
+.brand strong {
+  font-size: 18px;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
+  display: block;
+}
+.brand small {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  margin-top: 5px;
+  letter-spacing: 1.4px;
+  opacity: 0.8;
+}
+.organization {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.organization strong {
+  display: block;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.organization small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.logo {
+  display: grid;
+  place-items: center;
+  background: #112f40;
+  border-radius: 8px;
+  width: 104px;
+  min-height: 46px;
+  padding: 8px;
+  flex-shrink: 0;
+}
+.logo img {
+  width: 100%;
+  height: auto;
+  max-height: 42px;
+  object-fit: contain;
+}
+.fallback {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  background: #e5efed;
+  border: 1px solid #cadeda;
+  color: #17665e;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+@media (max-width: 600px) {
+  .header {
+    padding: 14px 18px;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .brand strong {
+    font-size: 17px;
+  }
+  .brand small {
+    font-size: 9px;
+  }
+}

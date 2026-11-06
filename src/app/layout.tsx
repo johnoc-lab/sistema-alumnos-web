@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import "@/styles/globals.css";
 export const metadata: Metadata = {
   title: {
-    default: "Impulso Cero · Espacio de aprendizaje",
-    template: "%s · Impulso Cero",
+    default: "Sistema Alumnos · Espacio de aprendizaje",
+    template: "%s · Sistema Alumnos",
   },
   description:
-    "Interfaces iniciales del sistema de alumnos. Acceso real aún no habilitado.",
+    "Espacio académico de talleres, materiales y actividades para alumnos y administradores.",
   robots: { index: false, follow: false },
 };
 export default function RootLayout({

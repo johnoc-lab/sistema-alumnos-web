@@ -1,10 +1,17 @@
-import { AccessPending } from "@/features/auth/components/access-pending";
-import { isOrganizationSlug, previewHref } from "@/features/preview/routes";
+import { AcademicPage } from "@/features/academic/academic-page";
 import type { OrganizationPageProps } from "@/types/routes";
-export default async function Page({ params }: OrganizationPageProps) {
+export default async function Page({
+  params,
+  searchParams,
+}: OrganizationPageProps & {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { organizationSlug } = await params;
-  const previewPath = isOrganizationSlug(organizationSlug)
-    ? previewHref(organizationSlug, "dashboard/calendario")
-    : "/demo";
-  return <AccessPending previewPath={previewPath} />;
+  return (
+    <AcademicPage
+      slug={organizationSlug}
+      section="dashboard/calendario"
+      search={await searchParams}
+    />
+  );
 }

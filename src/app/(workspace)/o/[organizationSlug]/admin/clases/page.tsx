@@ -1,10 +1,13 @@
-import { AccessPending } from "@/features/auth/components/access-pending";
-import { isOrganizationSlug, previewHref } from "@/features/preview/routes";
+import { ProtectedModule } from "@/features/auth/components/protected-module";
 import type { OrganizationPageProps } from "@/types/routes";
 export default async function Page({ params }: OrganizationPageProps) {
   const { organizationSlug } = await params;
-  const previewPath = isOrganizationSlug(organizationSlug)
-    ? previewHref(organizationSlug, "admin/clases")
-    : "/demo";
-  return <AccessPending previewPath={previewPath} />;
+  return (
+    <ProtectedModule
+      slug={organizationSlug}
+      role="admin"
+      title="Clases"
+      section="admin/clases"
+    />
+  );
 }
