@@ -130,15 +130,23 @@ function Save({ disabled = false }: { disabled?: boolean }) {
 function CourseSelect({
   data,
   current,
+  selected,
 }: {
   data: AcademicData;
   current?: string | undefined;
+  selected?: string | undefined;
 }) {
   return current ? (
     <input type="hidden" name="course_id" value={current} />
   ) : (
     <Field label="Taller">
-      <select name="course_id" defaultValue="" required>
+      <select
+        name="course_id"
+        defaultValue={
+          data.courses.some((c) => c.id === selected) ? selected : ""
+        }
+        required
+      >
         <option value="" disabled>
           Selecciona un taller
         </option>
@@ -153,7 +161,7 @@ function CourseSelect({
 }
 function Empty({ children }: { children: ReactNode }) {
   return (
-    <p className={css.hint} role="status">
+    <p className={css.empty} role="status">
       {children}
     </p>
   );
@@ -315,73 +323,108 @@ function StudentsAdmin({
       {!students.length && (
         <Empty>No hay alumnos que coincidan con la búsqueda.</Empty>
       )}
-      {students.map((m) => (
-        <article key={m.id} className={css.section}>
-          <Status status={m.status} />
-          <h2>{name(m)}</h2>
-          <p>{m.contact_email ?? "Sin correo de contacto"}</p>
-          <details>
-            <summary>Ficha y datos del alumno</summary>
-            <p className={css.hint}>
-              Ingreso: {date(m.joined_at)}. Los datos de contacto no cambian las
-              credenciales de acceso.
-            </p>
-            <BaseForm
-              slug={slug}
-              action="student"
-              id={m.id}
-              version={m.row_version}
-            >
-              <Field label="Nombres">
-                <input
-                  name="first_name"
-                  required
-                  maxLength={100}
-                  defaultValue={m.first_name}
-                />
-              </Field>
-              <Field label="Apellidos">
-                <input
-                  name="last_name"
-                  maxLength={100}
-                  defaultValue={m.last_name}
-                />
-              </Field>
-              <Field label="Correo de contacto (opcional)">
-                <input
-                  type="email"
-                  name="contact_email"
-                  maxLength={254}
-                  defaultValue={m.contact_email ?? ""}
-                />
-              </Field>
-              <Save />
-            </BaseForm>
-            <BaseForm
-              slug={slug}
-              action="student-status"
-              id={m.id}
-              version={m.row_version}
-            >
-              <StatusInput options={states.student} current={m.status} />
-              <Save />
-            </BaseForm>
-            <h3>Matrículas</h3>
-            {data.enrollments
-              .filter((e) => e.membership_id === m.id)
-              .map((e) => (
-                <p key={e.id}>
-                  {data.courses.find((c) => c.id === e.course_id)?.title ??
-                    "Taller no disponible"}{" "}
-                  · {labels[e.status]}
-                </p>
+      {!!students.length && (
+        <div className={css.tableWrap}>
+          <table className={css.table}>
+            <caption>Alumnos de la organización</caption>
+            <thead>
+              <tr>
+                <th scope="col">Alumno</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Matrículas</th>
+                <th scope="col">Gestión</th>
+              </tr>
+            </thead>
+            <tbody>
+              {students.map((m) => (
+                <tr key={m.id}>
+                  <td>
+                    <strong>{name(m)}</strong>
+                    <p className={css.hint}>
+                      {m.contact_email ?? "Sin correo de contacto"}
+                    </p>
+                  </td>
+                  <td>
+                    <Status status={m.status} />
+                  </td>
+                  <td>
+                    {
+                      data.enrollments.filter((e) => e.membership_id === m.id)
+                        .length
+                    }
+                  </td>
+                  <td>
+                    {" "}
+                    <details>
+                      <summary>Ficha y datos del alumno</summary>
+                      <p className={css.hint}>
+                        Ingreso: {date(m.joined_at)}. Los datos de contacto no
+                        cambian las credenciales de acceso.
+                      </p>
+                      <BaseForm
+                        slug={slug}
+                        action="student"
+                        id={m.id}
+                        version={m.row_version}
+                      >
+                        <Field label="Nombres">
+                          <input
+                            name="first_name"
+                            required
+                            maxLength={100}
+                            defaultValue={m.first_name}
+                          />
+                        </Field>
+                        <Field label="Apellidos">
+                          <input
+                            name="last_name"
+                            maxLength={100}
+                            defaultValue={m.last_name}
+                          />
+                        </Field>
+                        <Field label="Correo de contacto (opcional)">
+                          <input
+                            type="email"
+                            name="contact_email"
+                            maxLength={254}
+                            defaultValue={m.contact_email ?? ""}
+                          />
+                        </Field>
+                        <Save />
+                      </BaseForm>
+                      <BaseForm
+                        slug={slug}
+                        action="student-status"
+                        id={m.id}
+                        version={m.row_version}
+                      >
+                        <StatusInput
+                          options={states.student}
+                          current={m.status}
+                        />
+                        <Save />
+                      </BaseForm>
+                      <h3>Matrículas</h3>
+                      {data.enrollments
+                        .filter((e) => e.membership_id === m.id)
+                        .map((e) => (
+                          <p key={e.id}>
+                            {data.courses.find((c) => c.id === e.course_id)
+                              ?.title ?? "Taller no disponible"}{" "}
+                            · {labels[e.status]}
+                          </p>
+                        ))}
+                      {!data.enrollments.some(
+                        (e) => e.membership_id === m.id,
+                      ) && <Empty>Sin matrículas.</Empty>}
+                    </details>
+                  </td>
+                </tr>
               ))}
-            {!data.enrollments.some((e) => e.membership_id === m.id) && (
-              <Empty>Sin matrículas.</Empty>
-            )}
-          </details>
-        </article>
-      ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </>
   );
 }
@@ -406,7 +449,7 @@ function EnrollmentsAdmin({
       <section className={css.section}>
         <h2>Inscribir alumno existente</h2>
         <BaseForm slug={slug} action="enrollment">
-          <CourseSelect data={data} />
+          <CourseSelect data={data} selected={selected} />
           <Field label="Alumno activo">
             <select name="membership_id" defaultValue="" required>
               <option value="" disabled>
@@ -433,42 +476,76 @@ function EnrollmentsAdmin({
         </Link>
       )}
       {!enrollments.length && <Empty>No hay matrículas para mostrar.</Empty>}
-      {enrollments.map((e) => (
-        <article key={e.id} className={css.section}>
-          <h3>
-            {data.memberships.find((m) => m.id === e.membership_id)
-              ? name(data.memberships.find((m) => m.id === e.membership_id)!)
-              : "Alumno no disponible"}{" "}
-            ·{" "}
-            {data.courses.find((c) => c.id === e.course_id)?.title ??
-              "Taller no disponible"}
-          </h3>
-          <Status status={e.status} />
-          <p className={css.hint}>Inscripción: {date(e.enrolled_at)}</p>
-          <details>
-            <summary>Editar estado y avance</summary>
-            <BaseForm
-              slug={slug}
-              action="enrollment"
-              id={e.id}
-              version={e.row_version}
-            >
-              <StatusInput options={states.enrollment} current={e.status} />
-              <Field label="Avance (%)">
-                <input
-                  name="progress_percent"
-                  type="number"
-                  min={0}
-                  max={100}
-                  step="0.01"
-                  defaultValue={e.progress_percent ?? 0}
-                />
-              </Field>
-              <Save />
-            </BaseForm>
-          </details>
-        </article>
-      ))}
+      {!!enrollments.length && (
+        <div className={css.tableWrap}>
+          <table className={css.table}>
+            <caption>Matrículas de la organización</caption>
+            <thead>
+              <tr>
+                <th scope="col">Alumno / taller</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Avance</th>
+                <th scope="col">Gestión</th>
+              </tr>
+            </thead>
+            <tbody>
+              {enrollments.map((e) => {
+                const student = data.memberships.find(
+                  (m) => m.id === e.membership_id,
+                );
+                return (
+                  <tr key={e.id}>
+                    <td>
+                      <strong>
+                        {student ? name(student) : "Alumno no disponible"}
+                      </strong>
+                      <p>
+                        {data.courses.find((c) => c.id === e.course_id)
+                          ?.title ?? "Taller no disponible"}
+                      </p>
+                      <p className={css.hint}>
+                        Inscripción: {date(e.enrolled_at)}
+                      </p>
+                    </td>
+                    <td>
+                      <Status status={e.status} />
+                    </td>
+                    <td>{e.progress_percent ?? 0}%</td>
+                    <td>
+                      {" "}
+                      <details>
+                        <summary>Editar estado y avance</summary>
+                        <BaseForm
+                          slug={slug}
+                          action="enrollment"
+                          id={e.id}
+                          version={e.row_version}
+                        >
+                          <StatusInput
+                            options={states.enrollment}
+                            current={e.status}
+                          />
+                          <Field label="Avance (%)">
+                            <input
+                              name="progress_percent"
+                              type="number"
+                              min={0}
+                              max={100}
+                              step="0.01"
+                              defaultValue={e.progress_percent ?? 0}
+                            />
+                          </Field>
+                          <Save />
+                        </BaseForm>
+                      </details>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </>
   );
 }
@@ -914,6 +991,37 @@ export function AcademicView({
           </Link>
         ))}
       </div>
+      {admin && (
+        <section className={css.section}>
+          <h2>Prepara tu espacio académico</h2>
+          <p className={css.hint}>
+            Publica un taller, matricula a un alumno y comparte sus primeros
+            contenidos.
+          </p>
+          <ol className={css.steps}>
+            <li>
+              <Link href={"/o/" + slug + "/admin/cursos"}>
+                Crear y publicar un taller
+              </Link>
+            </li>
+            <li>
+              <Link href={"/o/" + slug + "/admin/matriculas"}>
+                Matricular a un alumno existente
+              </Link>
+            </li>
+            <li>
+              <Link href={"/o/" + slug + "/admin/materiales"}>
+                Publicar un material por enlace
+              </Link>
+            </li>
+            <li>
+              <Link href={"/o/" + slug + "/admin/avisos"}>
+                Compartir un aviso del taller
+              </Link>
+            </li>
+          </ol>
+        </section>
+      )}
       {!admin && (
         <>
           <h2>Avisos recientes</h2>
@@ -1015,7 +1123,10 @@ export async function AcademicPage({
         }
       />
       {Object.hasOwn(noticeText, notice) && (
-        <p role="status" className={ui.notice}>
+        <p
+          role={notice === "saved" ? "status" : "alert"}
+          className={notice === "saved" ? css.success : css.error}
+        >
           {noticeText[notice]}
         </p>
       )}

@@ -10,12 +10,18 @@ export type MfaOverview =
 export const factorIdValid = (value: unknown): value is string =>
   typeof value === "string" &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
-export async function mfaContext(client: MfaClient, organizationId?: string) {
+export async function mfaContext(
+  client: MfaClient,
+  organizationId?: string,
+  onStage?: (stage: "session" | "authorization" | "claims") => void,
+) {
+  onStage?.("session");
   const session = await readSessionForClient(client);
   if (session.status === "unconfigured" || session.status === "unavailable")
     return { status: session.status } as const;
   if (session.status !== "authenticated")
     return { status: "anonymous" } as const;
+  onStage?.("authorization");
   const admin = session.memberships
     .filter(
       (m) =>
@@ -33,6 +39,7 @@ export async function mfaContext(client: MfaClient, organizationId?: string) {
     !admin
   )
     return { status: "forbidden" } as const;
+  onStage?.("claims");
   const { data, error } = await client.auth.getClaims();
   const c = data?.claims;
   if (
@@ -53,9 +60,15 @@ export async function mfaContext(client: MfaClient, organizationId?: string) {
     aal: c.aal === "aal2" ? ("aal2" as const) : ("aal1" as const),
   };
 }
-export async function ownTotpFactors(client: MfaClient): Promise<MfaFactor[]> {
+export async function ownTotpFactors(
+  client: MfaClient,
+  onError?: (error: unknown) => void,
+): Promise<MfaFactor[]> {
   const { data, error } = await client.auth.mfa.listFactors();
-  if (error || !Array.isArray(data?.all)) throw Error("factors_unavailable");
+  if (error || !Array.isArray(data?.all)) {
+    onError?.(error);
+    throw Error("factors_unavailable");
+  }
   return data.all
     .filter((f) => f.factor_type === "totp")
     .map((f) => {
@@ -83,15 +96,33 @@ export async function loadMfaOverview(): Promise<MfaOverview> {
   }
 }
 /** Solo imagen SVG del proveedor, nunca markup activo ni recursos externos. */
-export function privateQrDataUri(value: unknown): string | null {
-  if (typeof value !== "string" || value.length > 150000) return null;
+export type QrRejection =
+  | "qr_invalid_type_or_size"
+  | "qr_invalid_prefix"
+  | "qr_decode_failed"
+  | "qr_invalid_structure"
+  | "qr_blocked_markup"
+  | "qr_external_reference"
+  | "qr_unsupported_element";
+export function privateQrDataUri(
+  value: unknown,
+  onReject?: (reason: QrRejection) => void,
+): string | null {
+  const reject = (reason: QrRejection) => {
+    onReject?.(reason);
+    return null;
+  };
+  // goqrsvg emite un rectángulo por módulo: un SVG legítimo supera 150000 caracteres.
+  // Límite de entrada finito (incluye el prefijo y posible percent-encoding), antes de decodificar.
+  if (typeof value !== "string" || value.length > 1024 * 1024)
+    return reject("qr_invalid_type_or_size");
   const prefix = "data:image/svg+xml;utf-8,";
-  if (!value.startsWith(prefix)) return null;
+  if (!value.startsWith(prefix)) return reject("qr_invalid_prefix");
   let svg = value.slice(prefix.length);
   try {
     if (/^%3c/i.test(svg)) svg = decodeURIComponent(svg);
   } catch {
-    return null;
+    return reject("qr_decode_failed");
   }
   // Supabase Auth genera SVGo: declaración XML, comentario y estilos rect black/white.
   // Solo se normalizan esas formas inertes conocidas; DTD, scripts y otros estilos se rechazan.
@@ -104,20 +135,18 @@ export function privateQrDataUri(value: unknown): string | null {
       /\sstyle=(["'])fill:(black|white);stroke:none;?\1/g,
       (_value, _quote, fill: string) => ' fill="' + fill + '" stroke="none"',
     );
-  if (
-    !/^<svg\b/i.test(svg) ||
-    !/<\/svg>\s*$/i.test(svg) ||
-    /<!|<\?|(?:\s|:)on[a-z]+\s*=|(?:href|src|style)\s*=|url\s*\(/i.test(svg)
-  )
-    return null;
+  if (!/^<svg\b/i.test(svg) || !/<\/svg>\s*$/i.test(svg))
+    return reject("qr_invalid_structure");
+  if (/<!|<\?|(?:\s|:)on[a-z]+\s*=|(?:href|src|style)\s*=|url\s*\(/i.test(svg))
+    return reject("qr_blocked_markup");
   const withoutNamespace = svg.replace(
     /\sxmlns=(["'])http:\/\/www\.w3\.org\/2000\/svg\1/gi,
     "",
   );
   if (/https?:|data:|file:|javascript:|\/\//i.test(withoutNamespace))
-    return null;
+    return reject("qr_external_reference");
   for (const tag of svg.matchAll(/<\/?([a-z][a-z0-9:-]*)\b/gi))
     if (!["svg", "path", "rect", "g"].includes(tag[1]!.toLowerCase()))
-      return null;
+      return reject("qr_unsupported_element");
   return "data:image/svg+xml;base64," + Buffer.from(svg).toString("base64");
 }

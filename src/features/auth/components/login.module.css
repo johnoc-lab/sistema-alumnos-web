@@ -219,3 +219,62 @@
     font-size: 18px;
   }
 }
+
+/* El acceso real es la acción principal; la demo es una vista secundaria. */
+.submit {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #071522;
+  font-weight: 600;
+}
+.submit:hover {
+  background: #87e0f2;
+}
+.fields input {
+  color: var(--text);
+  min-height: 46px;
+}
+.fields input:focus {
+  border-color: var(--accent);
+}
+.preview {
+  background: #ffffff04;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-weight: 500;
+}
+.preview:hover {
+  border-color: #60d4ec55;
+  color: var(--text);
+}
+.feedback {
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid #e6c78455;
+  border-radius: 9px;
+  color: var(--amber);
+  background: #e6c78408;
+  font-size: 13px;
+}
+@media (max-width: 480px) {
+  .top {
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .card {
+    padding: 24px 20px;
+  }
+}
+
+.logout {
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #ffffff05;
+  color: var(--text);
+  font-size: 12px;
+}
+.logout:hover {
+  background: #ffffff0b;
+  border-color: #60d4ec55;
+}

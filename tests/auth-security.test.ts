@@ -123,3 +123,39 @@ describe("redirección, origen, configuración y prueba de recuperación", () =>
     expect(authConfig()).toBeNull();
   });
 });
+
+describe("Preview HTTPS: origen exacto", () => {
+  const origin = "https://sistema-alumnos-git-qa.vercel.app";
+  it("admite el origen HTTPS configurado, conservando rechazo de otros Preview", () => {
+    expect(authOrigin(origin)).toBe(origin);
+    for (const supplied of [
+      origin,
+      "https://otro-preview.vercel.app",
+      "null",
+    ]) {
+      const request = new Request(origin + "/o/qa/acciones", {
+        method: "POST",
+        headers: { origin: supplied, "sec-fetch-site": "same-origin" },
+      });
+      expect(sameOriginPost(request, origin)).toBe(supplied === origin);
+    }
+  });
+  it("Host y X-Forwarded-Host no sustituyen Origin", () => {
+    const request = new Request(origin + "/auth/login", {
+      method: "POST",
+      headers: {
+        origin: "https://evil.test",
+        host: new URL(origin).host,
+        "x-forwarded-host": new URL(origin).host,
+      },
+    });
+    expect(sameOriginPost(request, origin)).toBe(false);
+  });
+  it("no habilita Auth ni deriva APP_ORIGIN automáticamente de VERCEL_URL", () => {
+    vi.stubEnv("APP_ORIGIN", "");
+    vi.stubEnv("VERCEL_URL", new URL(origin).host);
+    vi.stubEnv("SUPABASE_AUTH_ENABLED", "false");
+    expect(authOrigin()).toBeNull();
+    expect(authConfig()).toBeNull();
+  });
+});

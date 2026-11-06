@@ -12,6 +12,7 @@ import {
 } from "./mfa.server";
 import { mfaCookie, makeMfaProof, readMfaProof } from "./mfa-proof.server";
 import { enrollmentHtml, challengeHtml } from "./mfa-html";
+import { enrollmentDiagnostics } from "./mfa-diagnostics.server";
 export type MfaAction = "enroll" | "challenge" | "verify" | "cancel";
 const failure = (status: number) =>
   NextResponse.json(
@@ -36,9 +37,20 @@ const html = (body: string) =>
     },
   });
 export async function mfaPost(request: Request, action: MfaAction) {
+  const diagnostic = enrollmentDiagnostics(action === "enroll");
+  diagnostic.at("configuration");
   const config = authConfig();
-  if (!config) return failure(503);
-  if (!sameOriginPost(request, config.origin)) return failure(403);
+  if (!config) {
+    diagnostic.fail("configuration_unavailable");
+    return failure(503);
+  }
+  diagnostic.ok();
+  diagnostic.at("csrf");
+  if (!sameOriginPost(request, config.origin)) {
+    diagnostic.fail("csrf_rejected");
+    return failure(403);
+  }
+  diagnostic.ok();
   const go = (path: string) =>
     NextResponse.redirect(new URL(path, config.origin), {
       status: 303,
@@ -46,12 +58,17 @@ export async function mfaPost(request: Request, action: MfaAction) {
     });
   try {
     let fields: URLSearchParams;
+    diagnostic.at("form");
     try {
       fields = await readFields(request);
     } catch {
+      diagnostic.fail("invalid_form");
       return failure(400);
     }
+    diagnostic.ok();
+    diagnostic.at("cookies");
     const jar = await cookies();
+    diagnostic.ok();
     const clear = () =>
       jar.set(mfaCookie, "", {
         httpOnly: true,
@@ -81,9 +98,22 @@ export async function mfaPost(request: Request, action: MfaAction) {
       clear();
       return go("/auth/mfa?notice=invalid");
     }
+    diagnostic.at("client");
     const client = await createServerSupabaseClient(true);
-    const context = await mfaContext(client, proof?.organization_id);
-    if (context.status !== "ready")
+    diagnostic.ok();
+    const context = await mfaContext(
+      client,
+      proof?.organization_id,
+      diagnostic.at,
+    );
+    if (context.status !== "ready") {
+      diagnostic.fail(
+        context.status === "anonymous"
+          ? "context_anonymous"
+          : context.status === "forbidden"
+            ? "context_forbidden"
+            : "context_unavailable",
+      );
       return failure(
         context.status === "anonymous"
           ? 401
@@ -91,6 +121,8 @@ export async function mfaPost(request: Request, action: MfaAction) {
             ? 403
             : 503,
       );
+    }
+    diagnostic.ok();
     if (
       proof &&
       (proof.sub !== context.sub ||
@@ -103,20 +135,51 @@ export async function mfaPost(request: Request, action: MfaAction) {
       clear();
       return failure(403);
     }
-    const factors = await ownTotpFactors(client);
+    diagnostic.at("list_factors");
+    const factors = await ownTotpFactors(client, (error) =>
+      diagnostic.fail("factor_list_failed", error),
+    );
+    diagnostic.ok();
     if (action === "enroll") {
-      if (factors.length) return go("/auth/mfa?notice=exists");
+      if (factors.length) {
+        diagnostic.stop("existing_factor");
+        return go("/auth/mfa?notice=exists");
+      }
+      diagnostic.at("challenge_state_clear");
       clear();
+      diagnostic.ok();
+      diagnostic.calling();
+      diagnostic.at("auth_enroll");
       const { data, error } = await client.auth.mfa.enroll({
         factorType: "totp",
         friendlyName: "Autenticador personal",
         issuer: "SistemaAlumnos-Web",
       });
-      if (error || !data || data.type !== "totp" || !factorIdValid(data.id))
+      diagnostic.returned();
+      diagnostic.at("enroll_response");
+      if (error) {
+        diagnostic.fail("provider_error", error);
         return failure(503);
-      const qr = privateQrDataUri(data.totp.qr_code);
+      }
+      if (!data || data.type !== "totp" || !factorIdValid(data.id)) {
+        diagnostic.fail("invalid_enroll_response");
+        return failure(503);
+      }
+      diagnostic.ok();
+      diagnostic.at("qr_receive");
+      const rawQr = data.totp.qr_code;
+      diagnostic.ok();
+      diagnostic.at("qr_validation");
+      const qr = privateQrDataUri(rawQr, (reason) => diagnostic.fail(reason));
       if (!qr) return failure(503);
-      return html(enrollmentHtml(qr, data.id));
+      diagnostic.ok();
+      diagnostic.at("html_render");
+      const body = enrollmentHtml(qr, data.id);
+      diagnostic.ok();
+      diagnostic.at("http_response");
+      const response = html(body);
+      diagnostic.ok();
+      return response;
     }
     const factor = factors.find((f) => f.id === factorId);
     if (!factor) {
@@ -208,7 +271,8 @@ export async function mfaPost(request: Request, action: MfaAction) {
     )
       return go("/auth/mfa?notice=failed");
     return go("/seleccionar-organizacion");
-  } catch {
+  } catch (error) {
+    diagnostic.fail("unexpected_exception", error);
     return failure(503);
   }
 }

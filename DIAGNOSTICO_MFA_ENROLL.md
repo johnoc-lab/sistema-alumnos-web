@@ -50,3 +50,104 @@ Si el evento Auth confirma éxito, todavía será necesario distinguir el result
 Sin operaciones Supabase Cloud, creación/eliminación de factores, modificación de usuarios, SQL, cambios académicos, RLS, .env.local, contraseñas o sesiones reales. No se debilitó CSRF ni aal2. No hubo commit, push o deploy.
 
 Se entrega el diagnóstico incompleto de forma explícita y los datos concretos necesarios para continuar; no se declara una causa ni una corrección que no estén demostradas.
+## Actualización: instrumentación temporal del enrollment
+
+Fecha de referencia: **5 de noviembre de 2026**. Se incorpora diagnóstico, no una corrección de la causa. El usuario comunica que después del fallo reaparece un factor unverified; esto no permite identificar todavía si falló el retorno del SDK, el QR o la respuesta HTML. Codex no ejecutó un intento real.
+
+Archivos cambiados:
+
+- src/lib/auth/mfa-diagnostics.server.ts: trazas de servidor opt-in y códigos permitidos.
+- src/lib/auth/mfa-handlers.server.ts: puntos de diagnóstico antes/después de cada etapa de enrollment.
+- src/lib/auth/mfa.server.ts: callbacks de etapas del contexto/listado y motivos fijos de rechazo del QR. Se conservan las mismas reglas de validación.
+- tests/mfa-diagnostics.test.ts y tests/auth-mfa.test.ts: privacidad y fallos por etapa con SDK simulado.
+
+Los únicos campos registrados son attempt (UUID aleatorio de diagnóstico), stage, event, enroll_state y, cuando proceda, code, provider_code, provider_status y exception. No se registran identificadores de usuario/perfil/sesión/factor, solicitudes, encabezados, objetos de error, mensajes, stack, QR, semillas o credenciales. provider_code usa una lista cerrada; los valores desconocidos se reemplazan por unrecognized. Los estados del proveedor se limitan a números HTTP válidos. Una avería del logger no cambia el resultado del handler.
+
+### Activación para el próximo ensayo manual
+
+Detener el servidor local actual con Ctrl+C y ejecutar desde el proyecto, en PowerShell:
+
+```powershell
+$env:MFA_ENROLL_DIAGNOSTICS = 'true'
+npm run dev
+```
+
+Es una variable privada del proceso. **No requiere modificar .env.local ni activar/desactivar Auth.** Solo se emiten trazas en NODE_ENV=development y para la acción enroll; production/test, GET, challenge, verify y cancel no las activan.
+
+1. El administrador entra con su sesión normal y abre /auth/mfa.
+2. Si sigue existiendo un factor pendiente, la guarda mantiene bloqueado otro enrollment. El usuario decide si cancela ese pendiente mediante la interfaz existente antes del nuevo ensayo; Codex no cancela factores ni inicia el registro.
+3. Cuando se muestre Configurar TOTP, el usuario pulsa una sola vez durante el intento controlado.
+4. En la terminal de Next.js, reunir solo las líneas que empiezan por **[mfa-enroll]** y comparten el mismo attempt. El event=failed indica la etapa y código. No compartir el QR, HTML de enrollment, capturas del autenticador ni logs completos de respuestas.
+
+| stage / código | Interpretación |
+|---|---|
+| configuration | Configuración Auth no disponible; todavía no se llamó a enroll |
+| csrf | El POST fue rechazado por el control de origen/metadatos |
+| form | Lectura/validación del cuerpo rechazada |
+| cookies / client | Obtención del contexto de cookies o creación del cliente SSR |
+| session | Resolución de sesión y datos de acceso no disponible/válida |
+| authorization | Perfil/membresía administrativa no vigente |
+| claims | Verificación de claims de la sesión |
+| list_factors | Error en listado/validación de factores propios; puede incluir un código público del SDK |
+| existing_factor (event=stop) | Ya había TOTP; no se solicitó otro enrollment |
+| challenge_state_clear | Fallo al invalidar el challenge transitorio, antes de enroll |
+| auth_enroll | La llamada al SDK comenzó y no retornó normalmente |
+| enroll_response | El SDK retornó un error o una respuesta incompatible |
+| qr_receive | Lectura del campo QR del resultado TOTP |
+| qr_validation | Rechazo por tipo/tamaño, prefijo, decodificación, estructura, markup, referencia externa o elemento no admitido; el código identifica el motivo sin mostrar contenido |
+| html_render / http_response | Construcción del HTML o de la respuesta; http_response con event=ok significa que la respuesta quedó preparada en servidor, no que el navegador la haya mostrado o escaneado |
+
+Los valores de enroll_state separan **not_called**, **calling** y **returned**. calling puede incluir un fallo después de que el proveedor haya persistido el factor. returned solo significa que la promesa del SDK resolvió; debe interpretarse junto con stage/code. Ninguno autoriza a asumir que el factor no existe ni a repetir o limpiar automáticamente.
+
+Para apagar las trazas, detener Next.js, quitar la variable del proceso y reiniciar:
+
+```powershell
+Remove-Item Env:\MFA_ENROLL_DIAGNOSTICS -ErrorAction SilentlyContinue
+npm run dev
+```
+
+### Validación de esta actualización
+
+- **173/173** pruebas específicas MFA/sesión/proxy/diagnóstico aprobadas.
+- Suite completa: **343/343**, 16 archivos.
+- **Lint y typecheck aprobados.**
+- Incluye descarte de códigos desconocidos y objetos sensibles, fallos del logger, errores anteriores/posteriores al SDK, validación del QR y generación HTML. Se conservaron CSRF, cookies privadas, pertenencia administrativa y aal2 del Panel.
+
+No hubo enrollment, unenroll o verificación reales desde Codex; tampoco SQL, migraciones, cambios Cloud, .env.local, usuarios o factores. No se cambió el formato aceptado del QR ni se añadió recuperación automática. No se hizo stage, commit, push o deploy. La causa real queda pendiente de las trazas del próximo ensayo controlado.
+## Corrección localizada: límite del QR (6 de noviembre de 2026)
+
+### Evidencia y causa técnica
+
+El usuario comunicó trazas con enroll_response y qr_receive correctos, seguidos de qr_validation / qr_invalid_type_or_size y HTTP 503. Codex no realizó un enrollment real ni accedió al QR real.
+
+El guard inicial de privateQrDataUri agrupaba dos causas: entrada distinta de string o longitud mayor de **150 000 caracteres**, incluido el prefijo. Se ejecutaba antes de comprobar prefijo, SVG o HTML. El contrato TOTP retorna data.totp.qr_code; el backend lo define como string SVG y el SDK instalado (@supabase/auth-js, GoTrueClient.ts) antepone **data:image/svg+xml;utf-8,**. El formato ya estaba admitido. Fuentes: [contrato oficial de enroll](https://supabase.com/docs/reference/javascript/auth-mfa-enroll), [generación TOTP de Supabase Auth](https://github.com/supabase/auth/blob/master/internal/api/mfa.go).
+
+Supabase utiliza goqrsvg/SVGo, que emite un rectángulo para **cada módulo blanco o negro**. Un SVG de este formato puede exceder el límite anterior sin ser malicioso. Se reprodujo localmente con una matriz sintética de 57×57 módulos: las variantes textual y percent-encoded fueron rechazadas antes del cambio y aceptadas después. La matriz solo reproduce estructura/densidad; no codifica un TOTP real ni demuestra escaneo en celular. [Generador goqrsvg](https://github.com/aaronarduino/goqrsvg/blob/master/goqrsvg.go).
+
+**Conclusión verificable:** el límite local era incompatible con SVG densos del generador. Es consistente con el fallo comunicado. La traza agrupa tipo y tamaño y no aporta metadatos del QR real, por lo que no se afirma haber medido su longitud ni confirmado independientemente cuál de ambas ramas se activó en Cloud.
+
+### Cambio y seguridad
+
+- **src/lib/auth/mfa.server.ts:** único cambio funcional de esta corrección: ampliar el límite de entrada a **1 048 576 caracteres (1 Mi)**, antes de decodificar. No es un límite en bytes ni una garantía para cualquier tamaño posible de QR.
+- **tests/auth-mfa.test.ts:** 15 casos nuevos: dos variantes de SVG denso y respuesta privada del handler, límite exacto/exceso, cinco tipos inválidos y siete contenidos peligrosos, estos últimos también percent-encoded.
+- **DIAGNOSTICO_MFA_ENROLL.md:** este registro.
+
+Se revisaron mfa-handlers.server.ts y mfa-html.ts; no requirieron cambios para esta corrección. Se conservaron el tipo string, prefijo exacto, normalización restringida SVGo, rechazo de scripts/HTML/DTD/eventos/referencias externas/estilos no admitidos, elementos permitidos y salida base64 dentro de un img con atributos escapados. No se inserta el SVG como HTML. No se amplió la aceptación a PNG, URLs remotas, objetos ni formatos arbitrarios.
+
+CSRF, sesión, pertenencia administrativa, requisito aal2 del Panel, no-store y privacidad del QR permanecen intactos. Las pruebas nuevas activan las trazas sanitizadas en el proceso simulado y comprueban que QR, data URI y secreto sintético no aparecen en logs ni se persiste la imagen en cookies. No se registra metadato ni contenido adicional del QR.
+
+### Resultados
+
+- Regresión antes del cambio: **2/2 casos densos fallaban** por rechazo local.
+- Después: **188/188** pruebas específicas MFA/diagnóstico/sesión/proxy; suite completa **358/358**, 16 archivos.
+- **Lint y typecheck aprobados.**
+- **Build Next.js 16.4.3 aprobado con --webpack**, en copia temporal aislada de src/configuración pública, sin copiar .env.local y con Auth deshabilitado solo en el proceso de build. Se compilaron las rutas MFA y /demo; no se alteró el servidor de desarrollo existente.
+- No se validó visualización/escaneo real ni enrollment contra Supabase Cloud.
+
+### Próximo ensayo manual y límites
+
+Existe posiblemente un factor unverified del último intento del usuario. No se reintenta automáticamente ni se cancela desde Codex. Para una prueba posterior decidida por el usuario: reiniciar Next.js con el código corregido, entrar en /auth/mfa y, si hay un pendiente propio, utilizar la cancelación explícita existente antes de comenzar otro enrollment. El usuario escanea el nuevo QR en privado y verifica el código; el acceso administrativo sigue dependiendo de aal2. No compartir QR, HTML, semillas, códigos o sesiones.
+
+Si se repite qr_invalid_type_or_size, detenerse: el dato adicional necesario sería únicamente tipo, longitud aproximada y categoría de prefijo, nunca el contenido. No atribuir automáticamente un nuevo fallo al mismo límite ni seguir ampliándolo sin evidencia.
+
+**Sin operaciones Cloud, enrollment/unenroll/verify reales, cambios Auth/SQL/migraciones/RLS/.env.local, stage, commit, push o deploy.** Los cambios de instrumentación anteriores permanecen; esta corrección no los sustituye.

@@ -20,7 +20,9 @@ export const notices: Record<string, string> = {
 };
 export function Notice({ code }: { code?: string | undefined }) {
   return typeof code === "string" && Object.hasOwn(notices, code) ? (
-    <p role="status">{notices[code]}</p>
+    <p role="status" className={styles.feedback}>
+      {notices[code]}
+    </p>
   ) : null;
 }
 export function AuthForm({
@@ -51,7 +53,7 @@ export function AuthForm({
       <fieldset className={styles.fields} disabled={!enabled}>
         {mode !== "password" && (
           <label>
-            Correo electrónico
+            Identificador institucional
             <input
               name="email"
               type="email"
@@ -115,7 +117,9 @@ export function LogoutForm() {
   return (
     <form action="/auth/logout" method="post">
       <input type="hidden" name="intent" value="logout" />
-      <button type="submit">Cerrar sesión</button>
+      <button type="submit" className={styles.logout}>
+        Cerrar sesión
+      </button>
     </form>
   );
 }

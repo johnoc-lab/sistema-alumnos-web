@@ -17,7 +17,7 @@ export function LoginScreen({
         <div className={styles.brand}>
           <Orbit size={31} color="var(--accent)" strokeWidth={1.4} />
           <div>
-            <strong>Impulso Cero</strong>
+            <strong>Sistema Alumnos</strong>
             <span>ESPACIO DE APRENDIZAJE</span>
           </div>
         </div>
@@ -62,7 +62,7 @@ export function LoginScreen({
           </p>
           <Notice code={notice} />
           <AuthForm next={next} />
-          <div className={styles.divider}>REVISA LAS INTERFACES</div>
+          <div className={styles.divider}>EXPLORAR SIN CUENTA</div>
           <Link className={styles.preview} href="/demo">
             <Eye size={17} />
             Abrir demostración
