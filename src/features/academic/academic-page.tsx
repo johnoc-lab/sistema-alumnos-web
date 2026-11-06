@@ -1,4 +1,12 @@
 import Link from "next/link";
+import {
+  BookOpen,
+  FolderOpen,
+  Megaphone,
+  CalendarDays,
+  UserRound,
+} from "lucide-react";
+import { CourseTile } from "./course-tile";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { organizationAccess } from "@/lib/auth/access.server";
@@ -324,7 +332,12 @@ function StudentsAdmin({
         <Empty>No hay alumnos que coincidan con la búsqueda.</Empty>
       )}
       {!!students.length && (
-        <div className={css.tableWrap}>
+        <div
+          className={css.tableWrap}
+          role="region"
+          aria-label="Tabla de alumnos"
+          tabIndex={0}
+        >
           <table className={css.table}>
             <caption>Alumnos de la organización</caption>
             <thead>
@@ -477,7 +490,12 @@ function EnrollmentsAdmin({
       )}
       {!enrollments.length && <Empty>No hay matrículas para mostrar.</Empty>}
       {!!enrollments.length && (
-        <div className={css.tableWrap}>
+        <div
+          className={css.tableWrap}
+          role="region"
+          aria-label="Tabla de matrículas"
+          tabIndex={0}
+        >
           <table className={css.table}>
             <caption>Matrículas de la organización</caption>
             <thead>
@@ -851,6 +869,36 @@ function Calendar({
     </>
   );
 }
+function StudentCourses({
+  slug,
+  data,
+  membershipId,
+}: {
+  slug: string;
+  data: AcademicData;
+  membershipId?: string | undefined;
+}) {
+  return (
+    <div className={css.courseGrid}>
+      {data.courses.map((c, index) => {
+        const enrollment = data.enrollments.find(
+          (e) => e.course_id === c.id && e.membership_id === membershipId,
+        );
+        return (
+          <CourseTile
+            key={c.id}
+            title={c.title}
+            description={c.description}
+            tag={c.tag}
+            href={"/o/" + slug + "/dashboard/cursos/" + c.id}
+            progress={enrollment?.progress_percent ?? null}
+            variant={index}
+          />
+        );
+      })}
+    </div>
+  );
+}
 export function AcademicView({
   slug,
   section,
@@ -883,7 +931,10 @@ export function AcademicView({
   if (section === "dashboard/perfil")
     return (
       <section className={css.section}>
-        <h2>{own ? name(own) : "Mi perfil"}</h2>
+        <div className={css.row}>
+          <UserRound size={30} aria-hidden="true" />
+          <h2>{own ? name(own) : "Mi perfil"}</h2>
+        </div>
         <p>Contacto: {own?.contact_email ?? "Sin correo de contacto"}</p>
         <p>Organización: {slug}</p>
         <p>Estado: {own ? labels[own.status] : ""}</p>
@@ -944,30 +995,34 @@ export function AcademicView({
             publicar el taller.
           </Empty>
         )}
-        {data.courses.map((c) => (
-          <article key={c.id} className={css.section}>
-            <h2>{c.title}</h2>
-            <p>{c.description || "Sin descripción."}</p>
-            <Link
-              className={ui.secondaryLink}
-              href={"/o/" + slug + "/dashboard/cursos/" + c.id}
-            >
-              Ver taller y materiales
-            </Link>
-          </article>
-        ))}
+        {!!data.courses.length && (
+          <>
+            <div className={css.blockHeading}>
+              <h2>Vista general de talleres</h2>
+              <span className={css.hint}>
+                {data.courses.length} disponibles
+              </span>
+            </div>
+            <StudentCourses slug={slug} data={data} membershipId={own?.id} />
+          </>
+        )}
       </>
     );
   }
   return (
     <>
-      <p>
-        {admin
-          ? "Gestiona la información académica de tu organización."
-          : "Hola, " +
-            (own ? name(own) : "estudiante") +
-            ". Aquí encontrarás tus talleres y actividades."}
-      </p>
+      <section className={css.hero}>
+        <h2>
+          {admin
+            ? "Tu comunidad, en un solo espacio."
+            : "Hola, " + (own ? name(own) : "estudiante") + "."}
+        </h2>
+        <p>
+          {admin
+            ? "Organiza los talleres, acompaña a tus alumnos y comparte los recursos que necesitan para avanzar."
+            : "Continúa tus talleres, descubre tus materiales y mantente al día con las actividades de tu organización."}
+        </p>
+      </section>
       <div className={css.metrics}>
         {(admin
           ? [
@@ -1024,12 +1079,98 @@ export function AcademicView({
       )}
       {!admin && (
         <>
-          <h2>Avisos recientes</h2>
-          <Announcements
-            slug={slug}
-            data={{ ...data, announcements: data.announcements.slice(0, 3) }}
-            admin={false}
-          />
+          <div className={css.blockHeading}>
+            <h2>Recursos académicos</h2>
+          </div>
+          <div className={css.resourceGrid}>
+            {[
+              {
+                path: "cursos",
+                label: "Mis talleres",
+                description: "Continúa tu aprendizaje",
+                icon: BookOpen,
+              },
+              {
+                path: "materiales",
+                label: "Materiales",
+                description: "Consulta tus recursos",
+                icon: FolderOpen,
+              },
+              {
+                path: "avisos",
+                label: "Avisos",
+                description: "Novedades de tus talleres",
+                icon: Megaphone,
+              },
+              {
+                path: "calendario",
+                label: "Calendario",
+                description: "Organiza tus actividades",
+                icon: CalendarDays,
+              },
+            ].map(({ path, label, description, icon: Icon }) => (
+              <Link
+                className={css.resource}
+                key={path}
+                href={"/o/" + slug + "/dashboard/" + path}
+              >
+                <Icon aria-hidden="true" />
+                <span>
+                  <strong>{label}</strong>
+                  <small>{description}</small>
+                </span>
+              </Link>
+            ))}
+          </div>
+          <div className={css.blockHeading}>
+            <h2>Mis talleres</h2>
+            <Link href={"/o/" + slug + "/dashboard/cursos"}>
+              Ver todos los talleres →
+            </Link>
+          </div>
+          {!data.courses.length ? (
+            <Empty>
+              No tienes talleres disponibles. El administrador debe matricularte
+              y publicar el taller.
+            </Empty>
+          ) : (
+            <StudentCourses
+              slug={slug}
+              data={{ ...data, courses: data.courses.slice(0, 3) }}
+              membershipId={own?.id}
+            />
+          )}
+          <div className={css.overviewColumns}>
+            <section>
+              <div className={css.blockHeading}>
+                <h2>Avisos recientes</h2>
+                <Link href={"/o/" + slug + "/dashboard/avisos"}>
+                  Ver avisos →
+                </Link>
+              </div>
+              <Announcements
+                slug={slug}
+                data={{
+                  ...data,
+                  announcements: data.announcements.slice(0, 3),
+                }}
+                admin={false}
+              />
+            </section>
+            <section>
+              <div className={css.blockHeading}>
+                <h2>Agenda de talleres</h2>
+                <Link href={"/o/" + slug + "/dashboard/calendario"}>
+                  Ver calendario →
+                </Link>
+              </div>
+              <Calendar
+                slug={slug}
+                data={{ ...data, events: data.events.slice(0, 2) }}
+                admin={false}
+              />
+            </section>
+          </div>
         </>
       )}
     </>

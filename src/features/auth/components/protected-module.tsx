@@ -1,4 +1,5 @@
 import Link from "next/link";
+import campus from "@/components/institutional/campus.module.css";
 import { redirect } from "next/navigation";
 import type { OrganizationRole } from "@/lib/authorization/access";
 import { organizationAccess } from "@/lib/auth/access.server";
@@ -26,7 +27,7 @@ export async function ProtectedModule({
       return (
         <main
           id="main-content"
-          className={styles.centered}
+          className={campus.page + " " + styles.centered}
           data-access-state="forbidden"
         >
           <h1>Acceso no disponible</h1>
@@ -59,7 +60,7 @@ export async function ProtectedModule({
     <main
       id="main-content"
       data-access-state="authorized"
-      className={styles.centered}
+      className={campus.page + " " + styles.centered}
     >
       <p>{access.membership?.name}</p>
       <h1>{title}</h1>

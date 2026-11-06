@@ -1,9 +1,14 @@
 import Link from "next/link";
-import { Building2, ArrowRight, ShieldCheck, Orbit } from "lucide-react";
+import { Building2, ArrowRight, ShieldCheck } from "lucide-react";
 import type { AuthenticatedSession } from "@/lib/auth/resolve";
 import { LogoutForm } from "@/features/auth/components/auth-form";
 import { Badge } from "@/components/ui/primitives";
-import styles from "./organization-selector.module.css";
+import styles from "./organization-access.module.css";
+import campus from "@/components/institutional/campus.module.css";
+import {
+  CampusHeader,
+  OrganizationIdentity,
+} from "@/components/institutional/identity";
 import ui from "@/components/ui/ui.module.css";
 
 export function OrganizationAccess({
@@ -12,13 +17,10 @@ export function OrganizationAccess({
   session: AuthenticatedSession;
 }) {
   return (
-    <div className={styles.page} data-access-state="authenticated">
-      <header className={styles.header}>
-        <Link href="/seleccionar-organizacion" className={styles.brand}>
-          <Orbit color="var(--accent)" /> Sistema Alumnos
-        </Link>
+    <div className={campus.page} data-access-state="authenticated">
+      <CampusHeader>
         <LogoutForm />
-      </header>
+      </CampusHeader>
       <main id="main-content" className={styles.main}>
         <div className={styles.intro}>
           <Badge tone="cyan">Espacio académico</Badge>
@@ -42,13 +44,12 @@ export function OrganizationAccess({
             const needsMfa = session.identity?.assuranceLevel !== "aal2";
             return (
               <section key={m.organizationId} className={styles.card}>
-                <div className={styles.symbol}>
-                  <Building2 size={28} aria-hidden="true" />
-                </div>
+                <h2>
+                  <OrganizationIdentity slug={m.slug} name={m.name} />
+                </h2>
                 <Badge tone={m.role === "admin" ? "purple" : "green"}>
                   {m.role === "admin" ? "Administrador" : "Alumno"}
                 </Badge>
-                <h2>{m.name}</h2>
                 <p>
                   {m.role === "admin"
                     ? "Gestiona alumnos, talleres y contenidos de este espacio."

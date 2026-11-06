@@ -1,8 +1,19 @@
 import { authConfig } from "@/lib/supabase/config";
 import { AuthForm, Notice } from "./auth-form";
 import Link from "next/link";
-import { Orbit, ArrowRight, BookOpen, Building2, Eye } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  FolderOpen,
+  CalendarDays,
+  Eye,
+} from "lucide-react";
 import { Badge } from "@/components/ui/primitives";
+import {
+  CampusHeader,
+  OrganizationIdentity,
+} from "@/components/institutional/identity";
+import campus from "@/components/institutional/campus.module.css";
 import styles from "./login.module.css";
 export function LoginScreen({
   next,
@@ -12,74 +23,68 @@ export function LoginScreen({
   notice?: string | undefined;
 }) {
   return (
-    <div className={styles.page}>
-      <header className={styles.top}>
-        <div className={styles.brand}>
-          <Orbit size={31} color="var(--accent)" strokeWidth={1.4} />
-          <div>
-            <strong>Sistema Alumnos</strong>
-            <span>ESPACIO DE APRENDIZAJE</span>
-          </div>
-        </div>
-        <Badge tone="amber">
-          {authConfig() ? "Acceso seguro" : "Acceso en preparación"}
+    <div className={campus.page + " " + styles.page}>
+      <CampusHeader>
+        <Badge tone="neutral">
+          {authConfig() ? "Acceso institucional" : "Acceso en preparación"}
         </Badge>
-      </header>
+      </CampusHeader>
       <main id="main-content" className={styles.main}>
         <section className={styles.intro}>
-          <div className={styles.orbit} aria-hidden="true">
-            <Orbit size={102} strokeWidth={1} />
-          </div>
+          <p className={styles.kicker}>APRENDE. CONECTA. AVANZA.</p>
           <h1>
-            Tu próximo paso,
+            Tu aprendizaje,
             <br />
-            <span>en un solo lugar.</span>
+            <span>un paso más allá.</span>
           </h1>
           <p>
-            Tus talleres, materiales y agenda. Un espacio para aprender con
-            dirección y seguir construyendo.
+            Tus talleres, materiales y actividades en un espacio compartido para
+            seguir construyendo.
           </p>
-          <div className={styles.steps}>
+          <div className={styles.resources}>
             <span>
-              <BookOpen size={16} />
-              Aprende
+              <BookOpen size={21} aria-hidden="true" />
+              <strong>Talleres</strong>
+              <small>Continúa tu formación</small>
             </span>
             <span>
-              <Building2 size={16} />
-              Conecta
+              <FolderOpen size={21} aria-hidden="true" />
+              <strong>Materiales</strong>
+              <small>Recursos a tu alcance</small>
             </span>
             <span>
-              <Orbit size={16} />
-              Avanza
+              <CalendarDays size={21} aria-hidden="true" />
+              <strong>Agenda</strong>
+              <small>Organiza tu aprendizaje</small>
             </span>
+          </div>
+          <div className={styles.initiatives}>
+            <OrganizationIdentity slug="impulso-cero" name="Impulso Cero" />
+            <OrganizationIdentity slug="incubadora" name="Incubadora" />
           </div>
         </section>
         <section className={styles.card} aria-labelledby="login-title">
-          <Badge tone="cyan">Espacio de aprendizaje</Badge>
-          <h2 id="login-title">Bienvenido a tu espacio</h2>
+          <span className={styles.kicker}>BIENVENIDO A TU CAMPUS</span>
+          <h2 id="login-title">Inicia sesión</h2>
           <p className={styles.description}>
-            Accede con la cuenta habilitada por tu organización.
+            Usa la cuenta asignada por tu organización.
           </p>
           <Notice code={notice} />
           <AuthForm next={next} />
           <div className={styles.divider}>EXPLORAR SIN CUENTA</div>
           <Link className={styles.preview} href="/demo">
-            <Eye size={17} />
-            Abrir demostración
-            <ArrowRight size={16} />
+            <Eye size={17} aria-hidden="true" />
+            Ver demostración
+            <ArrowRight size={16} aria-hidden="true" />
           </Link>
           <p className={styles.note}>
-            Navegación pública con datos ficticios.
-            <br />
-            No crea una sesión ni concede permisos.
-          </p>
-          <p className={styles.footer}>
-            {authConfig()
-              ? "Acceso académico sujeto a membresía vigente"
-              : "Acceso real no configurado"}
+            La demo usa datos ficticios y no concede acceso académico.
           </p>
         </section>
       </main>
+      <footer className={styles.footer}>
+        Sistema Alumnos · Un espacio para aprender con propósito.
+      </footer>
     </div>
   );
 }

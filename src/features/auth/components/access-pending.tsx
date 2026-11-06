@@ -1,4 +1,5 @@
 import Link from "next/link";
+import campus from "@/components/institutional/campus.module.css";
 import styles from "@/components/ui/ui.module.css";
 export function AccessPending({
   state = "unconfigured",
@@ -11,7 +12,7 @@ export function AccessPending({
     <main
       id="main-content"
       data-access-state={state}
-      className={styles.centered}
+      className={campus.page + " " + styles.centered}
     >
       <h1>Acceso no disponible</h1>
       <p>{message}</p>
