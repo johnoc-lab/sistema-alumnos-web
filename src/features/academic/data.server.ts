@@ -4,6 +4,13 @@ import { AcademicError, type AcademicCommand } from "./forms";
 export type AcademicClient = Awaited<
   ReturnType<typeof createServerSupabaseClient>
 >;
+export type AttendanceRecord = {
+  id: string;
+  organization_id: string;
+  event_id: string;
+  membership_id: string;
+  status: "pending" | "present" | "absent" | "late";
+};
 const checked = <T>(result: { data: T; error: unknown }): T => {
   if (result.error) throw result.error;
   return result.data;
@@ -79,7 +86,7 @@ export async function loadAcademic(client: AcademicClient, org: string) {
     announcements: checked(announcements) ?? [],
     events: checked(events) ?? [],
     files: checked(files) ?? [],
-    attendance: checked(attendance) ?? [],
+    attendance: (checked(attendance) ?? []) as unknown as AttendanceRecord[],
   };
 }
 export type AcademicData = Awaited<ReturnType<typeof loadAcademic>>;
