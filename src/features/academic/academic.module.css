@@ -170,8 +170,89 @@
 .attendanceList {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 16px 24px;
+  gap: 10px;
+}
+.attendanceStudent {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.65fr) minmax(0, 1.35fr);
+  gap: 14px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.attendanceStudent > strong {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.attendanceChoices {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.attendanceOption {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border: 1px solid #bdcbd0;
+  border-radius: 8px;
+  background: #fff;
+  color: #435963;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 650;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.attendanceOption:has(input:checked) {
+  border-color: var(--accent);
+  background: #eaf4f0;
+  color: var(--accent);
+}
+.attendanceOption[data-status="present"]:has(input:checked) {
+  border-color: #3b8c66;
+  background: #e9f5ed;
+  color: #226443;
+}
+.attendanceOption[data-status="late"]:has(input:checked) {
+  border-color: #c48a24;
+  background: #fff5df;
+  color: #805713;
+}
+.attendanceOption[data-status="absent"]:has(input:checked) {
+  border-color: #c95b58;
+  background: #fff0ef;
+  color: #963c39;
+}
+.attendanceOption input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.attendanceOption:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+@media (max-width: 640px) {
+  .attendanceStudent {
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+  .attendanceChoices {
+    gap: 6px;
+  }
+  .attendanceOption {
+    flex-direction: column;
+    gap: 5px;
+    padding: 9px 5px;
+    font-size: 11px;
+  }
 }
 .wide {
   grid-column: 1/-1;

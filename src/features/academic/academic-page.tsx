@@ -1034,25 +1034,35 @@ function AttendanceAdmin({
                         item.membership_id === student.id,
                     );
                     return (
-                      <Field key={student.id} label={name(student)}>
-                        <select
-                          name={"attendance:" + student.id}
-                          defaultValue={
-                            record && record.status !== "pending"
-                              ? record.status
-                              : ""
-                          }
-                          disabled={!editable}
-                          required
+                      <div className={css.attendanceStudent} key={student.id}>
+                        <strong>{name(student)}</strong>
+                        <fieldset
+                          className={css.attendanceChoices}
+                          aria-label={"Asistencia de " + name(student)}
                         >
-                          <option value="" disabled>
-                            Selecciona asistencia
-                          </option>
-                          <option value="present">Asistió</option>
-                          <option value="absent">Faltó</option>
-                          <option value="late">Llegó tarde</option>
-                        </select>
-                      </Field>
+                          {([
+                            ["present", "Asistió"],
+                            ["late", "Tarde"],
+                            ["absent", "Faltó"],
+                          ] as const).map(([status, label]) => (
+                            <label
+                              className={css.attendanceOption}
+                              data-status={status}
+                              key={status}
+                            >
+                              <input
+                                type="radio"
+                                name={"attendance:" + student.id}
+                                value={status}
+                                defaultChecked={record?.status === status}
+                                disabled={!editable}
+                                required
+                              />
+                              <span>{label}</span>
+                            </label>
+                          ))}
+                        </fieldset>
+                      </div>
                     );
                   })}
                 </div>
