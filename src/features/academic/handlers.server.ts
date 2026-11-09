@@ -22,6 +22,7 @@ export async function academicPost(request: Request, slug: string) {
     return failure(access.session.status === "anonymous" ? 401 : 403);
   let section = "admin";
   let notice = "saved";
+  let query = "";
   try {
     const fields = await readFields(request);
     const destinations: Record<string, string> = {
@@ -34,19 +35,32 @@ export async function academicPost(request: Request, slug: string) {
       event: "calendario",
       "event-attendees": "calendario",
       attendance: "asistencia",
+      "attendance-batch": "asistencia",
     };
     const submitted = fields.get("action") ?? "";
     if (Object.hasOwn(destinations, submitted))
       section = "admin/" + destinations[submitted];
     const command = parseAcademicForm(fields);
     section = "admin/" + sectionFor(command.kind);
+    if (
+      command.kind === "attendance-batch" &&
+      uuid(fields.get("course_id") ?? "")
+    )
+      query =
+        "?course=" +
+        encodeURIComponent(fields.get("course_id")!) +
+        "&event=" +
+        encodeURIComponent(command.id);
     const client = await createServerSupabaseClient(true);
     await mutateAcademic(client, access.membership.organizationId, command);
   } catch (error) {
     notice = errorNotice(error);
   }
   return NextResponse.redirect(
-    new URL("/o/" + slug + "/" + section + "?notice=" + notice, config.origin),
+    new URL(
+      "/o/" + slug + "/" + section + query + (query ? "&" : "?") + "notice=" + notice,
+      config.origin,
+    ),
     { status: 303, headers: noStoreHeaders },
   );
 }

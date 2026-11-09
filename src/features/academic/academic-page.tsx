@@ -869,6 +869,201 @@ function Calendar({
     </>
   );
 }
+function AttendanceAdmin({
+  slug,
+  data,
+  search,
+}: {
+  slug: string;
+  data: AcademicData;
+  search: Search;
+}) {
+  const courseId = value(search, "course");
+  const course = data.courses.find((item) => item.id === courseId);
+  const events = course
+    ? data.events.filter((event) => event.course_id === course.id)
+    : [];
+  const requestedEvent = value(search, "event");
+  const event = events.find((item) => item.id === requestedEvent) ??
+    (events.length === 1 ? events[0] : undefined);
+  const today = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "America/Lima",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+  const editable = Boolean(
+    data.attendanceAvailable &&
+      event?.status === "scheduled" &&
+      event &&
+      today ===
+        new Intl.DateTimeFormat("sv-SE", {
+          timeZone: "America/Lima",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(new Date(event.starts_at)),
+  );
+  const enrolledIds = new Set(
+    data.enrollments
+      .filter(
+        (enrollment) =>
+          enrollment.course_id === course?.id &&
+          ["active", "completed"].includes(enrollment.status),
+      )
+      .map((enrollment) => enrollment.membership_id),
+  );
+  const students = data.memberships.filter(
+    (member) =>
+      member.role === "student" &&
+      member.status === "active" &&
+      enrolledIds.has(member.id),
+  );
+
+  if (!course)
+    return (
+      <>
+        <h2>Elige un taller</h2>
+        {!data.courses.length && <Empty>No hay talleres registrados.</Empty>}
+        {data.courses.map((item) => (
+          <article className={css.card} key={item.id}>
+            <h3>{item.title}</h3>
+            <p>{item.description || "Taller"}</p>
+            <Link
+              className={ui.primaryLink}
+              href={"/o/" + slug + "/admin/asistencia?course=" + item.id}
+            >
+              Ver asistencias
+            </Link>
+          </article>
+        ))}
+      </>
+    );
+
+  return (
+    <>
+      <p>
+        <Link href={"/o/" + slug + "/admin/asistencia"}>
+          ← Todos los talleres
+        </Link>
+      </p>
+      <h2>{course.title}</h2>
+      {events.length > 1 && !event && (
+        <>
+          <h3>Elige la clase o el horario</h3>
+          {events.map((item) => (
+            <article className={css.card} key={item.id}>
+              <h4>{item.title}</h4>
+              <p>{date(item.starts_at)} — {date(item.ends_at)}</p>
+              <Link
+                className={ui.primaryLink}
+                href={
+                  "/o/" +
+                  slug +
+                  "/admin/asistencia?course=" +
+                  course.id +
+                  "&event=" +
+                  item.id
+                }
+              >
+                Tomar asistencia
+              </Link>
+            </article>
+          ))}
+        </>
+      )}
+      {!events.length && (
+        <Empty>
+          Este taller aún no tiene clases programadas. {" "}
+          <Link href={"/o/" + slug + "/admin/calendario"}>
+            Programa una clase en Calendario.
+          </Link>
+        </Empty>
+      )}
+      {event && (
+        <>
+          {events.length > 1 && (
+            <p>
+              <Link
+                href={
+                  "/o/" + slug + "/admin/asistencia?course=" + course.id
+                }
+              >
+                ← Cambiar horario
+              </Link>
+            </p>
+          )}
+          <article className={css.card}>
+            <h3>{event.title}</h3>
+            <p>{date(event.starts_at)} — {date(event.ends_at)}</p>
+            {!data.attendanceAvailable && (
+              <p className={css.hint} role="status">
+                La lista está disponible, pero falta aplicar la migración de
+                asistencia en Supabase para guardar los cambios.
+              </p>
+            )}
+            {data.attendanceAvailable && !editable && (
+              <p className={css.hint}>
+                La asistencia solo se puede cambiar el día de esta clase.
+              </p>
+            )}
+            {!students.length ? (
+              <Empty>Este taller no tiene alumnos con matrícula activa o completada.</Empty>
+            ) : (
+              <form
+                className={css.attendanceForm}
+                action={"/o/" + slug + "/acciones"}
+                method="post"
+              >
+                <input type="hidden" name="action" value="attendance-batch" />
+                <input type="hidden" name="id" value={event.id} />
+                <input type="hidden" name="version" value="1" />
+                <input type="hidden" name="course_id" value={course.id} />
+                <button
+                  className={ui.primaryLink}
+                  type="submit"
+                  disabled={!editable}
+                >
+                  Guardar asistencia
+                </button>
+                <div className={css.attendanceList}>
+                  {students.map((student) => {
+                    const record = data.attendance.find(
+                      (item) =>
+                        item.event_id === event.id &&
+                        item.membership_id === student.id,
+                    );
+                    return (
+                      <Field key={student.id} label={name(student)}>
+                        <select
+                          name={"attendance:" + student.id}
+                          defaultValue={
+                            record && record.status !== "pending"
+                              ? record.status
+                              : ""
+                          }
+                          disabled={!editable}
+                          required
+                        >
+                          <option value="" disabled>
+                            Selecciona asistencia
+                          </option>
+                          <option value="present">Asistió</option>
+                          <option value="absent">Faltó</option>
+                          <option value="late">Llegó tarde</option>
+                        </select>
+                      </Field>
+                    );
+                  })}
+                </div>
+              </form>
+            )}
+          </article>
+        </>
+      )}
+    </>
+  );
+}
 function StudentCourses({
   slug,
   data,
@@ -922,78 +1117,20 @@ export function AcademicView({
     return <StudentsAdmin slug={slug} data={data} search={search} />;
   if (section === "admin/matriculas")
     return <EnrollmentsAdmin slug={slug} data={data} search={search} />;
-  if (section === "admin/asistencia" || section === "dashboard/asistencia")
+  if (section === "admin/asistencia")
+    return <AttendanceAdmin slug={slug} data={data} search={search} />;
+  if (section === "dashboard/asistencia")
     return (
       <section className={css.section}>
-        {section === "admin/asistencia" ? (
-          <>
-            <h2>Asistencia por taller y clase</h2>
-            {!data.attendanceAvailable && (
-              <p className={css.hint} role="status">
-                La lista de alumnos está disponible, pero para guardar la asistencia
-                falta aplicar la migración de asistencia en Supabase.
-              </p>
-            )}
-            {!data.courses.length && <Empty>No hay talleres registrados.</Empty>}
-            {data.courses.map((course) => {
-              const events = data.events.filter((event) => event.course_id === course.id);
-              return (
-                <section className={css.section} key={course.id}>
-                  <h3>{course.title}</h3>
-                  {!events.length && <p className={css.hint}>Este taller aún no tiene clases programadas. <Link href={"/o/" + slug + "/admin/calendario"}>Programa una clase en Calendario.</Link></p>}
-                  {events.map((event) => {
-                    const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Lima", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-                    const classDay = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Lima", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(event.starts_at));
-                    const editable = data.attendanceAvailable && event.status === "scheduled" && today === classDay;
-                    const enrolledIds = new Set(data.enrollments
-                      .filter((enrollment) => enrollment.course_id === course.id && ["active", "completed"].includes(enrollment.status))
-                      .map((enrollment) => enrollment.membership_id));
-                    const rows = data.memberships
-                      .filter((member) => member.role === "student" && member.status === "active" && enrolledIds.has(member.id))
-                      .map((member) => ({
-                        membership_id: member.id,
-                        status: data.attendance.find((record) => record.event_id === event.id && record.membership_id === member.id)?.status ?? "pending",
-                      }));
-                    return <article className={css.card} key={event.id}>
-                      <h4>{event.title} · {date(event.starts_at)}</h4>
-                      {!data.attendanceAvailable ? null : !editable && <p className={css.hint}>La asistencia solo se modifica el día de la clase.</p>}
-                      {!rows.length && <p className={css.hint}>Este taller no tiene alumnos con matrícula activa o completada.</p>}
-                      {rows.map((row) => {
-                        const student = data.memberships.find((m) => m.id === row.membership_id);
-                        return <form key={row.membership_id} className={css.form} action={"/o/" + slug + "/acciones"} method="post">
-                          <input type="hidden" name="action" value="attendance" />
-                          <input type="hidden" name="id" value={event.id} />
-                          <input type="hidden" name="version" value="1" />
-                          <input type="hidden" name="membership_id" value={row.membership_id} />
-                          <Field label={student ? name(student) : "Alumno"}>
-                            <select name="status" defaultValue={row.status === "pending" ? "" : row.status} disabled={!editable} required>
-                              <option value="" disabled>Selecciona asistencia</option>
-                              <option value="present">Asistió</option><option value="absent">Falta</option><option value="late">Llegó tarde</option>
-                            </select>
-                          </Field>
-                          <Save disabled={!editable} />
-                        </form>;
-                      })}
-                    </article>;
-                  })}
-                </section>
-              );
-            })}
-          </>
-        ) : (
-          <>
-            <h2>Mi asistencia</h2>
-            {data.attendance.filter((row) => row.membership_id === own?.id).map((row) => {
-              const event = data.events.find((item) => item.id === row.event_id);
-              const course = event && data.courses.find((item) => item.id === event.course_id);
-              return <article className={css.card} key={row.id}><h3>{course?.title ?? "Taller"} · {event?.title ?? "Clase"}</h3><p>{event ? date(event.starts_at) : ""}</p><p>{row.status === "present" ? "Asistió" : row.status === "absent" ? "Falta" : row.status === "late" ? "Llegó tarde" : "Pendiente"}</p></article>;
-            })}
-            {!data.attendance.some((row) => row.membership_id === own?.id) && <Empty>Aún no hay asistencias registradas.</Empty>}
-          </>
-        )}
+        <h2>Mi asistencia</h2>
+        {data.attendance.filter((row) => row.membership_id === own?.id).map((row) => {
+          const event = data.events.find((item) => item.id === row.event_id);
+          const course = event && data.courses.find((item) => item.id === event.course_id);
+          return <article className={css.card} key={row.id}><h3>{course?.title ?? "Taller"} · {event?.title ?? "Clase"}</h3><p>{event ? date(event.starts_at) : ""}</p><p>{row.status === "present" ? "Asistió" : row.status === "absent" ? "Faltó" : row.status === "late" ? "Llegó tarde" : "Pendiente"}</p></article>;
+        })}
+        {!data.attendance.some((row) => row.membership_id === own?.id) && <Empty>Aún no hay asistencias registradas.</Empty>}
       </section>
-    );
-  if (section.endsWith("/materiales"))
+    );  if (section.endsWith("/materiales"))
     return <Materials slug={slug} data={data} admin={admin} />;
   if (section.endsWith("/avisos"))
     return <Announcements slug={slug} data={data} admin={admin} />;

@@ -28,20 +28,25 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
  );
 $$;
 
-CREATE OR REPLACE FUNCTION public.set_attendance(
+CREATE OR REPLACE FUNCTION public.set_attendance_batch(
   p_organization_id uuid,
   p_event_id uuid,
-  p_membership_id uuid,
-  p_status text
+  p_records jsonb
 ) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
-DECLARE v_event public.calendar_events;
+DECLARE
+ v_event public.calendar_events;
+ v_record jsonb;
+ v_membership_id uuid;
+ v_status text;
 BEGIN
  IF NOT private.org_admin(p_organization_id) THEN
    RAISE EXCEPTION 'forbidden' USING ERRCODE='42501';
  END IF;
- IF p_status NOT IN ('present','absent','late') THEN
-   RAISE EXCEPTION 'invalid status' USING ERRCODE='22023';
+ IF pg_catalog.jsonb_typeof(p_records)<>'array'
+   OR pg_catalog.jsonb_array_length(p_records)=0
+   OR pg_catalog.jsonb_array_length(p_records)>500 THEN
+   RAISE EXCEPTION 'invalid records' USING ERRCODE='22023';
  END IF;
  SELECT * INTO v_event FROM public.calendar_events
  WHERE organization_id=p_organization_id AND id=p_event_id FOR UPDATE;
@@ -50,22 +55,56 @@ BEGIN
       <> (now() AT TIME ZONE 'America/Lima')::date THEN
    RAISE EXCEPTION 'attendance date closed' USING ERRCODE='22023';
  END IF;
- IF NOT EXISTS(
-   SELECT 1 FROM public.enrollments e
-   JOIN public.organization_memberships m
-     ON m.organization_id=e.organization_id AND m.id=e.membership_id
-   WHERE e.organization_id=p_organization_id AND e.course_id=v_event.course_id
-     AND e.membership_id=p_membership_id AND e.status IN ('active','completed')
-     AND m.role='student' AND m.status='active'
- ) THEN
-   RAISE EXCEPTION 'not enrolled in course' USING ERRCODE='42501';
+ IF (SELECT pg_catalog.count(DISTINCT item.value->>'membership_id')
+     FROM pg_catalog.jsonb_array_elements(p_records) item)
+    <> pg_catalog.jsonb_array_length(p_records) THEN
+   RAISE EXCEPTION 'duplicate attendance row' USING ERRCODE='22023';
  END IF;
- INSERT INTO public.attendance_records(organization_id,event_id,membership_id,status)
- VALUES(p_organization_id,p_event_id,p_membership_id,p_status)
- ON CONFLICT(organization_id,event_id,membership_id) DO UPDATE
-   SET status=excluded.status,updated_at=now(),
-       row_version=public.attendance_records.row_version+1;
+ FOR v_record IN SELECT value FROM pg_catalog.jsonb_array_elements(p_records)
+ LOOP
+   IF pg_catalog.jsonb_typeof(v_record)<>'object'
+     OR v_record->>'status' NOT IN ('present','absent','late') THEN
+     RAISE EXCEPTION 'invalid status' USING ERRCODE='22023';
+   END IF;
+   v_membership_id := (v_record->>'membership_id')::uuid;
+   v_status := v_record->>'status';
+   IF NOT EXISTS(
+     SELECT 1 FROM public.enrollments e
+     JOIN public.organization_memberships m
+       ON m.organization_id=e.organization_id AND m.id=e.membership_id
+     WHERE e.organization_id=p_organization_id AND e.course_id=v_event.course_id
+       AND e.membership_id=v_membership_id AND e.status IN ('active','completed')
+       AND m.role='student' AND m.status='active'
+   ) THEN
+     RAISE EXCEPTION 'not enrolled in course' USING ERRCODE='42501';
+   END IF;
+   INSERT INTO public.attendance_records(organization_id,event_id,membership_id,status)
+   VALUES(p_organization_id,p_event_id,v_membership_id,v_status)
+   ON CONFLICT(organization_id,event_id,membership_id) DO UPDATE
+     SET status=excluded.status,updated_at=now(),
+         row_version=public.attendance_records.row_version+1;
+ END LOOP;
 END $$;
+
+CREATE OR REPLACE FUNCTION public.set_attendance(
+  p_organization_id uuid,
+  p_event_id uuid,
+  p_membership_id uuid,
+  p_status text
+) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+ PERFORM public.set_attendance_batch(
+   p_organization_id,p_event_id,
+   pg_catalog.jsonb_build_array(pg_catalog.jsonb_build_object(
+     'membership_id',p_membership_id,'status',p_status
+   ))
+ );
+END $$;
+REVOKE ALL ON FUNCTION public.set_attendance_batch(uuid,uuid,jsonb)
+  FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.set_attendance_batch(uuid,uuid,jsonb)
+  TO authenticated;
 
 DROP POLICY IF EXISTS attendance_read ON public.attendance_records;
 CREATE POLICY attendance_read ON public.attendance_records FOR SELECT TO authenticated

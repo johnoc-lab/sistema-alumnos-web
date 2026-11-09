@@ -119,7 +119,12 @@ export type AcademicCommand =
       ends_at: string;
     }
   | { kind: "event-attendees"; id: string; version: number }
-  | { kind: "attendance"; id: string; membership_id: string; status: string };
+  | { kind: "attendance"; id: string; membership_id: string; status: string }
+  | {
+      kind: "attendance-batch";
+      id: string;
+      records: { membership_id: string; status: string }[];
+    };
 export function parseAcademicForm(form: URLSearchParams): AcademicCommand {
   const text = (key: string, max = 200, required = true) => {
     if (form.getAll(key).length > 1) throw new AcademicError("invalid");
@@ -253,6 +258,25 @@ export function parseAcademicForm(form: URLSearchParams): AcademicCommand {
         membership_id: ident("membership_id"),
         status: choice("status", ["present", "absent", "late"]),
       };
+    case "attendance-batch": {
+      const entries = [...form.entries()].filter(([key]) =>
+        key.startsWith("attendance:"),
+      );
+      if (!entries.length || entries.length > 100)
+        throw new AcademicError("invalid");
+      const seen = new Set<string>();
+      const allowed = new Set(["present", "absent", "late"]);
+      const records = entries.map(([key, status]) => {
+        const membership_id = key.slice("attendance:".length);
+        if (!uuid(membership_id) || seen.has(membership_id))
+          throw new AcademicError("invalid");
+        seen.add(membership_id);
+        if (!allowed.has(status))
+          throw new AcademicError("invalid");
+        return { membership_id, status };
+      });
+      return { kind: "attendance-batch", id: existing(), records };
+    }
     case "event-attendees":
       return { kind: "event-attendees", id: existing(), version };
     default:
@@ -304,17 +328,12 @@ export function errorNotice(error: unknown): string {
           : "failed";
 }
 export function sectionFor(kind: AcademicCommand["kind"]) {
-  return kind === "student" || kind === "student-status"
-    ? "alumnos"
-    : kind === "course"
-      ? "cursos"
-      : kind === "enrollment"
-        ? "matriculas"
-        : kind === "material"
-          ? "materiales"
-          : kind === "announcement"
-            ? "avisos"
-            : kind === "attendance"
-            ? "asistencia"
-            : "calendario";
+  if (kind === "student" || kind === "student-status") return "alumnos";
+  if (kind === "course") return "cursos";
+  if (kind === "enrollment") return "matriculas";
+  if (kind === "material") return "materiales";
+  if (kind === "announcement") return "avisos";
+  if (kind === "attendance" || kind === "attendance-batch")
+    return "asistencia";
+  return "calendario";
 }

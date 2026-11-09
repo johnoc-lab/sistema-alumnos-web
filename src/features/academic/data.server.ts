@@ -378,6 +378,15 @@ export async function mutateAcademic(
       checked(result);
       break;
     }
+    case "attendance-batch": {
+      const result = await (client as any).rpc("set_attendance_batch", {
+        p_organization_id: org,
+        p_event_id: c.id,
+        p_records: c.records,
+      });
+      checked(result);
+      break;
+    }
     case "event-attendees": {
       const event = checked(
         await client
