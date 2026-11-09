@@ -23,6 +23,7 @@ export async function loadAcademic(client: AcademicClient, org: string) {
     materials,
     announcements,
     events,
+    eventAttendees,
     attendance,
     files,
   ] = await Promise.all([
@@ -65,6 +66,12 @@ export async function loadAcademic(client: AcademicClient, org: string) {
       .order("starts_at")
       .limit(500),
     client
+      .from("calendar_event_attendees")
+      .select("id,event_id,membership_id,status")
+      .eq("organization_id", org)
+      .eq("status", "active")
+      .limit(2000),
+    client
       .from("attendance_records" as any)
       .select("*")
       .eq("organization_id", org)
@@ -78,6 +85,26 @@ export async function loadAcademic(client: AcademicClient, org: string) {
       .eq("status", "ready")
       .limit(500),
   ]);
+  const attendanceResult = await attendance;
+  const attendanceError = attendanceResult.error as
+    | { code?: string }
+    | null;
+  const attendanceAvailable = !attendanceError;
+  if (
+    attendanceError &&
+    attendanceError.code !== "PGRST205" &&
+    attendanceError.code !== "42P01"
+  )
+    throw attendanceError;
+  const attendanceRows = attendanceAvailable
+    ? attendanceResult.data
+    : (checked(eventAttendees) ?? []).map((attendee) => ({
+        id: attendee.id,
+        organization_id: org,
+        event_id: attendee.event_id,
+        membership_id: attendee.membership_id,
+        status: "pending" as const,
+      }));
   return {
     courses: checked(courses) ?? [],
     memberships: checked(memberships) ?? [],
@@ -86,7 +113,8 @@ export async function loadAcademic(client: AcademicClient, org: string) {
     announcements: checked(announcements) ?? [],
     events: checked(events) ?? [],
     files: checked(files) ?? [],
-    attendance: (checked(attendance) ?? []) as unknown as AttendanceRecord[],
+    attendance: attendanceRows as unknown as AttendanceRecord[],
+    attendanceAvailable,
   };
 }
 export type AcademicData = Awaited<ReturnType<typeof loadAcademic>>;

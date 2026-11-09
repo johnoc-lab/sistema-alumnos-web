@@ -928,22 +928,28 @@ export function AcademicView({
         {section === "admin/asistencia" ? (
           <>
             <h2>Asistencia por taller y clase</h2>
+            {!data.attendanceAvailable && (
+              <p className={css.hint} role="status">
+                La lista de alumnos está disponible, pero para guardar la asistencia
+                falta aplicar la migración de asistencia en Supabase.
+              </p>
+            )}
             {!data.courses.length && <Empty>No hay talleres registrados.</Empty>}
             {data.courses.map((course) => {
               const events = data.events.filter((event) => event.course_id === course.id);
               return (
                 <section className={css.section} key={course.id}>
                   <h3>{course.title}</h3>
-                  {!events.length && <p className={css.hint}>Este taller aún no tiene clases programadas.</p>}
+                  {!events.length && <p className={css.hint}>Este taller aún no tiene clases programadas. <Link href={"/o/" + slug + "/admin/calendario"}>Programa una clase en Calendario.</Link></p>}
                   {events.map((event) => {
                     const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Lima", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
                     const classDay = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Lima", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(event.starts_at));
-                    const editable = event.status === "scheduled" && today === classDay;
+                    const editable = data.attendanceAvailable && event.status === "scheduled" && today === classDay;
                     const rows = data.attendance.filter((a) => a.event_id === event.id);
                     return <article className={css.card} key={event.id}>
                       <h4>{event.title} · {date(event.starts_at)}</h4>
-                      {!editable && <p className={css.hint}>La asistencia solo se modifica el día de la clase.</p>}
-                      {!rows.length && <p className={css.hint}>No hay alumnos asignados a esta clase.</p>}
+                      {!data.attendanceAvailable ? null : !editable && <p className={css.hint}>La asistencia solo se modifica el día de la clase.</p>}
+                      {!rows.length && <p className={css.hint}>No hay alumnos asignados a esta clase. En <Link href={"/o/" + slug + "/admin/calendario"}>Calendario</Link>, actualiza los participantes desde las matrículas activas.</p>}
                       {rows.map((row) => {
                         const student = data.memberships.find((m) => m.id === row.membership_id);
                         return <form key={row.membership_id} className={css.form} action={"/o/" + slug + "/acciones"} method="post">
