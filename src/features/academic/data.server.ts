@@ -16,8 +16,8 @@ export async function loadAcademic(client: AcademicClient, org: string) {
     materials,
     announcements,
     events,
-    files,
     attendance,
+    files,
   ] = await Promise.all([
     client
       .from("courses")

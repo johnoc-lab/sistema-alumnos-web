@@ -27,6 +27,7 @@ const empty = (): AcademicData => ({
   announcements: [],
   events: [],
   files: [],
+  attendance: [],
 });
 const render = (section: string, data = empty(), search = {}) =>
   renderToStaticMarkup(
