@@ -28,14 +28,14 @@ const icons: Record<string, LucideIcon> = {
   "admin/matriculas": ClipboardList,
   "admin/materiales": FolderOpen,
   "admin/avisos": Megaphone,
-  "admin/calendario": CalendarDays,
+  "admin/horario": CalendarDays,
   "admin/asistencia": ClipboardCheck,
   "dashboard/asistencia": ClipboardCheck,
   dashboard: LayoutDashboard,
   "dashboard/cursos": BookOpen,
   "dashboard/materiales": FolderOpen,
   "dashboard/avisos": Megaphone,
-  "dashboard/calendario": CalendarDays,
+  "dashboard/horario": CalendarDays,
   "dashboard/perfil": UserRound,
 };
 export function AcademicShell({
@@ -59,7 +59,7 @@ export function AcademicShell({
         ["admin/matriculas", "Matrículas"],
         ["admin/materiales", "Materiales"],
         ["admin/avisos", "Avisos"],
-        ["admin/calendario", "Calendario"],
+        ["admin/horario", "Horario"],
         ["admin/asistencia", "Asistencia"],
       ]
     : [
@@ -67,7 +67,7 @@ export function AcademicShell({
         ["dashboard/cursos", "Mis talleres"],
         ["dashboard/materiales", "Materiales"],
         ["dashboard/avisos", "Avisos"],
-        ["dashboard/calendario", "Calendario"],
+        ["dashboard/horario", "Mi horario"],
         ["dashboard/asistencia", "Mi asistencia"],
         ["dashboard/perfil", "Mi perfil"],
       ];

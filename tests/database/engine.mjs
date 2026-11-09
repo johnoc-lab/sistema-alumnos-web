@@ -24,7 +24,8 @@ export async function migrate(db) {
 }
 export async function createEmbedded() {
   const { PGlite } = await import("@electric-sql/pglite");
-  const db = new PGlite();
+  const { btree_gist } = await import("@electric-sql/pglite/contrib/btree_gist");
+  const db = new PGlite({ extensions: { btree_gist } });
   await db.exec(
     await readFile(
       path.join(projectRoot, "tests/database/support/embedded-bootstrap.sql"),
