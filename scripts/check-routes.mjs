@@ -49,8 +49,9 @@ assert.match(
 assert.match(await page("/demo"), /data-preview="synthetic"/);
 for (const slug of ["impulso", "incubadora"]) {
   for (const section of sections) {
+    const workspaceSection = section.replace(/\/calendario$/, "/horario");
     const real = await page(
-      "/o/" + slug + "/" + section + "?demo=true&role=admin",
+      "/o/" + slug + "/" + workspaceSection + "?demo=true&role=admin",
     );
     assert.match(real, /data-access-state="unconfigured"/);
     assert(

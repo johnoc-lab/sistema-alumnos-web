@@ -1,17 +1,15 @@
-import { AcademicPage } from "@/features/academic/academic-page";
 import type { OrganizationPageProps } from "@/types/routes";
+import {
+  redirectCalendar,
+  type ScheduleSearch,
+} from "@/features/schedule/schedule-page";
+
 export default async function Page({
   params,
   searchParams,
 }: OrganizationPageProps & {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<ScheduleSearch>;
 }) {
   const { organizationSlug } = await params;
-  return (
-    <AcademicPage
-      slug={organizationSlug}
-      section="admin/calendario"
-      search={await searchParams}
-    />
-  );
+  redirectCalendar(organizationSlug, true, await searchParams);
 }
