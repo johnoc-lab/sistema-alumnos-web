@@ -945,11 +945,19 @@ export function AcademicView({
                     const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Lima", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
                     const classDay = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Lima", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(event.starts_at));
                     const editable = data.attendanceAvailable && event.status === "scheduled" && today === classDay;
-                    const rows = data.attendance.filter((a) => a.event_id === event.id);
+                    const enrolledIds = new Set(data.enrollments
+                      .filter((enrollment) => enrollment.course_id === course.id && ["active", "completed"].includes(enrollment.status))
+                      .map((enrollment) => enrollment.membership_id));
+                    const rows = data.memberships
+                      .filter((member) => member.role === "student" && member.status === "active" && enrolledIds.has(member.id))
+                      .map((member) => ({
+                        membership_id: member.id,
+                        status: data.attendance.find((record) => record.event_id === event.id && record.membership_id === member.id)?.status ?? "pending",
+                      }));
                     return <article className={css.card} key={event.id}>
                       <h4>{event.title} · {date(event.starts_at)}</h4>
                       {!data.attendanceAvailable ? null : !editable && <p className={css.hint}>La asistencia solo se modifica el día de la clase.</p>}
-                      {!rows.length && <p className={css.hint}>No hay alumnos asignados a esta clase. En <Link href={"/o/" + slug + "/admin/calendario"}>Calendario</Link>, actualiza los participantes desde las matrículas activas.</p>}
+                      {!rows.length && <p className={css.hint}>Este taller no tiene alumnos con matrícula activa o completada.</p>}
                       {rows.map((row) => {
                         const student = data.memberships.find((m) => m.id === row.membership_id);
                         return <form key={row.membership_id} className={css.form} action={"/o/" + slug + "/acciones"} method="post">
@@ -958,7 +966,8 @@ export function AcademicView({
                           <input type="hidden" name="version" value="1" />
                           <input type="hidden" name="membership_id" value={row.membership_id} />
                           <Field label={student ? name(student) : "Alumno"}>
-                            <select name="status" defaultValue={row.status === "pending" ? "present" : row.status} disabled={!editable}>
+                            <select name="status" defaultValue={row.status === "pending" ? "" : row.status} disabled={!editable} required>
+                              <option value="" disabled>Selecciona asistencia</option>
                               <option value="present">Asistió</option><option value="absent">Falta</option><option value="late">Llegó tarde</option>
                             </select>
                           </Field>
@@ -974,12 +983,12 @@ export function AcademicView({
         ) : (
           <>
             <h2>Mi asistencia</h2>
-            {data.attendance.filter((row) => row.membership_id === own?.id && row.status !== "pending").map((row) => {
+            {data.attendance.filter((row) => row.membership_id === own?.id).map((row) => {
               const event = data.events.find((item) => item.id === row.event_id);
               const course = event && data.courses.find((item) => item.id === event.course_id);
-              return <article className={css.card} key={row.id}><h3>{course?.title ?? "Taller"} · {event?.title ?? "Clase"}</h3><p>{event ? date(event.starts_at) : ""}</p><p>{row.status === "present" ? "Asistió" : row.status === "absent" ? "Falta" : "Llegó tarde"}</p></article>;
+              return <article className={css.card} key={row.id}><h3>{course?.title ?? "Taller"} · {event?.title ?? "Clase"}</h3><p>{event ? date(event.starts_at) : ""}</p><p>{row.status === "present" ? "Asistió" : row.status === "absent" ? "Falta" : row.status === "late" ? "Llegó tarde" : "Pendiente"}</p></article>;
             })}
-            {!data.attendance.some((row) => row.membership_id === own?.id && row.status !== "pending") && <Empty>Aún no hay asistencias registradas.</Empty>}
+            {!data.attendance.some((row) => row.membership_id === own?.id) && <Empty>Aún no hay asistencias registradas.</Empty>}
           </>
         )}
       </section>
