@@ -20,7 +20,8 @@ for (const path of [
   "admin/matriculas",
   "admin/materiales",
   "admin/avisos",
-  "admin/calendario",
+  "admin/horario",
+  "dashboard/horario",
   "dashboard",
   "dashboard/cursos",
   "dashboard/materiales",
@@ -31,6 +32,18 @@ for (const path of [
   assert.match(response.headers.get("cache-control") || "", /no-store/);
   assert((await response.text()).includes('data-access-state="unconfigured"'));
 }
+for (const section of ["admin", "dashboard"]) {
+  const origin = "/o/qa-sistema-alumnos-01/" + section;
+  const response = await request(origin + "/calendario?view=month&date=2026-11-09");
+  assert.equal(response.status, 307);
+  const target = new URL(response.headers.get("location"), base);
+  assert.equal(target.pathname, origin + "/horario");
+  assert.equal(target.searchParams.get("view"), "month");
+  assert.equal(target.searchParams.get("date"), "2026-11-09");
+}
+const read = await request("/o/qa-sistema-alumnos-01/horario/datos?scope=admin");
+assert.equal(read.status, 503);
+assert.match(read.headers.get("cache-control") || "", /no-store/);
 const blocked = await request("/o/qa-sistema-alumnos-01/acciones", {
   method: "POST",
   headers: {

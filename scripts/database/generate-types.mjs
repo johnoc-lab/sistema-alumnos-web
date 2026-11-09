@@ -27,6 +27,7 @@ const jsType = (kind, udt) => {
     ["int2", "int4", "int8", "numeric", "float4", "float8", "oid"].includes(udt)
   )
     return "number";
+  if (udt === "void") return "undefined";
   if (udt === "bool") return "boolean";
   if (["json", "jsonb"].includes(udt)) return "Json";
   throw new Error(
@@ -107,7 +108,7 @@ try {
         ":" +
         jsType(arg.type.startsWith("_") ? "ARRAY" : "", arg.type) +
         ";";
-    source += "};Returns:" + jsType("", fn.result) + ";};";
+    source += "};Returns:" + jsType(fn.result.startsWith("_") ? "ARRAY" : "", fn.result) + ";};";
   }
   source +=
     "};Enums:Record<never,never>;CompositeTypes:Record<never,never>;};};";
@@ -117,7 +118,9 @@ try {
     if ((await readFile(target, "utf8")) !== source)
       throw new Error("Tipos desactualizados: ejecute npm run db:types.");
     console.log(
-      "Tipos PostgreSQL reproducibles: 14 tablas y " +
+      "Tipos PostgreSQL reproducibles: " +
+        new Set(columns.map((column) => column.table_name)).size +
+        " tablas y " +
         functions.length +
         " RPC.",
     );

@@ -49,7 +49,6 @@ describe("vistas académicas", () => {
     ["dashboard/cursos", "No tienes talleres"],
     ["dashboard/materiales", "No hay materiales"],
     ["dashboard/avisos", "No hay avisos"],
-    ["dashboard/calendario", "No hay actividades"],
   ])("estado vacío de %s sin acciones de administración", (section, text) => {
     const html = render(section!);
     expect(html).toContain(text);

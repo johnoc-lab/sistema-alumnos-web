@@ -1,0 +1,356 @@
+.board {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.toolbar {
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.toolbarLine,
+.dialogHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+.toolbarLine h2 {
+  margin-top: 6px;
+  font-size: 22px;
+  text-transform: capitalize;
+}
+.controls,
+.actions {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.controls label,
+.form label:not(.check) {
+  display: grid;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 0;
+}
+.controls label {
+  flex: 1;
+  min-width: min(100%, 145px);
+}
+.controls input,
+.controls select,
+.form input:not([type="checkbox"]),
+.form select,
+.form textarea {
+  min-height: 42px;
+  border: 1px solid #81949b;
+  background: #fff;
+  color: var(--text);
+  border-radius: 7px;
+  padding: 8px 10px;
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  font-weight: 400;
+}
+.form textarea {
+  resize: vertical;
+}
+.week,
+.month {
+  display: grid;
+}
+.week {
+  grid-template-columns: 60px repeat(7, minmax(0, 1fr));
+}
+.weekRow {
+  display: contents;
+}
+.month {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.axis,
+.dayHead {
+  padding: 10px 7px;
+  font-size: 12px;
+  color: var(--muted);
+  background: #edf4f4;
+}
+.axis,
+.slot,
+.monthDay,
+.dayHead {
+  border-bottom: 1px solid var(--border);
+}
+.slot,
+.monthDay,
+.dayHead {
+  border-left: 1px solid var(--border);
+}
+.dayHead {
+  font-weight: 600;
+  text-align: center;
+}
+.slot,
+.monthDay {
+  padding: 5px;
+  min-width: 0;
+  min-height: 43px;
+}
+.monthDay {
+  min-height: 84px;
+}
+.slot[data-today="true"],
+.dayHead[data-today="true"],
+.monthDay[data-today="true"] {
+  background: #e9f5ef;
+}
+.monthDay[data-outside="true"] {
+  background: #f6f8f9;
+  color: var(--muted);
+}
+.dayNumber {
+  display: inline-grid;
+  place-items: center;
+  padding: 3px 8px;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  font-size: 13px;
+}
+.monthDay button.dayNumber {
+  min-height: 30px;
+}
+.dayNumber:hover {
+  background: #e3efec;
+}
+.session {
+  --course-tint: #e2f2eb;
+  --course-accent: #1b7461;
+  border: 1px solid #00000014;
+  border-left: 3px solid var(--course-accent);
+  border-radius: 6px;
+  background: var(--course-tint);
+  color: #182e3b;
+  display: grid;
+  width: 100%;
+  padding: 7px;
+  margin: 3px 0;
+  gap: 2px;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.session:hover {
+  border-color: var(--course-accent);
+}
+.session[data-tone="1"] {
+  --course-tint: #e3edf8;
+  --course-accent: #245f9d;
+}
+.session[data-tone="2"] {
+  --course-tint: #f3eafa;
+  --course-accent: #714491;
+}
+.session[data-tone="3"] {
+  --course-tint: #faf0de;
+  --course-accent: #8a5b19;
+}
+.session[data-tone="4"] {
+  --course-tint: #f9e9ee;
+  --course-accent: #8a3e59;
+}
+.session[data-tone="5"] {
+  --course-tint: #e8eff0;
+  --course-accent: #386470;
+}
+.session[data-status="cancelled"],
+.session[data-status="archived"] {
+  --course-tint: #f3f3f3;
+  --course-accent: #6b7078;
+  border-left-style: dashed;
+}
+.session[data-status="cancelled"] strong {
+  text-decoration: line-through;
+}
+.session strong {
+  font-size: 13px;
+  line-height: 1.25;
+}
+.session span,
+.session small {
+  font-size: 11px;
+}
+.sessionState {
+  font-weight: 700;
+}
+.mobile {
+  display: none;
+}
+.empty {
+  padding: 36px 18px;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 10px;
+  color: var(--muted);
+}
+.empty svg {
+  color: var(--accent);
+}
+.empty h3 {
+  color: var(--text);
+}
+.dialog {
+  border: 1px solid #a9bdc4;
+  border-radius: 14px;
+  padding: 22px;
+  width: min(620px, calc(100% - 28px));
+  max-height: calc(100dvh - 28px);
+  color: var(--text);
+  background: var(--surface);
+  overflow: auto;
+}
+.dialog::backdrop {
+  background: #102c40a6;
+}
+.dialogHeader {
+  margin-bottom: 18px;
+}
+.dialogHeader h2 {
+  font-size: 23px;
+  margin-top: 4px;
+}
+.form,
+.details {
+  display: grid;
+  gap: 14px;
+}
+.fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.fields label {
+  flex: 1;
+  min-width: min(100%, 124px);
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.check input[type="checkbox"] {
+  min-height: 0;
+  width: 17px;
+  height: 17px;
+  accent-color: var(--accent);
+}
+.weekdays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+}
+.weekdays legend {
+  font-size: 13px;
+  font-weight: 600;
+}
+.preview {
+  background: #f2f7f6;
+  border-radius: 8px;
+  padding: 12px;
+}
+.preview ol {
+  max-height: 180px;
+  overflow: auto;
+  padding-left: 25px;
+  margin-bottom: 0;
+}
+.preview h3 {
+  font-size: 15px;
+}
+.status {
+  justify-self: start;
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: #e2f2eb;
+  color: #255d4d;
+}
+.status[data-status="cancelled"] {
+  background: #f4e9ec;
+  color: #773649;
+}
+.status[data-status="draft"],
+.status[data-status="archived"] {
+  background: #edf0f1;
+  color: #465b68;
+}
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+.description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.info,
+.error {
+  padding: 10px 14px;
+  border-radius: 7px;
+  font-size: 13px;
+}
+.info {
+  background: #e8f4ef;
+  color: #24584b;
+}
+.error {
+  background: #fbecee;
+  color: #832942;
+}
+.board > .info {
+  margin: 12px;
+}
+@media (max-width: 900px) {
+  .week,
+  .month {
+    display: none;
+  }
+  .mobile {
+    display: grid;
+    gap: 14px;
+    padding: 14px;
+  }
+  .mobile:empty {
+    display: none;
+  }
+  .mobile > section {
+    display: grid;
+    gap: 4px;
+  }
+  .mobile h3 {
+    font-size: 15px;
+    text-transform: capitalize;
+  }
+}
+@media (max-width: 490px) {
+  .toolbar {
+    padding: 14px;
+  }
+  .toolbarLine {
+    flex-wrap: wrap;
+  }
+  .toolbarLine h2 {
+    font-size: 19px;
+  }
+  .dialog {
+    padding: 16px;
+  }
+}

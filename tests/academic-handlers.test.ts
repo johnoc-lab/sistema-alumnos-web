@@ -15,6 +15,8 @@ vi.mock("@/features/academic/data.server", () => ({
   privatePdf: mocks.pdf,
 }));
 import { academicPost, academicPdf } from "@/features/academic/handlers.server";
+import { NextRequest } from "next/server";
+import { GET as scheduleGet } from "@/app/(workspace)/o/[organizationSlug]/horario/datos/route";
 import type { AuthenticatedSession } from "@/lib/auth/resolve";
 const org = "11111111-1111-4111-8111-111111111111",
   id = "22222222-2222-4222-8222-222222222222",
@@ -182,5 +184,96 @@ describe("acciones académicas: guard real con sesión simulada", () => {
     const r = await academicPdf("qa", id);
     expect(r.status).toBe(404);
     expect(await r.text()).not.toContain("PRIVATE_DETAIL");
+  });
+});
+
+describe("Horario: guardas HTTP y RPC", () => {
+  const schedulePost = (headers: Record<string, string> = {}) =>
+    new Request(origin + "/o/qa/acciones", {
+      method: "POST",
+      headers: { origin, ...headers },
+      body: new URLSearchParams({
+        action: "schedule-create",
+        organization_id: id,
+        course: id,
+        title: "Clase de prueba",
+        date: "2026-11-09",
+        start: "09:00",
+        end: "10:00",
+        repeat: "weekly",
+        until: "2026-11-23",
+        weekday: "1",
+      }),
+    });
+  const get = (scope: string) =>
+    scheduleGet(
+      new NextRequest(
+        origin + "/o/qa/horario/datos?date=2026-11-09&scope=" + scope,
+      ),
+      {
+        params: Promise.resolve({ organizationSlug: "qa" }),
+      },
+    );
+  it("envía la serie completa a una sola RPC de la organización verificada", async () => {
+    const rpc = vi.fn().mockResolvedValue({ error: null, data: [] });
+    mocks.create.mockResolvedValue({ rpc });
+    const response = await academicPost(schedulePost(), "qa");
+    expect(response.status).toBe(200);
+    expect(rpc).toHaveBeenCalledExactlyOnceWith(
+      "create_schedule_sessions",
+      expect.objectContaining({
+        p_org: org,
+        p_dates: ["2026-11-09", "2026-11-16", "2026-11-23"],
+      }),
+    );
+    expect(response.headers.get("cache-control")).toContain("no-store");
+  });
+  it("bloquea el POST con Origin externo antes de llamar a la RPC", async () => {
+    const response = await academicPost(
+      schedulePost({ origin: "https://invalid.example" }),
+      "qa",
+    );
+    expect(response.status).toBe(403);
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it("devuelve conflicto privado y sin detalles SQL ante un solapamiento", async () => {
+    const rpc = vi
+      .fn()
+      .mockResolvedValue({
+        error: { code: "23P01", details: "detalle interno" },
+      });
+    mocks.create.mockResolvedValue({ rpc });
+    const response = await academicPost(schedulePost(), "qa");
+    expect(response.status).toBe(409);
+    expect(await response.text()).not.toContain("detalle interno");
+  });
+  it("rechaza alcance administrativo para admin aal1 y para un alumno", async () => {
+    const s = session();
+    s.identity = { ...s.identity!, assuranceLevel: "aal1" };
+    mocks.session.mockResolvedValue(s);
+    expect((await get("admin")).status).toBe(403);
+    expect((await academicPost(schedulePost(), "qa")).status).toBe(403);
+    s.memberships[0] = { ...s.memberships[0]!, role: "student" };
+    expect((await get("admin")).status).toBe(403);
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it("consulta el rango del alumno con la organización verificada y sin caché", async () => {
+    const s = session();
+    s.memberships[0] = { ...s.memberships[0]!, role: "student" };
+    mocks.session.mockResolvedValue(s);
+    const rpc = vi
+      .fn()
+      .mockResolvedValue({ error: null, data: { courses: [], sessions: [] } });
+    mocks.create.mockResolvedValue({ rpc });
+    const response = await get("");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toContain("no-store");
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("list_schedule", {
+      p_org: org,
+      p_from: "2026-11-09",
+      p_to: "2026-11-16",
+      p_admin: false,
+      p_course: "",
+    });
   });
 });

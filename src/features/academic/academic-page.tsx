@@ -38,18 +38,6 @@ const date = (v: string | null) =>
         timeStyle: "short",
       }).format(new Date(v))
     : "Sin fecha";
-const localInput = (v: string) =>
-  new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "America/Lima",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  })
-    .format(new Date(v))
-    .replace(" ", "T");
 function Field({
   label,
   children,
@@ -765,110 +753,6 @@ function Announcements({
     </>
   );
 }
-function EventForm({
-  slug,
-  data,
-  item,
-}: {
-  slug: string;
-  data: AcademicData;
-  item?: AcademicData["events"][number];
-}) {
-  return (
-    <BaseForm
-      slug={slug}
-      action="event"
-      id={item?.id}
-      version={item?.row_version}
-    >
-      <CourseSelect data={data} current={item?.course_id} />
-      <Field label="Actividad">
-        <input
-          name="title"
-          required
-          maxLength={200}
-          defaultValue={item?.title}
-        />
-      </Field>
-      <Field label="Inicio · hora de Lima">
-        <input
-          type="datetime-local"
-          name="starts_at"
-          required
-          defaultValue={item ? localInput(item.starts_at) : undefined}
-        />
-      </Field>
-      <Field label="Fin · hora de Lima">
-        <input
-          type="datetime-local"
-          name="ends_at"
-          required
-          defaultValue={item ? localInput(item.ends_at) : undefined}
-        />
-      </Field>
-      {item && <StatusInput options={states.event} current={item.status} />}
-      <Save disabled={!data.courses.length} />
-    </BaseForm>
-  );
-}
-function Calendar({
-  slug,
-  data,
-  admin,
-}: {
-  slug: string;
-  data: AcademicData;
-  admin: boolean;
-}) {
-  return (
-    <>
-      {admin && (
-        <section className={css.section}>
-          <h2>Registrar actividad</h2>
-          <p className={css.hint}>
-            Agenda única de la organización, por taller. Se asigna a los alumnos
-            activos matriculados al guardar. Usa “Actualizar participantes” para
-            incorporar nuevas matrículas a una actividad existente. Horario de
-            Lima (UTC−05).
-          </p>
-          <EventForm slug={slug} data={data} />
-        </section>
-      )}
-      {!data.events.length && (
-        <Empty>No hay actividades académicas disponibles.</Empty>
-      )}
-      {data.events.map((e) => (
-        <article className={css.card} key={e.id}>
-          <h3>{e.title}</h3>
-          <p>
-            {date(e.starts_at)} — {date(e.ends_at)}
-          </p>
-          <p className={css.hint}>
-            {data.courses.find((c) => c.id === e.course_id)?.title} · Hora de
-            Lima
-          </p>
-          <Status status={e.status} />
-          {admin && (
-            <details>
-              <summary>Editar actividad y participantes</summary>
-              <EventForm slug={slug} data={data} item={e} />
-              <BaseForm
-                slug={slug}
-                action="event-attendees"
-                id={e.id}
-                version={e.row_version}
-              >
-                <button className={ui.secondaryLink}>
-                  Actualizar participantes desde matrículas activas
-                </button>
-              </BaseForm>
-            </details>
-          )}
-        </article>
-      ))}
-    </>
-  );
-}
 function AttendanceAdmin({
   slug,
   data,
@@ -975,8 +859,8 @@ function AttendanceAdmin({
       {!events.length && (
         <Empty>
           Este taller aún no tiene clases programadas. {" "}
-          <Link href={"/o/" + slug + "/admin/calendario"}>
-            Programa una clase en Calendario.
+          <Link href={"/o/" + slug + "/admin/horario"}>
+            Programa una clase en Horario.
           </Link>
         </Empty>
       )}
@@ -1144,8 +1028,6 @@ export function AcademicView({
     return <Materials slug={slug} data={data} admin={admin} />;
   if (section.endsWith("/avisos"))
     return <Announcements slug={slug} data={data} admin={admin} />;
-  if (section.endsWith("/calendario"))
-    return <Calendar slug={slug} data={data} admin={admin} />;
   if (section === "dashboard/perfil")
     return (
       <section className={css.section}>
@@ -1170,7 +1052,6 @@ export function AcademicView({
         ...data,
         materials: data.materials.filter((m) => m.course_id === c.id),
         announcements: data.announcements.filter((a) => a.course_id === c.id),
-        events: data.events.filter((e) => e.course_id === c.id),
       };
       const enrollment = data.enrollments.find(
         (e) => e.course_id === c.id && e.membership_id === own?.id,
@@ -1200,7 +1081,7 @@ export function AcademicView({
           </section>
           <section className={css.section}>
             <h2>Actividades del taller</h2>
-            <Calendar slug={slug} data={subset} admin={false} />
+            <Link className={ui.secondaryLink} href={"/o/" + slug + "/dashboard/horario?course=" + c.id}>Ver horario del taller</Link>
           </section>
         </>
       );
@@ -1321,8 +1202,8 @@ export function AcademicView({
                 icon: Megaphone,
               },
               {
-                path: "calendario",
-                label: "Calendario",
+                path: "horario",
+                label: "Mi horario",
                 description: "Organiza tus actividades",
                 icon: CalendarDays,
               },
@@ -1378,15 +1259,11 @@ export function AcademicView({
             <section>
               <div className={css.blockHeading}>
                 <h2>Agenda de talleres</h2>
-                <Link href={"/o/" + slug + "/dashboard/calendario"}>
-                  Ver calendario →
+                <Link href={"/o/" + slug + "/dashboard/horario"}>
+                  Ver mi horario →
                 </Link>
               </div>
-              <Calendar
-                slug={slug}
-                data={{ ...data, events: data.events.slice(0, 2) }}
-                admin={false}
-              />
+              <p className={css.hint}>Consulta las próximas sesiones de tus talleres y los cambios de horario.</p>
             </section>
           </div>
         </>
@@ -1401,13 +1278,11 @@ const titles: Record<string, string> = {
   "admin/matriculas": "Matrículas",
   "admin/materiales": "Materiales",
   "admin/avisos": "Avisos",
-  "admin/calendario": "Calendario",
   "admin/asistencia": "Asistencia",
   dashboard: "Mi espacio",
   "dashboard/cursos": "Mis talleres",
   "dashboard/materiales": "Materiales",
   "dashboard/avisos": "Avisos",
-  "dashboard/calendario": "Calendario",
   "dashboard/asistencia": "Mi asistencia",
   "dashboard/perfil": "Mi perfil",
 };

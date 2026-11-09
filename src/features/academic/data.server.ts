@@ -72,7 +72,7 @@ export async function loadAcademic(client: AcademicClient, org: string) {
       .eq("status", "active")
       .limit(2000),
     client
-      .from("attendance_records" as any)
+      .from("attendance_records")
       .select("*")
       .eq("organization_id", org)
       .limit(2000),
@@ -372,14 +372,14 @@ export async function mutateAcademic(
       break;
     }
     case "attendance": {
-      const result = await (client as any).rpc("set_attendance", {
+      const result = await client.rpc("set_attendance", {
         p_organization_id: org, p_event_id: c.id, p_membership_id: c.membership_id, p_status: c.status,
       });
       checked(result);
       break;
     }
     case "attendance-batch": {
-      const result = await (client as any).rpc("set_attendance_batch", {
+      const result = await client.rpc("set_attendance_batch", {
         p_organization_id: org,
         p_event_id: c.id,
         p_records: c.records,

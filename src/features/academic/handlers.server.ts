@@ -5,6 +5,7 @@ import { sameOriginPost, readFields } from "@/lib/auth/security";
 import { organizationAccess } from "@/lib/auth/access.server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { parseAcademicForm, errorNotice, sectionFor, uuid } from "./forms";
+import { isScheduleAction, scheduleMutation } from "@/features/schedule/schedule.server";
 import { mutateAcademic, privatePdf } from "./data.server";
 const failure = (status: number) =>
   NextResponse.json(
@@ -38,6 +39,8 @@ export async function academicPost(request: Request, slug: string) {
       "attendance-batch": "asistencia",
     };
     const submitted = fields.get("action") ?? "";
+    if (isScheduleAction(submitted))
+      return scheduleMutation(submitted, fields, access.membership.organizationId);
     if (Object.hasOwn(destinations, submitted))
       section = "admin/" + destinations[submitted];
     const command = parseAcademicForm(fields);

@@ -84,6 +84,54 @@ export type Database = {
           },
         ];
       };
+      attendance_records: {
+        Row: {
+          id: string;
+          organization_id: string;
+          event_id: string;
+          membership_id: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+          row_version: number;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          event_id: string;
+          membership_id: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+          row_version?: number;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          event_id?: string;
+          membership_id?: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+          row_version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "attendance_records_organization_id_event_id_fkey";
+            columns: ["organization_id", "event_id"];
+            isOneToOne: false;
+            referencedRelation: "calendar_events";
+            referencedColumns: ["organization_id", "id"];
+          },
+          {
+            foreignKeyName: "attendance_records_organization_id_membership_id_fkey";
+            columns: ["organization_id", "membership_id"];
+            isOneToOne: false;
+            referencedRelation: "organization_memberships";
+            referencedColumns: ["organization_id", "id"];
+          },
+        ];
+      };
       audit_events: {
         Row: {
           id: string;
@@ -234,6 +282,10 @@ export type Database = {
           timezone: string;
           color_key: string;
           status: string;
+          description: string | null;
+          modality: string | null;
+          location: string | null;
+          series_id: string | null;
         };
         Insert: {
           id?: string;
@@ -252,6 +304,10 @@ export type Database = {
           timezone?: string;
           color_key?: string;
           status?: string;
+          description?: string | null;
+          modality?: string | null;
+          location?: string | null;
+          series_id?: string | null;
         };
         Update: {
           id?: string;
@@ -270,6 +326,10 @@ export type Database = {
           timezone?: string;
           color_key?: string;
           status?: string;
+          description?: string | null;
+          modality?: string | null;
+          location?: string | null;
+          series_id?: string | null;
         };
         Relationships: [
           {
@@ -1078,6 +1138,18 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
+      create_schedule_sessions: {
+        Args: {
+          p_org: string;
+          p_course: string;
+          p_dates: string[];
+          p_start: string;
+          p_end: string;
+          p_draft: boolean;
+          p_details: Json;
+        };
+        Returns: string[];
+      };
       create_scheduled_event: {
         Args: {
           p_organization_id: string;
@@ -1085,6 +1157,16 @@ export type Database = {
           p_membership_ids: string[];
         };
         Returns: string;
+      };
+      list_schedule: {
+        Args: {
+          p_org: string;
+          p_from: string;
+          p_to: string;
+          p_admin: boolean;
+          p_course: string;
+        };
+        Returns: Json;
       };
       replace_event_attendees: {
         Args: {
@@ -1094,6 +1176,23 @@ export type Database = {
           p_membership_ids: string[];
         };
         Returns: number;
+      };
+      set_attendance: {
+        Args: {
+          p_organization_id: string;
+          p_event_id: string;
+          p_membership_id: string;
+          p_status: string;
+        };
+        Returns: undefined;
+      };
+      set_attendance_batch: {
+        Args: {
+          p_organization_id: string;
+          p_event_id: string;
+          p_records: Json;
+        };
+        Returns: undefined;
       };
       set_student_status: {
         Args: {
@@ -1183,6 +1282,10 @@ export type Database = {
           p_expected_version: number;
           p_patch: Json;
         };
+        Returns: number;
+      };
+      update_schedule_session: {
+        Args: { p_org: string; p_id: string; p_version: number; p_patch: Json };
         Returns: number;
       };
       update_student_contact: {

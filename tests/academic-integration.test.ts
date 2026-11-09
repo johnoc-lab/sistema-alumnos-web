@@ -1,5 +1,6 @@
 import { it, expect, vi } from "vitest";
 import { PGlite } from "@electric-sql/pglite";
+import { btree_gist } from "@electric-sql/pglite/contrib/btree_gist";
 import { readFile, readdir } from "node:fs/promises";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -26,6 +27,8 @@ function sqlClient(db: PGlite): AcademicClient {
     "materials",
     "announcements",
     "calendar_events",
+    "calendar_event_attendees",
+    "attendance_records",
     "file_assets",
   ]);
   return {
@@ -152,7 +155,7 @@ function sqlClient(db: PGlite): AcademicClient {
 }
 
 it("formularios → adaptador de aplicación → SQL real: taller, matrícula, enlace, aviso y RLS", async () => {
-  const db = new PGlite();
+  const db = new PGlite({ extensions: { btree_gist } });
   const org = "00000000-0000-4000-8000-000000000001";
   const other = "00000000-0000-4000-8000-000000000002";
   const student = "00000000-0000-4000-8000-000000000203";
