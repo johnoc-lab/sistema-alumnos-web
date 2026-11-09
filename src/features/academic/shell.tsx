@@ -5,6 +5,7 @@ import {
   Users,
   BookOpen,
   ClipboardList,
+  ClipboardCheck,
   FolderOpen,
   Megaphone,
   CalendarDays,
@@ -28,6 +29,8 @@ const icons: Record<string, LucideIcon> = {
   "admin/materiales": FolderOpen,
   "admin/avisos": Megaphone,
   "admin/calendario": CalendarDays,
+  "admin/asistencia": ClipboardCheck,
+  "dashboard/asistencia": ClipboardCheck,
   dashboard: LayoutDashboard,
   "dashboard/cursos": BookOpen,
   "dashboard/materiales": FolderOpen,
@@ -57,6 +60,7 @@ export function AcademicShell({
         ["admin/materiales", "Materiales"],
         ["admin/avisos", "Avisos"],
         ["admin/calendario", "Calendario"],
+        ["admin/asistencia", "Asistencia"],
       ]
     : [
         ["dashboard", "Mi espacio"],
@@ -64,6 +68,7 @@ export function AcademicShell({
         ["dashboard/materiales", "Materiales"],
         ["dashboard/avisos", "Avisos"],
         ["dashboard/calendario", "Calendario"],
+        ["dashboard/asistencia", "Mi asistencia"],
         ["dashboard/perfil", "Mi perfil"],
       ];
   return (

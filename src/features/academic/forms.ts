@@ -118,7 +118,8 @@ export type AcademicCommand =
       starts_at: string;
       ends_at: string;
     }
-  | { kind: "event-attendees"; id: string; version: number };
+  | { kind: "event-attendees"; id: string; version: number }
+  | { kind: "attendance"; id: string; membership_id: string; status: string };
 export function parseAcademicForm(form: URLSearchParams): AcademicCommand {
   const text = (key: string, max = 200, required = true) => {
     if (form.getAll(key).length > 1) throw new AcademicError("invalid");
@@ -245,6 +246,13 @@ export function parseAcademicForm(form: URLSearchParams): AcademicCommand {
         ends_at: ends,
       };
     }
+    case "attendance":
+      return {
+        kind: "attendance",
+        id: existing(),
+        membership_id: ident("membership_id"),
+        status: choice("status", ["present", "absent", "late"]),
+      };
     case "event-attendees":
       return { kind: "event-attendees", id: existing(), version };
     default:
@@ -267,6 +275,7 @@ export const labels: Record<string, string> = {
 };
 export const noticeText: Record<string, string> = {
   saved: "Cambios guardados.",
+  closed: "La asistencia solo se puede modificar el día de la clase.",
   invalid: "Revisa los campos del formulario y las fechas.",
   duplicate: "Ya existe ese taller o matrícula. Revisa el registro existente.",
   conflict: "Este registro cambió. Recarga la página antes de editarlo.",
@@ -288,7 +297,9 @@ export function errorNotice(error: unknown): string {
       ? "conflict"
       : code === "42501"
         ? "unavailable"
-        : code === "23503" || code === "23514" || code === "22023"
+        : code === "22023"
+          ? "closed"
+          : code === "23503" || code === "23514"
           ? "invalid"
           : "failed";
 }
@@ -303,5 +314,7 @@ export function sectionFor(kind: AcademicCommand["kind"]) {
           ? "materiales"
           : kind === "announcement"
             ? "avisos"
+            : kind === "attendance"
+            ? "asistencia"
             : "calendario";
 }

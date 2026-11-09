@@ -922,6 +922,62 @@ export function AcademicView({
     return <StudentsAdmin slug={slug} data={data} search={search} />;
   if (section === "admin/matriculas")
     return <EnrollmentsAdmin slug={slug} data={data} search={search} />;
+  if (section === "admin/asistencia" || section === "dashboard/asistencia")
+    return (
+      <section className={css.section}>
+        {section === "admin/asistencia" ? (
+          <>
+            <h2>Asistencia por taller y clase</h2>
+            {!data.courses.length && <Empty>No hay talleres registrados.</Empty>}
+            {data.courses.map((course) => {
+              const events = data.events.filter((event) => event.course_id === course.id);
+              return (
+                <section className={css.section} key={course.id}>
+                  <h3>{course.title}</h3>
+                  {!events.length && <p className={css.hint}>Este taller aún no tiene clases programadas.</p>}
+                  {events.map((event) => {
+                    const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Lima", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+                    const classDay = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Lima", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(event.starts_at));
+                    const editable = event.status === "scheduled" && today === classDay;
+                    const rows = data.attendance.filter((a) => a.event_id === event.id);
+                    return <article className={css.card} key={event.id}>
+                      <h4>{event.title} · {date(event.starts_at)}</h4>
+                      {!editable && <p className={css.hint}>La asistencia solo se modifica el día de la clase.</p>}
+                      {!rows.length && <p className={css.hint}>No hay alumnos asignados a esta clase.</p>}
+                      {rows.map((row) => {
+                        const student = data.memberships.find((m) => m.id === row.membership_id);
+                        return <form key={row.membership_id} className={css.form} action={"/o/" + slug + "/acciones"} method="post">
+                          <input type="hidden" name="action" value="attendance" />
+                          <input type="hidden" name="id" value={event.id} />
+                          <input type="hidden" name="version" value="1" />
+                          <input type="hidden" name="membership_id" value={row.membership_id} />
+                          <Field label={student ? name(student) : "Alumno"}>
+                            <select name="status" defaultValue={row.status === "pending" ? "present" : row.status} disabled={!editable}>
+                              <option value="present">Asistió</option><option value="absent">Falta</option><option value="late">Llegó tarde</option>
+                            </select>
+                          </Field>
+                          <Save disabled={!editable} />
+                        </form>;
+                      })}
+                    </article>;
+                  })}
+                </section>
+              );
+            })}
+          </>
+        ) : (
+          <>
+            <h2>Mi asistencia</h2>
+            {data.attendance.filter((row) => row.membership_id === own?.id && row.status !== "pending").map((row) => {
+              const event = data.events.find((item) => item.id === row.event_id);
+              const course = event && data.courses.find((item) => item.id === event.course_id);
+              return <article className={css.card} key={row.id}><h3>{course?.title ?? "Taller"} · {event?.title ?? "Clase"}</h3><p>{event ? date(event.starts_at) : ""}</p><p>{row.status === "present" ? "Asistió" : row.status === "absent" ? "Falta" : "Llegó tarde"}</p></article>;
+            })}
+            {!data.attendance.some((row) => row.membership_id === own?.id && row.status !== "pending") && <Empty>Aún no hay asistencias registradas.</Empty>}
+          </>
+        )}
+      </section>
+    );
   if (section.endsWith("/materiales"))
     return <Materials slug={slug} data={data} admin={admin} />;
   if (section.endsWith("/avisos"))
@@ -1184,11 +1240,13 @@ const titles: Record<string, string> = {
   "admin/materiales": "Materiales",
   "admin/avisos": "Avisos",
   "admin/calendario": "Calendario",
+  "admin/asistencia": "Asistencia",
   dashboard: "Mi espacio",
   "dashboard/cursos": "Mis talleres",
   "dashboard/materiales": "Materiales",
   "dashboard/avisos": "Avisos",
   "dashboard/calendario": "Calendario",
+  "dashboard/asistencia": "Mi asistencia",
   "dashboard/perfil": "Mi perfil",
 };
 export async function AcademicPage({

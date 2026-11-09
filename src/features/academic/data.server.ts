@@ -17,6 +17,7 @@ export async function loadAcademic(client: AcademicClient, org: string) {
     announcements,
     events,
     files,
+    attendance,
   ] = await Promise.all([
     client
       .from("courses")
@@ -57,6 +58,11 @@ export async function loadAcademic(client: AcademicClient, org: string) {
       .order("starts_at")
       .limit(500),
     client
+      .from("attendance_records" as any)
+      .select("*")
+      .eq("organization_id", org)
+      .limit(2000),
+    client
       .from("file_assets")
       .select("*")
       .eq("organization_id", org)
@@ -73,6 +79,7 @@ export async function loadAcademic(client: AcademicClient, org: string) {
     announcements: checked(announcements) ?? [],
     events: checked(events) ?? [],
     files: checked(files) ?? [],
+    attendance: checked(attendance) ?? [],
   };
 }
 export type AcademicData = Awaited<ReturnType<typeof loadAcademic>>;
@@ -327,6 +334,13 @@ export async function mutateAcademic(
             p_membership_ids: await attendees(client, org, c.course_id),
           }),
         );
+      break;
+    }
+    case "attendance": {
+      const result = await (client as any).rpc("set_attendance", {
+        p_organization_id: org, p_event_id: c.id, p_membership_id: c.membership_id, p_status: c.status,
+      });
+      checked(result);
       break;
     }
     case "event-attendees": {

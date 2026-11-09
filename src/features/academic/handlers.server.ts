@@ -33,6 +33,7 @@ export async function academicPost(request: Request, slug: string) {
       announcement: "avisos",
       event: "calendario",
       "event-attendees": "calendario",
+      attendance: "asistencia",
     };
     const submitted = fields.get("action") ?? "";
     if (Object.hasOwn(destinations, submitted))
