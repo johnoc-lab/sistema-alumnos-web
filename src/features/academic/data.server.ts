@@ -11,6 +11,20 @@ export type AttendanceRecord = {
   membership_id: string;
   status: "pending" | "present" | "absent" | "late";
 };
+type AnnouncementRow = {
+  id: string;
+  organization_id: string;
+  course_id: string;
+  title: string;
+  body: string;
+  status: string;
+  published_at: string | null;
+  row_version: number;
+  image_url?: string | null;
+  video_url?: string | null;
+  image_asset_id?: string | null;
+  video_asset_id?: string | null;
+};
 const checked = <T>(result: { data: T; error: unknown }): T => {
   if (result.error) throw result.error;
   return result.data;
@@ -110,7 +124,7 @@ export async function loadAcademic(client: AcademicClient, org: string) {
     memberships: checked(memberships) ?? [],
     enrollments: checked(enrollments) ?? [],
     materials: checked(materials) ?? [],
-    announcements: checked(announcements) ?? [],
+    announcements: (checked(announcements) ?? []) as unknown as AnnouncementRow[],
     events: checked(events) ?? [],
     files: checked(files) ?? [],
     attendance: attendanceRows as unknown as AttendanceRecord[],
@@ -269,7 +283,10 @@ export async function mutateAcademic(
       const patch = {
         title: c.title,
         status: c.status,
-        external_url: c.external_url,
+        external_url: null,
+        class_url: c.class_url,
+        recording_url: c.recording_url,
+        help_url: c.help_url,
         file_asset_id: c.file_asset_id,
       };
       if (c.id) {
@@ -301,15 +318,22 @@ export async function mutateAcademic(
     }
     case "announcement": {
       await courseExists(client, org, c.course_id);
-      const patch = {
+      const legacyPatch = {
         title: c.title,
         body: c.body,
         status: c.status,
         published_at: c.status === "published" ? now() : null,
       };
+      const patch = {
+        ...legacyPatch,
+        image_url: null,
+        video_url: null,
+        image_asset_id: c.image_asset_id,
+        video_asset_id: c.video_asset_id,
+      };
       if (c.id) {
         const original = checked(
-          await client
+          await (client as any)
             .from("announcements")
             .select("published_at")
             .eq("organization_id", org)
@@ -320,18 +344,49 @@ export async function mutateAcademic(
         if (!original) throw new AcademicError("unavailable");
         if (c.status === "published" && original.published_at)
           patch.published_at = original.published_at;
-        checked(
-          await client.rpc("update_announcement", {
-            ...rpcArgs(c.id, c.version),
-            p_patch: patch,
-          }),
-        );
+        const result = await client.rpc("update_announcement", {
+          ...rpcArgs(c.id, c.version),
+          p_patch: patch,
+        });
+        const resultCode =
+          result.error && "code" in result.error ? result.error.code : "";
+        if (
+          result.error &&
+          ["42501", "PGRST202"].includes(String(resultCode)) &&
+          !c.image_asset_id &&
+          !c.video_asset_id
+        ) {
+          checked(
+            await client.rpc("update_announcement", {
+              ...rpcArgs(c.id, c.version),
+              p_patch: legacyPatch,
+            }),
+          );
+        } else if (
+          result.error &&
+          ["42501", "PGRST202"].includes(String(resultCode))
+        ) {
+          throw new AcademicError("media-migration");
+        } else checked(result);
       } else
-        checked(
-          await client
+        {
+          const result = await (client as any)
             .from("announcements")
-            .insert({ organization_id: org, course_id: c.course_id, ...patch }),
-        );
+            .insert({
+              organization_id: org,
+              course_id: c.course_id,
+              ...legacyPatch,
+              image_url: null,
+              video_url: null,
+              ...(c.image_asset_id ? { image_asset_id: c.image_asset_id } : {}),
+              ...(c.video_asset_id ? { video_asset_id: c.video_asset_id } : {}),
+            });
+          const resultCode =
+            result.error && "code" in result.error ? result.error.code : "";
+          if (result.error && ["PGRST204", "42703"].includes(String(resultCode)))
+            throw new AcademicError("media-migration");
+          checked(result);
+        }
       break;
     }
     case "event": {
