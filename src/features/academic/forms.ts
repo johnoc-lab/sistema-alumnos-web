@@ -39,6 +39,24 @@ export function resourceUrl(value: string): string | null {
     return null;
   }
 }
+export function mediaUrl(value: string): string | null {
+  try {
+    const url = new URL(value);
+    if (
+      url.protocol !== "https:" ||
+      !url.hostname ||
+      url.username ||
+      url.password ||
+      (url.port && url.port !== "443") ||
+      /[\s<>]/.test(value) ||
+      value.length > 2000
+    )
+      return null;
+    return url.href;
+  } catch {
+    return null;
+  }
+}
 export function limaInstant(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))
     throw new AcademicError("invalid");
@@ -97,6 +115,9 @@ export type AcademicCommand =
       title: string;
       status: string;
       external_url: string | null;
+      class_url: string | null;
+      recording_url: string | null;
+      help_url: string | null;
       file_asset_id: string | null;
     }
   | {
@@ -107,6 +128,8 @@ export type AcademicCommand =
       title: string;
       body: string;
       status: string;
+      image_asset_id: string | null;
+      video_asset_id: string | null;
     }
   | {
       kind: "event";
@@ -211,10 +234,18 @@ export function parseAcademicForm(form: URLSearchParams): AcademicCommand {
       };
     }
     case "material": {
-      const source = choice("source", ["link", "pdf"]);
-      const url =
-        source === "link" ? resourceUrl(text("external_url", 2000)) : null;
-      if (source === "link" && !url) throw new AcademicError("url");
+      const source = choice("source", ["links", "pdf"]);
+      const rawLinks = source === "links" ? {
+        class_url: text("class_url", 2000, false),
+        recording_url: text("recording_url", 2000, false),
+        help_url: text("help_url", 2000, false),
+      } : { class_url: "", recording_url: "", help_url: "" };
+      const class_url = rawLinks.class_url ? resourceUrl(rawLinks.class_url) : null;
+      const recording_url = rawLinks.recording_url ? resourceUrl(rawLinks.recording_url) : null;
+      const help_url = rawLinks.help_url ? resourceUrl(rawLinks.help_url) : null;
+      if ((rawLinks.class_url && !class_url) || (rawLinks.recording_url && !recording_url) || (rawLinks.help_url && !help_url)) throw new AcademicError("url");
+      if (source === "links" && !class_url && !recording_url && !help_url) throw new AcademicError("invalid");
+      const file_asset_id = source === "pdf" ? ident("file_asset_id") : null;
       return {
         kind: "material",
         id,
@@ -222,11 +253,18 @@ export function parseAcademicForm(form: URLSearchParams): AcademicCommand {
         course_id: ident("course_id"),
         title: text("title"),
         status: choice("status", states.content),
-        external_url: url,
-        file_asset_id: source === "pdf" ? ident("file_asset_id") : null,
+        external_url: null,
+        class_url,
+        recording_url,
+        help_url,
+        file_asset_id,
       };
     }
-    case "announcement":
+    case "announcement": {
+      const image_asset_id = text("image_asset_id", 36, false) || null;
+      const video_asset_id = text("video_asset_id", 36, false) || null;
+      if ((image_asset_id && !uuid(image_asset_id)) || (video_asset_id && !uuid(video_asset_id)))
+        throw new AcademicError("invalid");
       return {
         kind: "announcement",
         id,
@@ -235,7 +273,10 @@ export function parseAcademicForm(form: URLSearchParams): AcademicCommand {
         title: text("title"),
         body: text("body", 2000),
         status: choice("status", states.content),
+        image_asset_id,
+        video_asset_id,
       };
+    }
     case "event": {
       const starts = limaInstant(text("starts_at")),
         ends = limaInstant(text("ends_at"));
@@ -306,6 +347,8 @@ export const noticeText: Record<string, string> = {
   unavailable: "El registro ya no está disponible o no tienes acceso.",
   failed: "No se pudo completar la operación. Inténtalo más tarde.",
   url: "Utiliza un enlace HTTPS de YouTube, Vimeo, Drive, Docs, Meet o Zoom.",
+  "media-url": "La imagen y el video deben usar enlaces HTTPS válidos.",
+  "media-migration": "Para guardar imágenes o videos, primero aplica la migración de medios de avisos en Supabase.",
   attendees:
     "El taller necesita alumnos activos matriculados para programar el evento.",
   pdf: "Selecciona un PDF privado listo del mismo taller. La subida de archivos todavía no está habilitada.",

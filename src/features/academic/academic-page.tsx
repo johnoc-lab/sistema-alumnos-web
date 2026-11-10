@@ -16,6 +16,9 @@ import { PageHeading, Badge } from "@/components/ui/primitives";
 import { normalizeSearch } from "@/features/preview/presentation";
 import { AcademicShell } from "./shell";
 import { loadAcademic, type AcademicData } from "./data.server";
+import { AnnouncementImage } from "./announcement-image";
+import { AnnouncementMediaPicker } from "./announcement-media-picker";
+import { MaterialSourceFields } from "./material-source-fields";
 import { labels, noticeText, resourceUrl, states, uuid } from "./forms";
 import ui from "@/components/ui/ui.module.css";
 import css from "./academic.module.css";
@@ -581,37 +584,15 @@ function MaterialForm({
         />
       </Field>
       <StatusInput options={states.content} current={item?.status ?? "draft"} />
-      <Field label="Tipo de recurso">
-        <select
-          name="source"
-          defaultValue={item?.file_asset_id ? "pdf" : "link"}
-        >
-          <option value="link">Enlace externo</option>
-          <option value="pdf">PDF privado ya disponible</option>
-        </select>
-      </Field>
-      <Field label="Enlace HTTPS (si elegiste enlace)">
-        <input
-          type="url"
-          name="external_url"
-          maxLength={2000}
-          defaultValue={item?.external_url ?? ""}
-          placeholder="https://www.youtube.com/watch?v=..."
-        />
-      </Field>
-      <Field label="PDF del mismo taller (si elegiste PDF)">
-        <select name="file_asset_id" defaultValue={item?.file_asset_id ?? ""}>
-          <option value="">Selecciona un PDF listo</option>
-          {data.files
-            .filter((f) => !item || f.course_id === item.course_id)
-            .map((f) => (
-              <option key={f.id} value={f.id}>
-                {data.courses.find((c) => c.id === f.course_id)?.title} ·{" "}
-                {f.original_name}
-              </option>
-            ))}
-        </select>
-      </Field>
+      <MaterialSourceFields
+        initial={item?.file_asset_id ? "pdf" : "links"}
+        pdfContent={<AnnouncementMediaPicker slug={slug} kind="pdf" courseId={item?.course_id} initialAssetId={item?.file_asset_id} />}
+        linksContent={<div className={css.materialLinkFields}>
+          <Field label="Clase en vivo · Meet o Zoom"><input type="url" name="class_url" maxLength={2000} defaultValue={item?.class_url ?? item?.external_url ?? ""} placeholder="https://meet.google.com/... o zoom.us/..." /></Field>
+          <Field label="Clase grabada"><input type="url" name="recording_url" maxLength={2000} defaultValue={item?.recording_url ?? ""} placeholder="Enlace a la grabación" /></Field>
+          <Field label="Videos de ayuda"><input type="url" name="help_url" maxLength={2000} defaultValue={item?.help_url ?? ""} placeholder="Enlace a videos de apoyo" /></Field>
+        </div>}
+      />
       <Save disabled={!data.courses.length} />
     </BaseForm>
   );
@@ -631,9 +612,7 @@ function Materials({
         <section className={css.section}>
           <h2>Publicar material</h2>
           <p className={css.hint}>
-            Enlaces admitidos: YouTube, Vimeo, Drive, Docs, Meet y Zoom. No se
-            alojan videos. Los PDF se descargan desde Storage privado; subirlos
-            requiere habilitar el flujo de carga posteriormente.
+            Adjunta un PDF de este taller o publica por separado el enlace para la clase en vivo, su grabación y videos de ayuda.
           </p>
           <MaterialForm slug={slug} data={data} />
         </section>
@@ -646,19 +625,13 @@ function Materials({
             {data.courses.find((c) => c.id === m.course_id)?.title}
           </p>
           {admin && <Status status={m.status} />}
-          <div className={css.row}>
-            {m.external_url && resourceUrl(m.external_url) && (
-              <a
-                href={resourceUrl(m.external_url)!}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Abrir enlace
-              </a>
-            )}
+          <div className={css.materialLinks}>
+            {(m.class_url ?? m.external_url) && resourceUrl(m.class_url ?? m.external_url ?? "") && <a href={resourceUrl(m.class_url ?? m.external_url ?? "")!} target="_blank" rel="noopener noreferrer"><strong>Clase en vivo</strong><span>Entrar a Meet o Zoom</span></a>}
+            {m.recording_url && resourceUrl(m.recording_url) && <a href={resourceUrl(m.recording_url)!} target="_blank" rel="noopener noreferrer"><strong>Clase grabada</strong><span>Volver a ver la sesión</span></a>}
+            {m.help_url && resourceUrl(m.help_url) && <a href={resourceUrl(m.help_url)!} target="_blank" rel="noopener noreferrer"><strong>Videos de ayuda</strong><span>Ver material complementario</span></a>}
             {m.file_asset_id && (
               <a href={"/o/" + slug + "/archivos/" + m.file_asset_id}>
-                Descargar PDF privado
+                <strong>PDF del taller</strong><span>Ver o descargar el documento</span>
               </a>
             )}
           </div>
@@ -707,8 +680,39 @@ function AnnouncementForm({
           defaultValue={item?.body}
         />
       </Field>
+      <AnnouncementMediaPicker slug={slug} kind="image" courseId={item?.course_id} initialAssetId={item?.image_asset_id} />
+      <AnnouncementMediaPicker slug={slug} kind="video" courseId={item?.course_id} initialAssetId={item?.video_asset_id} />
       <Save disabled={!data.courses.length} />
     </BaseForm>
+  );
+}
+function AnnouncementMedia({
+  slug,
+  imageAssetId,
+  videoAssetId,
+  title,
+}: {
+  slug: string;
+  imageAssetId?: string | null;
+  videoAssetId?: string | null;
+  title: string;
+}) {
+  if (!imageAssetId && !videoAssetId) return null;
+  const mediaPath = (id: string) => `/o/${slug}/medios/${id}`;
+  return (
+    <div className={css.announcementMedia}>
+      {imageAssetId && (
+        <AnnouncementImage
+          src={mediaPath(imageAssetId)}
+          alt={"Imagen del aviso: " + title}
+        />
+      )}
+      {videoAssetId && (
+        <video className={css.announcementVideo} src={mediaPath(videoAssetId)} controls preload="metadata">
+          Tu navegador no puede reproducir este video.
+        </video>
+      )}
+    </div>
   );
 }
 function Announcements({
@@ -727,7 +731,8 @@ function Announcements({
           <h2>Crear comunicado</h2>
           <p className={css.hint}>
             Los avisos se dirigen a los alumnos del taller seleccionado.
-            Publicar establece la fecha de disponibilidad.
+            Puedes adjuntar imágenes y videos desde tu computadora. Publicar establece
+            la fecha de disponibilidad.
           </p>
           <AnnouncementForm slug={slug} data={data} />
         </section>
@@ -742,6 +747,12 @@ function Announcements({
           </p>
           {admin && <Status status={a.status} />}
           <p>{a.body}</p>
+          <AnnouncementMedia
+            slug={slug}
+            imageAssetId={a.image_asset_id}
+            videoAssetId={a.video_asset_id}
+            title={a.title}
+          />
           {admin && (
             <details>
               <summary>Editar aviso</summary>

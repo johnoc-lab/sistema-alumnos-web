@@ -24,6 +24,10 @@ export type Database = {
           body: string;
           published_at: string | null;
           status: string;
+          image_url: string | null;
+          video_url: string | null;
+          image_asset_id: string | null;
+          video_asset_id: string | null;
         };
         Insert: {
           id?: string;
@@ -38,6 +42,10 @@ export type Database = {
           body: string;
           published_at?: string | null;
           status?: string;
+          image_url?: string | null;
+          video_url?: string | null;
+          image_asset_id?: string | null;
+          video_asset_id?: string | null;
         };
         Update: {
           id?: string;
@@ -52,6 +60,10 @@ export type Database = {
           body?: string;
           published_at?: string | null;
           status?: string;
+          image_url?: string | null;
+          video_url?: string | null;
+          image_asset_id?: string | null;
+          video_asset_id?: string | null;
         };
         Relationships: [
           {
@@ -908,6 +920,9 @@ export type Database = {
           lesson_id: string | null;
           title: string;
           external_url: string | null;
+          class_url: string | null;
+          recording_url: string | null;
+          help_url: string | null;
           file_asset_id: string | null;
           sort_order: number;
           status: string;
@@ -924,6 +939,9 @@ export type Database = {
           lesson_id?: string | null;
           title: string;
           external_url?: string | null;
+          class_url?: string | null;
+          recording_url?: string | null;
+          help_url?: string | null;
           file_asset_id?: string | null;
           sort_order?: number;
           status?: string;
@@ -940,6 +958,9 @@ export type Database = {
           lesson_id?: string | null;
           title?: string;
           external_url?: string | null;
+          class_url?: string | null;
+          recording_url?: string | null;
+          help_url?: string | null;
           file_asset_id?: string | null;
           sort_order?: number;
           status?: string;
