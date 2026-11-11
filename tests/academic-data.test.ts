@@ -98,6 +98,19 @@ describe("adaptador académico con SDK simulado", () => {
     });
     expect(db.calls.map((call) => call.table)).toEqual(["enrollments"]);
   });
+  it("el formulario anterior recibe el enlace disponible sin cambiar la respuesta original", async () => {
+    const material = {
+      id,
+      external_url: null,
+      class_url: null,
+      recording_url: "https://example.test/recording",
+    };
+    const empty = { data: [], error: null };
+    const db = fake([empty, empty, empty, { data: [material], error: null }]);
+    const result = await loadAcademic(db.client, org);
+    expect(result.materials[0]?.external_url).toBe(material.recording_url);
+    expect(material.external_url).toBeNull();
+  });
   it("una consulta fallida no se representa como un estado vacío", async () => {
     const db = fake([{ data: null, error: { code: "42501" } }]);
     await expect(loadAcademic(db.client, org)).rejects.toMatchObject({

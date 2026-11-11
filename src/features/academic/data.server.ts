@@ -31,14 +31,33 @@ const orgEnrollments = (client: AcademicClient, org: string) =>
     .eq("organization_id", org)
     .order("created_at", { ascending: false })
     .limit(500);
-const orgMaterials = (client: AcademicClient, org: string) =>
-  client
+async function orgMaterials(client: AcademicClient, org: string) {
+  const result = await client
     .from("materials")
     .select("*")
     .eq("organization_id", org)
     .order("sort_order")
     .order("title")
     .limit(500);
+  return {
+    ...result,
+    data:
+      result.data?.map((item) => ({
+        ...item,
+        external_url:
+          item.external_url ??
+          ("class_url" in item && typeof item.class_url === "string"
+            ? item.class_url
+            : null) ??
+          ("recording_url" in item && typeof item.recording_url === "string"
+            ? item.recording_url
+            : null) ??
+          ("help_url" in item && typeof item.help_url === "string"
+            ? item.help_url
+            : null),
+      })) ?? null,
+  };
+}
 const orgAnnouncements = (client: AcademicClient, org: string) =>
   client
     .from("announcements")

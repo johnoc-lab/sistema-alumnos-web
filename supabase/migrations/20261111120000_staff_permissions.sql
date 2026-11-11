@@ -1,5 +1,50 @@
 BEGIN;
 
+-- Reconoce la base histórica o el contrato de Medios comprobado en Cloud.
+-- Una instalación parcial o una definición distinta debe revisarse antes de tocar los permisos.
+DO $$
+DECLARE
+  media_columns integer;
+  media_functions integer;
+  media_constraints integer;
+BEGIN
+  SELECT count(*) INTO media_columns FROM information_schema.columns WHERE table_schema='public'
+    AND ((table_name='announcements' AND column_name IN ('image_url','video_url','image_asset_id','video_asset_id'))
+      OR (table_name='materials' AND column_name IN ('class_url','recording_url','help_url')));
+  SELECT count(*) INTO media_functions FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+    WHERE n.nspname||'.'||p.proname IN ('public.prepare_announcement_media','public.finalize_announcement_media','private.validate_announcement_media');
+  IF media_columns=0 AND media_functions=0
+    AND NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects'
+      AND policyname='project_announcement_media_insert') THEN RETURN; END IF;
+  SELECT count(*) INTO media_constraints FROM pg_constraint WHERE convalidated AND
+    ((conrelid='public.announcements'::regclass AND conname IN (
+        'announcements_image_asset_course_fkey','announcements_video_asset_course_fkey',
+        'announcements_image_source_check','announcements_video_source_check',
+        'announcements_image_url_https_check','announcements_video_url_https_check'))
+      OR (conrelid='public.materials'::regclass AND conname IN (
+        'materials_resource_source_check','materials_class_url_check','materials_recording_url_check','materials_help_url_check'))
+      OR (conrelid='public.file_assets'::regclass AND conname='file_assets_announcement_media_purpose_check'));
+  IF media_columns<>7 OR media_functions<>3 OR media_constraints<>11 OR EXISTS (
+    SELECT 1 FROM (VALUES
+      ('private.asset_access(uuid,uuid)','5f65a90ccc327923464d95005b77a3ba'),
+      ('private.validate_announcement_media()','5ac026ba434fc31e014c02cff5f2632a'),
+      ('public.finalize_announcement_media(uuid,uuid,bigint,text)','7b985600446663c6cbe4323ab38b4833'),
+      ('public.prepare_announcement_media(uuid,uuid,text,text,text,bigint)','c918fc04322ccd97449cb8c5a37a3f2c'),
+      ('public.update_announcement(uuid,uuid,bigint,jsonb)','37640ad570f5f4ad9bf7dac85e71b2ea'),
+      ('public.update_material(uuid,uuid,bigint,jsonb)','0aa5afa5b1f3ce86def6ff4fffe7acd5')
+    ) AS expected(signature,body_hash) LEFT JOIN pg_proc p ON p.oid=to_regprocedure(expected.signature)
+    WHERE md5(regexp_replace(p.prosrc,'[[:space:]]+','','g')) IS DISTINCT FROM expected.body_hash
+  ) OR NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.announcements'::regclass
+       AND tgname='validate_announcement_media' AND tgenabled IN ('O','A'))
+    OR (SELECT count(*) FROM pg_policies WHERE schemaname='storage' AND tablename='objects'
+      AND cmd='INSERT' AND ((policyname='project_assets_insert_guard' AND permissive='RESTRICTIVE')
+        OR (policyname='project_announcement_media_insert' AND permissive='PERMISSIVE'))
+      AND md5(regexp_replace(with_check,'[[:space:]]+','','g'))='b7ab558ba01551912b252e0c42360a1e')<>2 THEN
+    RAISE EXCEPTION 'Contrato de Medios incompleto o distinto al revisado' USING ERRCODE='23514';
+  END IF;
+END;
+$$;
+
 ALTER TABLE public.organization_memberships
   ADD COLUMN staff_rank text,
   ADD COLUMN allowed_modules text[] NOT NULL DEFAULT '{}';
@@ -166,6 +211,14 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
     SELECT 1 FROM public.file_assets f WHERE f.organization_id=org AND f.id=asset AND f.status='ready'
       AND (private.org_admin(org)
         OR (f.purpose='course_material' AND private.can_use_module(org,'materials'))
+        OR (f.purpose IN ('announcement_image','announcement_video') AND (
+          private.can_use_module(org,'announcements') OR EXISTS (
+            SELECT 1 FROM public.announcements a WHERE a.organization_id=org AND a.course_id=f.course_id
+              AND a.status='published' AND a.published_at<=now()
+              AND (to_jsonb(a)->>'image_asset_id'=f.id::text OR to_jsonb(a)->>'video_asset_id'=f.id::text)
+              AND private.course_access(org,a.course_id)
+          )
+        ))
         OR (private.member_id(org) IS NOT NULL AND f.purpose='branding')
         OR (f.purpose='course_material' AND EXISTS (
           SELECT 1 FROM public.materials m WHERE m.organization_id=org AND m.file_asset_id=f.id AND private.material_access(org,m.id)
@@ -223,6 +276,7 @@ ALTER POLICY attendees_read ON public.calendar_event_attendees USING (
 );
 ALTER POLICY assets_read ON public.file_assets USING (
   private.org_admin(organization_id) OR (purpose='course_material' AND private.can_use_module(organization_id,'materials'))
+  OR (purpose IN ('announcement_image','announcement_video') AND private.can_use_module(organization_id,'announcements'))
   OR private.asset_access(organization_id,id)
 );
 ALTER POLICY attendance_read ON public.attendance_records USING (
@@ -326,14 +380,23 @@ $$;
 
 CREATE OR REPLACE FUNCTION public.update_announcement(p_organization_id uuid,p_id uuid,p_expected_version bigint,p_patch jsonb) RETURNS bigint
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
-DECLARE original public.announcements;candidate public.announcements;result_version bigint;
+DECLARE original public.announcements;candidate public.announcements;result_version bigint; media boolean;
 BEGIN
  PERFORM private.require_module(p_organization_id,'announcements');
- PERFORM private.validate_patch(p_patch,ARRAY['title','body','published_at','status']);
  SELECT * INTO original FROM public.announcements WHERE organization_id=p_organization_id AND id=p_id FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'Recurso no disponible' USING ERRCODE='42501'; END IF;
  IF p_expected_version IS NULL OR original.row_version<>p_expected_version THEN RAISE EXCEPTION 'Conflicto de versión; vuelva a consultar' USING ERRCODE='40001'; END IF;
+ media:=to_jsonb(original) ? 'image_asset_id';
+ PERFORM private.validate_patch(p_patch,ARRAY['title','body','published_at','status']
+   || CASE WHEN media THEN ARRAY['image_url','video_url','image_asset_id','video_asset_id'] ELSE ARRAY[]::text[] END);
  candidate:=jsonb_populate_record(original,p_patch);
+ IF media THEN
+   UPDATE public.announcements SET title=candidate.title,body=candidate.body,published_at=candidate.published_at,
+     status=candidate.status,image_url=candidate.image_url,video_url=candidate.video_url,
+     image_asset_id=candidate.image_asset_id,video_asset_id=candidate.video_asset_id
+   WHERE organization_id=p_organization_id AND id=p_id RETURNING row_version INTO result_version;
+   RETURN result_version;
+ END IF;
 
  UPDATE public.announcements SET title=candidate.title,body=candidate.body,published_at=candidate.published_at,status=candidate.status WHERE organization_id=p_organization_id AND id=p_id RETURNING row_version INTO result_version;
  RETURN result_version;
@@ -342,14 +405,34 @@ $$;
 
 CREATE OR REPLACE FUNCTION public.update_material(p_organization_id uuid,p_id uuid,p_expected_version bigint,p_patch jsonb) RETURNS bigint
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
-DECLARE original public.materials;candidate public.materials;result_version bigint;
+DECLARE original public.materials;candidate public.materials;result_version bigint; media boolean;
 BEGIN
  PERFORM private.require_module(p_organization_id,'materials');
- PERFORM private.validate_patch(p_patch,ARRAY['lesson_id','title','external_url','file_asset_id','sort_order','status']);
  SELECT * INTO original FROM public.materials WHERE organization_id=p_organization_id AND id=p_id FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'Recurso no disponible' USING ERRCODE='42501'; END IF;
  IF p_expected_version IS NULL OR original.row_version<>p_expected_version THEN RAISE EXCEPTION 'Conflicto de versión; vuelva a consultar' USING ERRCODE='40001'; END IF;
+ media:=to_jsonb(original) ? 'class_url';
+ PERFORM private.validate_patch(p_patch,ARRAY['lesson_id','title','external_url','file_asset_id','sort_order','status']
+   || CASE WHEN media THEN ARRAY['class_url','recording_url','help_url'] ELSE ARRAY[]::text[] END);
  candidate:=jsonb_populate_record(original,p_patch);
+ IF media THEN
+   -- El formulario anterior usa external_url. Al guardar el enlace ya mostrado se preservan los demás.
+   IF p_patch ? 'external_url' AND NOT (p_patch ?| ARRAY['class_url','recording_url','help_url']) THEN
+     IF candidate.file_asset_id IS NOT NULL AND candidate.external_url IS NULL THEN
+       candidate.class_url:=NULL; candidate.recording_url:=NULL; candidate.help_url:=NULL;
+     ELSIF candidate.file_asset_id IS NULL AND candidate.external_url IS NOT NULL THEN
+       IF candidate.external_url IS DISTINCT FROM coalesce(original.class_url,original.recording_url,original.help_url) THEN
+         candidate.class_url:=candidate.external_url;
+       END IF;
+       candidate.external_url:=NULL;
+     END IF;
+   END IF;
+   UPDATE public.materials SET lesson_id=candidate.lesson_id,title=candidate.title,external_url=candidate.external_url,
+     class_url=candidate.class_url,recording_url=candidate.recording_url,help_url=candidate.help_url,
+     file_asset_id=candidate.file_asset_id,sort_order=candidate.sort_order,status=candidate.status
+   WHERE organization_id=p_organization_id AND id=p_id RETURNING row_version INTO result_version;
+   RETURN result_version;
+ END IF;
 
  UPDATE public.materials SET lesson_id=candidate.lesson_id,title=candidate.title,external_url=candidate.external_url,file_asset_id=candidate.file_asset_id,sort_order=candidate.sort_order,status=candidate.status WHERE organization_id=p_organization_id AND id=p_id RETURNING row_version INTO result_version;
  RETURN result_version;
@@ -941,5 +1024,29 @@ REVOKE ALL ON FUNCTION private.staff_login_identifier(uuid), private.staff_assig
   FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.staff_academic_context(uuid,text,text), public.list_staff(uuid),
   public.link_staff(uuid,uuid,text,text[],text), public.update_staff(uuid,uuid,bigint,text,text[],text) TO authenticated;
+
+-- Admite altas del formulario anterior en el contrato de Medios sin relajar su CHECK.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public'
+      AND table_name='materials' AND column_name='class_url') THEN
+    EXECUTE $definition$
+      CREATE FUNCTION private.normalize_legacy_material_insert() RETURNS trigger
+      LANGUAGE plpgsql SET search_path='' AS $body$
+      BEGIN
+        IF NEW.external_url IS NOT NULL AND NEW.file_asset_id IS NULL
+          AND num_nonnulls(NEW.class_url,NEW.recording_url,NEW.help_url)=0 THEN
+          NEW.class_url:=NEW.external_url; NEW.external_url:=NULL;
+        END IF;
+        RETURN NEW;
+      END;
+      $body$
+    $definition$;
+    REVOKE ALL ON FUNCTION private.normalize_legacy_material_insert() FROM PUBLIC,anon,authenticated;
+    CREATE TRIGGER normalize_legacy_material_insert BEFORE INSERT ON public.materials
+      FOR EACH ROW EXECUTE FUNCTION private.normalize_legacy_material_insert();
+  END IF;
+END;
+$$;
 
 COMMIT;
