@@ -9,13 +9,23 @@ import {
 import { CourseTile } from "./course-tile";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+import {
+  hasStaffPermission,
+  staffModuleKeys,
+  staffModules,
+  staffSectionPermission,
+} from "@/lib/authorization/staff";
 import { organizationAccess } from "@/lib/auth/access.server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { ProtectedModule } from "@/features/auth/components/protected-module";
 import { PageHeading, Badge } from "@/components/ui/primitives";
 import { normalizeSearch } from "@/features/preview/presentation";
 import { AcademicShell } from "./shell";
-import { loadAcademic, type AcademicData } from "./data.server";
+import {
+  loadAcademic,
+  loadStaffAcademic,
+  type AcademicData,
+} from "./data.server";
 import { labels, noticeText, resourceUrl, states, uuid } from "./forms";
 import ui from "@/components/ui/ui.module.css";
 import css from "./academic.module.css";
@@ -30,7 +40,7 @@ const value = (search: Search, key: string) =>
   typeof search[key] === "string" ? (search[key] as string) : "";
 const name = (m: AcademicData["memberships"][number]) =>
   [m.first_name, m.last_name].filter(Boolean).join(" ") || "Sin nombre";
-const date = (v: string | null) =>
+const date = (v: string | null | undefined) =>
   v
     ? new Intl.DateTimeFormat("es-PE", {
         timeZone: "America/Lima",
@@ -248,10 +258,12 @@ function CoursesAdmin({
   slug,
   data,
   search,
+  canOpenEnrollments,
 }: {
   slug: string;
   data: AcademicData;
   search: Search;
+  canOpenEnrollments: boolean;
 }) {
   const q = normalizeSearch(value(search, "q")),
     status = value(search, "status");
@@ -280,9 +292,11 @@ function CoursesAdmin({
           <p className={css.hint}>
             {c.tag} · {c.slug}
           </p>
-          <Link href={"/o/" + slug + "/admin/matriculas?course=" + c.id}>
-            Ver matrículas
-          </Link>
+          {canOpenEnrollments && (
+            <Link href={"/o/" + slug + "/admin/matriculas?course=" + c.id}>
+              Ver matrículas
+            </Link>
+          )}
           <details>
             <summary>Detalles y edición</summary>
             <CourseForm slug={slug} course={c} />
@@ -757,10 +771,12 @@ function AttendanceAdmin({
   slug,
   data,
   search,
+  canOpenSchedule,
 }: {
   slug: string;
   data: AcademicData;
   search: Search;
+  canOpenSchedule: boolean;
 }) {
   const courseId = value(search, "course");
   const course = data.courses.find((item) => item.id === courseId);
@@ -858,10 +874,12 @@ function AttendanceAdmin({
       )}
       {!events.length && (
         <Empty>
-          Este taller aún no tiene clases programadas. {" "}
-          <Link href={"/o/" + slug + "/admin/horario"}>
-            Programa una clase en Horario.
-          </Link>
+          Este taller aún no tiene clases programadas.{" "}
+          {canOpenSchedule && (
+            <Link href={"/o/" + slug + "/admin/horario"}>
+              Programa una clase en Horario.
+            </Link>
+          )}
         </Empty>
       )}
       {event && (
@@ -977,8 +995,8 @@ function StudentCourses({
           <CourseTile
             key={c.id}
             title={c.title}
-            description={c.description}
-            tag={c.tag}
+            description={c.description ?? ""}
+            tag={c.tag ?? ""}
             href={"/o/" + slug + "/dashboard/cursos/" + c.id}
             progress={enrollment?.progress_percent ?? null}
             variant={index}
@@ -995,6 +1013,8 @@ export function AcademicView({
   profileId,
   search = {},
   courseId,
+  canOpenSchedule = false,
+  canOpenEnrollments = false,
 }: {
   slug: string;
   section: string;
@@ -1002,17 +1022,33 @@ export function AcademicView({
   profileId: string;
   search?: Search;
   courseId?: string;
+  canOpenSchedule?: boolean;
+  canOpenEnrollments?: boolean;
 }) {
   const admin = section.startsWith("admin"),
     own = data.memberships.find((m) => m.profile_id === profileId);
   if (section === "admin/cursos")
-    return <CoursesAdmin slug={slug} data={data} search={search} />;
+    return (
+      <CoursesAdmin
+        slug={slug}
+        data={data}
+        search={search}
+        canOpenEnrollments={canOpenEnrollments}
+      />
+    );
   if (section === "admin/alumnos")
     return <StudentsAdmin slug={slug} data={data} search={search} />;
   if (section === "admin/matriculas")
     return <EnrollmentsAdmin slug={slug} data={data} search={search} />;
   if (section === "admin/asistencia")
-    return <AttendanceAdmin slug={slug} data={data} search={search} />;
+    return (
+      <AttendanceAdmin
+        slug={slug}
+        data={data}
+        search={search}
+        canOpenSchedule={canOpenSchedule}
+      />
+    );
   if (section === "dashboard/asistencia")
     return (
       <section className={css.section}>
@@ -1295,7 +1331,12 @@ export async function AcademicPage({
   const admin = section.startsWith("admin"),
     role = admin ? "admin" : "student",
     title = titles[section] ?? "Sistema Alumnos";
-  const access = await organizationAccess(slug, role);
+  const permission = staffSectionPermission(section);
+  const access = await organizationAccess(
+    slug,
+    role,
+    admin ? permission : undefined,
+  );
   if (
     !access.allowed ||
     !access.membership ||
@@ -1310,18 +1351,69 @@ export async function AcademicPage({
         section={section}
       />
     );
+  const membership = access.membership;
+  const limited = admin && membership.staffRank !== "principal";
+  if (limited && permission === "overview") {
+    const modules = staffModuleKeys.filter((key) =>
+      hasStaffPermission(membership, key),
+    );
+    return (
+      <AcademicShell
+        slug={slug}
+        name={membership.name}
+        admin
+        section={section}
+        membership={membership}
+      >
+        <PageHeading
+          eyebrow="ADMINISTRACIÓN"
+          title={title}
+          description="Accede a las secciones habilitadas para tu cuenta."
+        />
+        {modules.length ? (
+          <ul>
+            {modules.map((key) => (
+              <li key={key}>
+                <Link href={"/o/" + slug + "/" + staffModules[key].path}>
+                  {staffModules[key].label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <Empty>No tienes secciones asignadas.</Empty>
+        )}
+      </AcademicShell>
+    );
+  }
+  const academicModule =
+    permission === "overview" ||
+    permission === "staff.manage" ||
+    permission === "schedule" ||
+    permission === "certificates"
+      ? null
+      : permission;
+  if (limited && !academicModule) notFound();
   let data: AcademicData;
   try {
-    data = await loadAcademic(
-      await createServerSupabaseClient(),
-      access.membership.organizationId,
-    );
+    const client = await createServerSupabaseClient();
+    const selectedCourse = value(search, "course");
+    data =
+      limited && academicModule
+        ? await loadStaffAcademic(
+            client,
+            membership.organizationId,
+            academicModule,
+            uuid(selectedCourse) ? selectedCourse : null,
+          )
+        : await loadAcademic(client, membership.organizationId);
   } catch {
     return (
       <AcademicShell
         slug={slug}
         name={access.membership.name}
         admin={admin}
+        membership={membership}
         section={section}
       >
         <PageHeading
@@ -1347,6 +1439,7 @@ export async function AcademicPage({
       slug={slug}
       name={access.membership.name}
       admin={admin}
+      membership={membership}
       section={section}
     >
       <PageHeading
@@ -1371,6 +1464,10 @@ export async function AcademicPage({
         section={section}
         data={data}
         profileId={access.session.identity.profileId}
+        canOpenSchedule={admin && hasStaffPermission(membership, "schedule")}
+        canOpenEnrollments={
+          admin && hasStaffPermission(membership, "enrollments")
+        }
         search={search}
         {...(courseId ? { courseId } : {})}
       />

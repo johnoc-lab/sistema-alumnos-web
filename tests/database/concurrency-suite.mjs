@@ -117,6 +117,92 @@ export async function concurrencySuite(observer) {
         );
       }
     });
+    await test("Snapshot repetible: una suspensión concurrente conserva al último principal", async () => {
+      let pending;
+      try {
+        await a.query("BEGIN ISOLATION LEVEL REPEATABLE READ");
+        await b.query("BEGIN ISOLATION LEVEL REPEATABLE READ");
+        await b.query("SELECT id FROM public.organizations WHERE id=$1", [
+          ids.orgA,
+        ]);
+        await a.query(
+          "UPDATE public.organization_memberships SET status='suspended' WHERE id=$1",
+          [ids.memberAdminA],
+        );
+        pending = b
+          .query(
+            "UPDATE public.organization_memberships SET staff_rank='administrator' WHERE id=$1",
+            [ids.memberAdminA2],
+          )
+          .then(
+            () => null,
+            (error) => error.code,
+          );
+        await waitForLock(observer, pid);
+        await a.query("COMMIT");
+        assert.equal(await pending, "40001");
+        await b.query("ROLLBACK");
+        const surviving = await observer.query(
+          "SELECT id FROM public.organization_memberships WHERE organization_id=$1 AND staff_rank='principal' AND status='active'",
+          [ids.orgA],
+        );
+        assert.deepEqual(surviving.rows, [{ id: ids.memberAdminA2 }]);
+      } finally {
+        await a.query("ROLLBACK");
+        await b.query("ROLLBACK");
+        if (pending) await pending;
+        await observer.query(
+          "UPDATE public.organization_memberships SET status='active',staff_rank='principal' WHERE id=ANY($1::uuid[])",
+          [[ids.memberAdminA, ids.memberAdminA2]],
+        );
+      }
+    });
+    await test("Dos principales: la sesión que pierde el rango no puede degradar al otro", async () => {
+      let pending;
+      try {
+        const { rows } = await observer.query(
+          "SELECT id,row_version FROM public.organization_memberships WHERE id=ANY($1::uuid[])",
+          [[ids.memberAdminA, ids.memberAdminA2]],
+        );
+        const versions = new Map(rows.map((row) => [row.id, row.row_version]));
+        const statement =
+          "SELECT public.update_staff($1,$2,$3,'secretary',ARRAY['attendance'],'active')";
+        await beginUser(a, ids.authAdminA);
+        await beginUser(b, ids.authAdminA2);
+        await a.query(statement, [
+          ids.orgA,
+          ids.memberAdminA2,
+          versions.get(ids.memberAdminA2),
+        ]);
+        pending = b
+          .query(statement, [
+            ids.orgA,
+            ids.memberAdminA,
+            versions.get(ids.memberAdminA),
+          ])
+          .then(
+            () => null,
+            (error) => error.code,
+          );
+        await waitForLock(observer, pid);
+        await a.query("COMMIT");
+        assert.equal(await pending, "42501");
+        await b.query("ROLLBACK");
+        const surviving = await observer.query(
+          "SELECT id FROM public.organization_memberships WHERE organization_id=$1 AND staff_rank='principal' AND status='active'",
+          [ids.orgA],
+        );
+        assert.deepEqual(surviving.rows, [{ id: ids.memberAdminA }]);
+      } finally {
+        await a.query("ROLLBACK");
+        await b.query("ROLLBACK");
+        if (pending) await pending;
+        await observer.query(
+          "UPDATE public.organization_memberships SET status='active',staff_rank='principal',allowed_modules=ARRAY[]::text[] WHERE id=ANY($1::uuid[])",
+          [[ids.memberAdminA, ids.memberAdminA2]],
+        );
+      }
+    });
     await test("Dos administradores: reemplazar asistentes usa la versión del evento y serializa cambios", async () => {
       const version = (
         await observer.query(

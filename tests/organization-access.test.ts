@@ -25,6 +25,8 @@ const session = (
       status: "active",
       organizationStatus: "active",
       role: admin ? "admin" : "student",
+      staffRank: admin ? "principal" : null,
+      allowedModules: [],
     },
   ],
 });

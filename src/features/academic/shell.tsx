@@ -14,6 +14,13 @@ import {
   ArrowLeftRight,
   type LucideIcon,
 } from "lucide-react";
+import type { VerifiedMembership } from "@/lib/authorization/access";
+import {
+  hasStaffPermission,
+  staffModuleKeys,
+  staffModules,
+  staffRanks,
+} from "@/lib/authorization/staff";
 import { LogoutForm } from "@/features/auth/components/auth-form";
 import {
   CampusHeader,
@@ -30,6 +37,7 @@ const icons: Record<string, LucideIcon> = {
   "admin/avisos": Megaphone,
   "admin/horario": CalendarDays,
   "admin/asistencia": ClipboardCheck,
+  "admin/administradores": ShieldCheck,
   "dashboard/asistencia": ClipboardCheck,
   dashboard: LayoutDashboard,
   "dashboard/cursos": BookOpen,
@@ -43,24 +51,25 @@ export function AcademicShell({
   name,
   admin,
   section,
+  membership,
   children,
 }: {
   slug: string;
   name: string;
   admin: boolean;
   section: string;
+  membership?: VerifiedMembership;
   children: ReactNode;
 }) {
   const links = admin
     ? [
         ["admin", "Resumen"],
-        ["admin/alumnos", "Alumnos"],
-        ["admin/cursos", "Talleres"],
-        ["admin/matriculas", "Matrículas"],
-        ["admin/materiales", "Materiales"],
-        ["admin/avisos", "Avisos"],
-        ["admin/horario", "Horario"],
-        ["admin/asistencia", "Asistencia"],
+        ...staffModuleKeys
+          .filter((key) => membership && hasStaffPermission(membership, key))
+          .map((key) => [staffModules[key].path, staffModules[key].label]),
+        ...(membership && hasStaffPermission(membership, "staff.manage")
+          ? [["admin/administradores", "Administradores"]]
+          : []),
       ]
     : [
         ["dashboard", "Mi espacio"],
@@ -76,7 +85,11 @@ export function AcademicShell({
       <CampusHeader>
         <div className={css.headerActions}>
           <span className={css.role}>
-            {admin ? "Administración" : "Espacio del alumno"}
+            {admin
+              ? membership?.staffRank
+                ? staffRanks[membership.staffRank]
+                : "Administración"
+              : "Espacio del alumno"}
           </span>
           {admin && (
             <Link href="/auth/mfa">

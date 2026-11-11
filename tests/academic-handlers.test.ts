@@ -14,6 +14,7 @@ vi.mock("@/features/academic/data.server", () => ({
   mutateAcademic: mocks.mutate,
   privatePdf: mocks.pdf,
 }));
+import { staffPost } from "@/features/staff/handlers.server";
 import { academicPost, academicPdf } from "@/features/academic/handlers.server";
 import { NextRequest } from "next/server";
 import { GET as scheduleGet } from "@/app/(workspace)/o/[organizationSlug]/horario/datos/route";
@@ -38,6 +39,8 @@ function session(): AuthenticatedSession {
         organizationStatus: "active",
         status: "active",
         role: "admin",
+        staffRank: "principal",
+        allowedModules: [],
         slug: "qa",
         name: "QA",
       },
@@ -103,7 +106,12 @@ describe("acciones académicas: guard real con sesión simulada", () => {
       if (kind === "aal1")
         s.identity = { ...s.identity!, assuranceLevel: "aal1" };
       if (kind === "student")
-        s.memberships[0] = { ...s.memberships[0]!, role: "student" };
+        s.memberships[0] = {
+          ...s.memberships[0]!,
+          role: "student",
+          staffRank: null,
+          allowedModules: [],
+        };
       if (kind === "suspended")
         s.memberships[0] = {
           ...s.memberships[0]!,
@@ -163,7 +171,12 @@ describe("acciones académicas: guard real con sesión simulada", () => {
   it("PDF del alumno usa sesión y respuesta privada, sin URL pública", async () => {
     const s = session();
     s.identity = { ...s.identity!, assuranceLevel: "aal1" };
-    s.memberships[0] = { ...s.memberships[0]!, role: "student" };
+    s.memberships[0] = {
+      ...s.memberships[0]!,
+      role: "student",
+      staffRank: null,
+      allowedModules: [],
+    };
     mocks.session.mockResolvedValue(s);
     const r = await academicPdf("qa", id);
     expect(r.status).toBe(200);
@@ -237,11 +250,9 @@ describe("Horario: guardas HTTP y RPC", () => {
     expect(mocks.create).not.toHaveBeenCalled();
   });
   it("devuelve conflicto privado y sin detalles SQL ante un solapamiento", async () => {
-    const rpc = vi
-      .fn()
-      .mockResolvedValue({
-        error: { code: "23P01", details: "detalle interno" },
-      });
+    const rpc = vi.fn().mockResolvedValue({
+      error: { code: "23P01", details: "detalle interno" },
+    });
     mocks.create.mockResolvedValue({ rpc });
     const response = await academicPost(schedulePost(), "qa");
     expect(response.status).toBe(409);
@@ -253,13 +264,36 @@ describe("Horario: guardas HTTP y RPC", () => {
     mocks.session.mockResolvedValue(s);
     expect((await get("admin")).status).toBe(403);
     expect((await academicPost(schedulePost(), "qa")).status).toBe(403);
-    s.memberships[0] = { ...s.memberships[0]!, role: "student" };
+    s.memberships[0] = {
+      ...s.memberships[0]!,
+      role: "student",
+      staffRank: null,
+      allowedModules: [],
+    };
     expect((await get("admin")).status).toBe(403);
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it("bloquea Horario directo para un profesor que solo tiene Asistencia", async () => {
+    const s = session();
+    s.memberships[0] = {
+      ...s.memberships[0]!,
+      staffRank: "teacher",
+      allowedModules: ["attendance"],
+    };
+    mocks.session.mockResolvedValue(s);
+    expect((await get("admin")).status).toBe(403);
+    expect((await get("student")).status).toBe(403);
+    expect((await academicPost(schedulePost(), "qa")).status).toBe(403);
     expect(mocks.create).not.toHaveBeenCalled();
   });
   it("consulta el rango del alumno con la organización verificada y sin caché", async () => {
     const s = session();
-    s.memberships[0] = { ...s.memberships[0]!, role: "student" };
+    s.memberships[0] = {
+      ...s.memberships[0]!,
+      role: "student",
+      staffRank: null,
+      allowedModules: [],
+    };
     mocks.session.mockResolvedValue(s);
     const rpc = vi
       .fn()
@@ -275,5 +309,143 @@ describe("Horario: guardas HTTP y RPC", () => {
       p_admin: false,
       p_course: "",
     });
+  });
+});
+
+describe("Roles delegados y gestión de personal: guardas HTTP reales", () => {
+  function delegated(
+    modules: AuthenticatedSession["memberships"][number]["allowedModules"],
+  ) {
+    const s = session();
+    s.memberships[0] = {
+      ...s.memberships[0]!,
+      staffRank: "secretary",
+      allowedModules: modules,
+    };
+    mocks.session.mockResolvedValue(s);
+  }
+  const staffRequest = (
+    fields: Record<string, string> = {},
+    requestOrigin = origin,
+    modules = ["attendance"],
+  ) => {
+    const body = new URLSearchParams({
+      action: "link",
+      id,
+      rank: "teacher",
+      status: "active",
+      organization_id: id,
+      ...fields,
+    });
+    for (const permission of modules) body.append("module", permission);
+    return new Request(origin + "/o/qa/admin/administradores/acciones", {
+      method: "POST",
+      headers: { origin: requestOrigin },
+      body,
+    });
+  };
+  it("un principal aal2 incorpora una asignación usando el tenant de su sesión", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: id, error: null });
+    mocks.create.mockResolvedValue({ rpc });
+    const response = await staffPost(staffRequest(), "qa");
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe(
+      origin + "/o/qa/admin/administradores?notice=linked",
+    );
+    expect(response.headers.get("cache-control")).toContain("no-store");
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("link_staff", {
+      p_org: org,
+      p_assignment: id,
+      p_rank: "teacher",
+      p_modules: ["attendance"],
+      p_status: "active",
+    });
+  });
+  it("un principal edita con la versión enviada y recibe el conflicto sanitizado", async () => {
+    const rpc = vi
+      .fn()
+      .mockResolvedValue({ error: { code: "40001", detail: "SQL interno" } });
+    mocks.create.mockResolvedValue({ rpc });
+    const response = await staffPost(
+      staffRequest({ action: "update", version: "7" }),
+      "qa",
+    );
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toContain("notice=stale");
+    expect(await response.text()).not.toContain("SQL interno");
+    expect(rpc).toHaveBeenCalledWith(
+      "update_staff",
+      expect.objectContaining({ p_org: org, p_membership: id, p_version: 7 }),
+    );
+  });
+  it("CSRF, tenant ajeno y combinaciones inválidas de rango o permisos se rechazan", async () => {
+    expect(
+      (await staffPost(staffRequest({}, "https://example.invalid"), "qa"))
+        .status,
+    ).toBe(403);
+    expect((await staffPost(staffRequest(), "otra")).status).toBe(403);
+    expect(
+      (await staffPost(staffRequest({}, origin, ["*", "staff.manage"]), "qa"))
+        .status,
+    ).toBe(400);
+    expect(
+      (
+        await staffPost(
+          staffRequest({ rank: "principal" }, origin, ["attendance"]),
+          "qa",
+        )
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await staffPost(
+          staffRequest({}, origin, ["certificates", "certificates.approve"]),
+          "qa",
+        )
+      ).status,
+    ).toBe(400);
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it("una secretaria con Matrículas solo puede enviar acciones de Matrículas", async () => {
+    delegated(["enrollments"]);
+    expect((await staffPost(staffRequest(), "qa")).status).toBe(403);
+    expect((await academicPost(request(), "qa")).status).toBe(403);
+    expect((await academicPdf("qa", id)).status).toBe(403);
+    expect(mocks.create).not.toHaveBeenCalled();
+    const response = await academicPost(
+      new Request(origin + "/o/qa/acciones", {
+        method: "POST",
+        headers: { origin },
+        body: new URLSearchParams({
+          action: "enrollment",
+          course_id: id,
+          membership_id: id,
+        }),
+      }),
+      "qa",
+    );
+    expect(response.status).toBe(303);
+    expect(mocks.mutate).toHaveBeenCalledExactlyOnceWith(
+      { synthetic: true },
+      org,
+      expect.objectContaining({ kind: "enrollment" }),
+    );
+  });
+  it("Materiales permite la descarga protegida sin otorgar gestión de personal", async () => {
+    delegated(["materials"]);
+    expect((await academicPdf("qa", id)).status).toBe(200);
+    expect(mocks.pdf).toHaveBeenCalledExactlyOnceWith(
+      { synthetic: true },
+      org,
+      id,
+    );
+    expect((await staffPost(staffRequest(), "qa")).status).toBe(403);
+  });
+  it("un administrador principal aal1 no puede gestionar personal", async () => {
+    const s = session();
+    s.identity = { ...s.identity!, assuranceLevel: "aal1" };
+    mocks.session.mockResolvedValue(s);
+    expect((await staffPost(staffRequest(), "qa")).status).toBe(403);
+    expect(mocks.create).not.toHaveBeenCalled();
   });
 });

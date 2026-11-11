@@ -56,12 +56,12 @@ export async function securitySuite(db) {
       rev,
       JSON.stringify(patch),
     ]);
-  await test("14 tablas públicas y RLS habilitada", async () => {
+  await test("15 tablas públicas y RLS habilitada", async () => {
     assert.equal(
       await scalar(
         "select count(*)::int from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and c.relrowsecurity",
       ),
-      14,
+      15,
     );
   });
   await test("Roles ordinarios sin BYPASSRLS ni superuser", async () => {
@@ -356,16 +356,16 @@ export async function securitySuite(db) {
     );
     assert.equal(await version("courses"), rev + 1);
   });
-  await test("Matrícula ajena al tenant falla con FK compuesta", async () => {
+  await test("Una matrícula ajena al tenant se bloquea por RLS y por FK compuesta", async () => {
+    const insert = () =>
+      q(
+        "insert into public.enrollments(organization_id,course_id,membership_id,enrolled_at) values($1,$2,$3,now())",
+        [ids.orgA, ids.courseA, ids.memberStudentB],
+      );
     await actor(ids.authAdminA, "aal2");
-    await errorCode(
-      () =>
-        q(
-          "insert into public.enrollments(organization_id,course_id,membership_id,enrolled_at) values($1,$2,$3,now())",
-          [ids.orgA, ids.courseA, ids.memberStudentB],
-        ),
-      "23503",
-    );
+    await errorCode(insert, "42501");
+    await owner();
+    await errorCode(insert, "23503");
   });
   await test("No se duplican matrículas", async () => {
     await actor(ids.authAdminA, "aal2");

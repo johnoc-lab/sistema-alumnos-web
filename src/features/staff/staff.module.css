@@ -1,0 +1,62 @@
+.filters,
+.form,
+.actions {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.filters {
+  grid-template-columns: minmax(12rem, 2fr) repeat(2, minmax(8rem, 1fr)) auto;
+  align-items: end;
+  margin-block: 1rem;
+}
+
+.form {
+  max-inline-size: 38rem;
+  margin-block: 0.75rem;
+}
+
+.form p {
+  margin: 0;
+}
+
+.filters label,
+.form label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.form button {
+  justify-self: start;
+}
+
+.permissions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.5rem 0.75rem;
+  min-inline-size: 0;
+}
+
+.form label.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.checkbox input {
+  margin: 0;
+}
+
+.actions {
+  min-inline-size: 12rem;
+}
+
+@media (max-width: 700px) {
+  .filters {
+    grid-template-columns: 1fr;
+  }
+
+  .filters button {
+    justify-self: start;
+  }
+}

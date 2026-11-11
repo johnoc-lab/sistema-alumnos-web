@@ -2,10 +2,18 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { authConfig, noStoreHeaders } from "@/lib/supabase/config";
 import { sameOriginPost, readFields } from "@/lib/auth/security";
+import {
+  hasStaffPermission,
+  staffSectionPermission,
+} from "@/lib/authorization/staff";
+import { authorizeOrganization } from "@/lib/authorization/access";
 import { organizationAccess } from "@/lib/auth/access.server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { parseAcademicForm, errorNotice, sectionFor, uuid } from "./forms";
-import { isScheduleAction, scheduleMutation } from "@/features/schedule/schedule.server";
+import {
+  isScheduleAction,
+  scheduleMutation,
+} from "@/features/schedule/schedule.server";
 import { mutateAcademic, privatePdf } from "./data.server";
 const failure = (status: number) =>
   NextResponse.json(
@@ -18,7 +26,7 @@ export async function academicPost(request: Request, slug: string) {
   if (!sameOriginPost(request, config.origin)) return failure(403);
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) || slug.length > 100)
     return failure(400);
-  const access = await organizationAccess(slug, "admin");
+  const access = await organizationAccess(slug, "admin", "overview");
   if (!access.allowed || !access.membership)
     return failure(access.session.status === "anonymous" ? 401 : 403);
   let section = "admin";
@@ -33,18 +41,33 @@ export async function academicPost(request: Request, slug: string) {
       enrollment: "matriculas",
       material: "materiales",
       announcement: "avisos",
-      event: "calendario",
-      "event-attendees": "calendario",
+      event: "horario",
+      "event-attendees": "horario",
       attendance: "asistencia",
       "attendance-batch": "asistencia",
     };
     const submitted = fields.get("action") ?? "";
-    if (isScheduleAction(submitted))
-      return scheduleMutation(submitted, fields, access.membership.organizationId);
-    if (Object.hasOwn(destinations, submitted))
+    if (isScheduleAction(submitted)) {
+      if (!hasStaffPermission(access.membership, "schedule"))
+        return failure(403);
+      return scheduleMutation(
+        submitted,
+        fields,
+        access.membership.organizationId,
+      );
+    }
+    if (Object.hasOwn(destinations, submitted)) {
       section = "admin/" + destinations[submitted];
+      if (
+        !hasStaffPermission(access.membership, staffSectionPermission(section))
+      )
+        return failure(403);
+    }
     const command = parseAcademicForm(fields);
-    section = "admin/" + sectionFor(command.kind);
+    section =
+      "admin/" + (destinations[command.kind] ?? sectionFor(command.kind));
+    if (!hasStaffPermission(access.membership, staffSectionPermission(section)))
+      return failure(403);
     if (
       command.kind === "attendance-batch" &&
       uuid(fields.get("course_id") ?? "")
@@ -61,7 +84,14 @@ export async function academicPost(request: Request, slug: string) {
   }
   return NextResponse.redirect(
     new URL(
-      "/o/" + slug + "/" + section + query + (query ? "&" : "?") + "notice=" + notice,
+      "/o/" +
+        slug +
+        "/" +
+        section +
+        query +
+        (query ? "&" : "?") +
+        "notice=" +
+        notice,
       config.origin,
     ),
     { status: 303, headers: noStoreHeaders },
@@ -70,10 +100,24 @@ export async function academicPost(request: Request, slug: string) {
 export async function academicPdf(slug: string, id: string) {
   if (!authConfig()) return failure(503);
   if (!uuid(id)) return failure(404);
-  let access = await organizationAccess(slug, "student");
-  if (access.allowed && access.membership?.role === "admin")
-    access = await organizationAccess(slug, "admin");
-  if (!access.allowed || !access.membership) return failure(403);
+  const access = await organizationAccess(slug, "member");
+  if (
+    !access.allowed ||
+    !access.membership ||
+    access.session.status !== "authenticated"
+  )
+    return failure(403);
+  if (
+    access.membership.role === "admin" &&
+    !authorizeOrganization(
+      access.session.identity,
+      access.membership,
+      access.membership.organizationId,
+      "admin",
+      "materials",
+    ).allowed
+  )
+    return failure(403);
   try {
     const file = await privatePdf(
       await createServerSupabaseClient(),

@@ -3,6 +3,7 @@ import { PageHeading } from "@/components/ui/primitives";
 import { AcademicShell } from "@/features/academic/shell";
 import { noticeText } from "@/features/academic/forms";
 import { ProtectedModule } from "@/features/auth/components/protected-module";
+import { hasStaffPermission } from "@/lib/authorization/staff";
 import { organizationAccess } from "@/lib/auth/access.server";
 import { ScheduleBoard } from "./schedule-board";
 import { loadSchedule, scheduleQuery } from "./schedule.server";
@@ -43,7 +44,7 @@ export async function SchedulePage({
   const role = admin ? "admin" : "student";
   const title = admin ? "Horario" : "Mi horario";
   const section = admin ? "admin/horario" : "dashboard/horario";
-  const access = await organizationAccess(slug, role);
+  const access = await organizationAccess(slug, role, "schedule");
   if (!access.allowed || !access.membership)
     return (
       <ProtectedModule
@@ -72,6 +73,7 @@ export async function SchedulePage({
       name={access.membership.name}
       admin={admin}
       section={section}
+      membership={access.membership}
     >
       <PageHeading
         eyebrow={admin ? "ADMINISTRACIÓN" : "ESPACIO DEL ALUMNO"}
@@ -85,6 +87,9 @@ export async function SchedulePage({
       <ScheduleBoard
         slug={slug}
         admin={admin}
+        canOpenAttendance={
+          admin && hasStaffPermission(access.membership, "attendance")
+        }
         initialQuery={query}
         initialData={data}
         initialNotice={notice}
