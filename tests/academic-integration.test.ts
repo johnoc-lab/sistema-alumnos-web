@@ -222,8 +222,8 @@ it("formularios → adaptador de aplicación → SQL real: taller, matrícula, e
       course_id: course.id,
       title: "Guía del taller",
       status: "published",
-      source: "link",
-      external_url: "https://docs.google.com/document/d/qa-sintetico",
+      source: "links",
+      class_url: "https://meet.google.com/qa-sintetico",
     });
     await submit({
       action: "announcement",

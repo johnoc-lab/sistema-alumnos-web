@@ -1159,6 +1159,26 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
+      prepare_announcement_media: {
+        Args: {
+          p_organization_id: string;
+          p_course_id: string;
+          p_purpose: string;
+          p_original_name: string;
+          p_mime_type: string;
+          p_size_bytes: number;
+        };
+        Returns: Json;
+      };
+      finalize_announcement_media: {
+        Args: {
+          p_organization_id: string;
+          p_asset_id: string;
+          p_size_bytes: number;
+          p_sha256: string;
+        };
+        Returns: undefined;
+      };
       create_schedule_sessions: {
         Args: {
           p_org: string;

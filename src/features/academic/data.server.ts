@@ -333,7 +333,7 @@ export async function mutateAcademic(
       };
       if (c.id) {
         const original = checked(
-          await (client as any)
+          await client
             .from("announcements")
             .select("published_at")
             .eq("organization_id", org)
@@ -370,7 +370,7 @@ export async function mutateAcademic(
         } else checked(result);
       } else
         {
-          const result = await (client as any)
+          const result = await client
             .from("announcements")
             .insert({
               organization_id: org,

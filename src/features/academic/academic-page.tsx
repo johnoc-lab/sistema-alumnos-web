@@ -586,7 +586,7 @@ function MaterialForm({
       <StatusInput options={states.content} current={item?.status ?? "draft"} />
       <MaterialSourceFields
         initial={item?.file_asset_id ? "pdf" : "links"}
-        pdfContent={<AnnouncementMediaPicker slug={slug} kind="pdf" courseId={item?.course_id} initialAssetId={item?.file_asset_id} />}
+        pdfContent={<AnnouncementMediaPicker slug={slug} kind="pdf" {...(item ? { courseId: item.course_id } : {})} initialAssetId={item?.file_asset_id ?? null} />}
         linksContent={<div className={css.materialLinkFields}>
           <Field label="Clase en vivo · Meet o Zoom"><input type="url" name="class_url" maxLength={2000} defaultValue={item?.class_url ?? item?.external_url ?? ""} placeholder="https://meet.google.com/... o zoom.us/..." /></Field>
           <Field label="Clase grabada"><input type="url" name="recording_url" maxLength={2000} defaultValue={item?.recording_url ?? ""} placeholder="Enlace a la grabación" /></Field>
@@ -680,8 +680,8 @@ function AnnouncementForm({
           defaultValue={item?.body}
         />
       </Field>
-      <AnnouncementMediaPicker slug={slug} kind="image" courseId={item?.course_id} initialAssetId={item?.image_asset_id} />
-      <AnnouncementMediaPicker slug={slug} kind="video" courseId={item?.course_id} initialAssetId={item?.video_asset_id} />
+      <AnnouncementMediaPicker slug={slug} kind="image" {...(item ? { courseId: item.course_id } : {})} initialAssetId={item?.image_asset_id ?? null} />
+      <AnnouncementMediaPicker slug={slug} kind="video" {...(item ? { courseId: item.course_id } : {})} initialAssetId={item?.video_asset_id ?? null} />
       <Save disabled={!data.courses.length} />
     </BaseForm>
   );
@@ -749,8 +749,8 @@ function Announcements({
           <p>{a.body}</p>
           <AnnouncementMedia
             slug={slug}
-            imageAssetId={a.image_asset_id}
-            videoAssetId={a.video_asset_id}
+            imageAssetId={a.image_asset_id ?? null}
+            videoAssetId={a.video_asset_id ?? null}
             title={a.title}
           />
           {admin && (

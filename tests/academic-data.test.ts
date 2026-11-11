@@ -63,13 +63,17 @@ describe("adaptador académico con SDK simulado", () => {
     const db = fake();
     const data = await loadAcademic(db.client, org);
     expect(data.courses).toEqual([]);
-    expect(db.calls).toHaveLength(7);
+    expect(db.calls).toHaveLength(9);
     for (const c of db.calls) {
       expect(c.methods).toContainEqual({
         name: "eq",
         args: ["organization_id", org],
       });
-      expect(c.methods).toContainEqual({ name: "limit", args: [500] });
+      const expectedLimit =
+        c.table === "calendar_event_attendees" || c.table === "attendance_records"
+          ? 2000
+          : 500;
+      expect(c.methods).toContainEqual({ name: "limit", args: [expectedLimit] });
     }
   });
   it("una consulta fallida no se representa como un estado vacío", async () => {
@@ -253,7 +257,7 @@ describe("adaptador académico con SDK simulado", () => {
       args: ["status", "ready"],
     });
   });
-  it("publica un enlace sin generar un archivo ni alojar video", async () => {
+  it("publica los enlaces de materiales en sus campos separados", async () => {
     const db = fake([{ data: { id }, error: null }]);
     await mutateAcademic(
       db.client,
@@ -263,8 +267,10 @@ describe("adaptador académico con SDK simulado", () => {
         course_id: id,
         title: "Video",
         status: "published",
-        source: "link",
-        external_url: "https://youtu.be/qa",
+        source: "links",
+        class_url: "https://meet.google.com/qa-clase",
+        recording_url: "https://youtu.be/qa",
+        help_url: "https://www.youtube.com/watch?v=ayuda-qa",
       }),
     );
     expect(db.calls[1]?.methods).toContainEqual({
@@ -275,7 +281,10 @@ describe("adaptador académico con SDK simulado", () => {
           course_id: id,
           title: "Video",
           status: "published",
-          external_url: "https://youtu.be/qa",
+          external_url: null,
+          class_url: "https://meet.google.com/qa-clase",
+          recording_url: "https://youtu.be/qa",
+          help_url: "https://www.youtube.com/watch?v=ayuda-qa",
           file_asset_id: null,
         },
       ],

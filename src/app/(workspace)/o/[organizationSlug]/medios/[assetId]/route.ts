@@ -12,17 +12,17 @@ export async function GET(_request: Request, { params }: { params: Promise<{ org
   const access = admin.allowed ? admin : student;
   if (!access?.allowed || !access.membership) return new NextResponse(null, { status: 404, headers: noStoreHeaders });
   const client = await createServerSupabaseClient();
-  const { data: asset, error } = await (client as any).from("file_assets")
+  const { data: asset, error } = await client.from("file_assets")
     .select("bucket_name,object_path,purpose,status,mime_type")
     .eq("organization_id", access.membership.organizationId).eq("id", assetId).maybeSingle();
   if (error || !asset || asset.status !== "ready" || !["announcement_image", "announcement_video"].includes(asset.purpose))
     return new NextResponse(null, { status: 404, headers: noStoreHeaders });
   const { data, error: signedError } = await client.storage.from(asset.bucket_name).createSignedUrl(asset.object_path, 300);
   if (signedError || !data?.signedUrl) return new NextResponse(null, { status: 404, headers: noStoreHeaders });
-  const upstream = await fetch(data.signedUrl, {
-    cache: "no-store",
-    headers: _request.headers.get("range") ? { range: _request.headers.get("range")! } : undefined,
-  });
+  const range = _request.headers.get("range");
+  const requestInit: RequestInit = { cache: "no-store" };
+  if (range) requestInit.headers = { range };
+  const upstream = await fetch(data.signedUrl, requestInit);
   if (!upstream.ok && upstream.status !== 206 && upstream.status !== 416)
     return new NextResponse(null, { status: 404, headers: noStoreHeaders });
   const headers = new Headers(noStoreHeaders);
