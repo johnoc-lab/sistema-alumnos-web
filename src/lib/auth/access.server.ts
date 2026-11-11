@@ -2,9 +2,14 @@ import "server-only";
 import { readSession } from "./session.server";
 import {
   authorizeOrganization,
-  type OrganizationRole,
+  type OrganizationAccessRole,
 } from "@/lib/authorization/access";
-export async function organizationAccess(slug: string, role: OrganizationRole) {
+import type { StaffRequirement } from "@/lib/authorization/staff";
+export async function organizationAccess(
+  slug: string,
+  role: OrganizationAccessRole,
+  permission?: StaffRequirement,
+) {
   const session = await readSession();
   if (session.status !== "authenticated")
     return { session, allowed: false as const, reason: session.status };
@@ -14,6 +19,7 @@ export async function organizationAccess(slug: string, role: OrganizationRole) {
     membership ?? null,
     membership?.organizationId ?? "",
     role,
+    permission,
   );
   return { session, ...decision, membership };
 }

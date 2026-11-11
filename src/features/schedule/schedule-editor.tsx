@@ -32,6 +32,7 @@ const weekdays = [
 
 export function ScheduleEditor({
   panel,
+  canOpenAttendance,
   admin,
   slug,
   courses,
@@ -40,6 +41,7 @@ export function ScheduleEditor({
   onSaved,
 }: {
   panel: SchedulePanel;
+  canOpenAttendance: boolean;
   admin: boolean;
   slug: string;
   courses: ScheduleData["courses"];
@@ -225,7 +227,7 @@ export function ScheduleEditor({
                     Programar
                   </button>
                 )}
-                {panel.session.status === "scheduled" && (
+                {canOpenAttendance && panel.session.status === "scheduled" && (
                   <Link
                     href={
                       "/o/" +

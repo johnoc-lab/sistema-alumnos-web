@@ -2,11 +2,11 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 export const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
-export async function migrate(db) {
+export async function migrate(db, before) {
   const migrations = (
     await readdir(path.join(projectRoot, "supabase/migrations"))
   )
-    .filter((f) => f.endsWith(".sql"))
+    .filter((f) => f.endsWith(".sql") && (!before || f < before))
     .sort();
   for (const name of migrations) {
     try {
@@ -24,7 +24,9 @@ export async function migrate(db) {
 }
 export async function createEmbedded() {
   const { PGlite } = await import("@electric-sql/pglite");
-  const { btree_gist } = await import("@electric-sql/pglite/contrib/btree_gist");
+  const { btree_gist } = await import(
+    "@electric-sql/pglite/contrib/btree_gist"
+  );
   const db = new PGlite({ extensions: { btree_gist } });
   await db.exec(
     await readFile(

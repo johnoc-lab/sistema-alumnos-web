@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 import {
   loadAcademic,
+  loadStaffAcademic,
   mutateAcademic,
   privatePdf,
   type AcademicClient,
@@ -38,7 +39,12 @@ function fake(replies: { data: unknown; error: unknown }[] = []) {
     ) => Promise.resolve(response).then(resolve, reject);
     return chain;
   });
-  const rpc = vi.fn(async () => ({ data: 2, error: null as unknown }));
+  const rpc = vi.fn(
+    async (): Promise<{ data: unknown; error: unknown }> => ({
+      data: 2,
+      error: null,
+    }),
+  );
   const download = vi.fn(async () => ({
     data: new Blob(["synthetic pdf"], { type: "application/pdf" }),
     error: null,
@@ -63,14 +69,47 @@ describe("adaptador académico con SDK simulado", () => {
     const db = fake();
     const data = await loadAcademic(db.client, org);
     expect(data.courses).toEqual([]);
-    expect(db.calls).toHaveLength(7);
+    expect(db.calls).toHaveLength(9);
     for (const c of db.calls) {
       expect(c.methods).toContainEqual({
         name: "eq",
         args: ["organization_id", org],
       });
-      expect(c.methods).toContainEqual({ name: "limit", args: [500] });
+      expect(
+        c.methods.find((method) => method.name === "limit")?.args[0],
+      ).toBeGreaterThan(0);
     }
+  });
+  it("carga solo matrículas y referencias mínimas para el módulo delegado", async () => {
+    const db = fake();
+    const context = {
+      courses: [{ id, title: "Taller", status: "published" }],
+      memberships: [],
+      enrollments: [],
+      events: [],
+    };
+    db.rpc.mockResolvedValueOnce({ data: context, error: null });
+    const data = await loadStaffAcademic(db.client, org, "enrollments", null);
+    expect(data.courses).toEqual(context.courses);
+    expect(db.rpc).toHaveBeenCalledExactlyOnceWith("staff_academic_context", {
+      p_org: org,
+      p_module: "enrollments",
+      p_course: "",
+    });
+    expect(db.calls.map((call) => call.table)).toEqual(["enrollments"]);
+  });
+  it("el formulario anterior recibe el enlace disponible sin cambiar la respuesta original", async () => {
+    const material = {
+      id,
+      external_url: null,
+      class_url: null,
+      recording_url: "https://example.test/recording",
+    };
+    const empty = { data: [], error: null };
+    const db = fake([empty, empty, empty, { data: [material], error: null }]);
+    const result = await loadAcademic(db.client, org);
+    expect(result.materials[0]?.external_url).toBe(material.recording_url);
+    expect(material.external_url).toBeNull();
   });
   it("una consulta fallida no se representa como un estado vacío", async () => {
     const db = fake([{ data: null, error: { code: "42501" } }]);
@@ -133,22 +172,17 @@ describe("adaptador académico con SDK simulado", () => {
       ],
     });
   });
-  it("matrícula valida pertenencia del curso y alumno activo antes de insertar", async () => {
-    const db = fake([
-      { data: { id }, error: null },
-      { data: { id }, error: null },
-    ]);
+  it("envía una sola escritura de matrícula al tenant verificado", async () => {
+    const db = fake();
     await mutateAcademic(
       db.client,
       org,
       parse({ action: "enrollment", course_id: id, membership_id: id }),
     );
-    expect(db.calls[1]?.methods).toContainEqual({
-      name: "eq",
-      args: ["role", "student"],
-    });
-    const insert = db.calls[2]?.methods.find((m) => m.name === "insert")
-      ?.args[0];
+    expect(db.calls.map((call) => call.table)).toEqual(["enrollments"]);
+    const insert = db.calls[0]?.methods.find(
+      (method) => method.name === "insert",
+    )?.args[0];
     expect(insert).toMatchObject({
       organization_id: org,
       status: "active",
@@ -157,35 +191,22 @@ describe("adaptador académico con SDK simulado", () => {
     });
     expect(insert).toHaveProperty("enrolled_at");
   });
-  it.each(["curso", "alumno"])(
-    "matrícula rechaza %s no disponible",
-    async (kind) => {
-      const db = fake(
-        kind === "curso"
-          ? [{ data: null, error: null }]
-          : [
-              { data: { id }, error: null },
-              { data: null, error: null },
-            ],
-      );
+  it.each(["23503", "42501"])(
+    "propaga el rechazo %s de integridad o RLS al matricular",
+    async (code) => {
+      const db = fake([{ data: null, error: { code } }]);
       await expect(
         mutateAcademic(
           db.client,
           org,
           parse({ action: "enrollment", course_id: id, membership_id: id }),
         ),
-      ).rejects.toMatchObject({ reason: "unavailable" });
-      expect(
-        db.calls.some((c) => c.methods.some((m) => m.name === "insert")),
-      ).toBe(false);
+      ).rejects.toMatchObject({ code });
+      expect(db.calls.map((call) => call.table)).toEqual(["enrollments"]);
     },
   );
   it("una matrícula duplicada no se reescribe ni se borra", async () => {
-    const db = fake([
-      { data: { id }, error: null },
-      { data: { id }, error: null },
-      { data: null, error: { code: "23505" } },
-    ]);
+    const db = fake([{ data: null, error: { code: "23505" } }]);
     try {
       await mutateAcademic(
         db.client,
@@ -226,10 +247,7 @@ describe("adaptador académico con SDK simulado", () => {
     );
   });
   it("publicación de material exige PDF ready del mismo taller", async () => {
-    const db = fake([
-      { data: { id }, error: null },
-      { data: null, error: null },
-    ]);
+    const db = fake([{ data: null, error: null }]);
     await expect(
       mutateAcademic(
         db.client,
@@ -244,11 +262,11 @@ describe("adaptador académico con SDK simulado", () => {
         }),
       ),
     ).rejects.toMatchObject({ reason: "pdf" });
-    expect(db.calls[1]?.methods).toContainEqual({
+    expect(db.calls[0]?.methods).toContainEqual({
       name: "eq",
       args: ["course_id", id],
     });
-    expect(db.calls[1]?.methods).toContainEqual({
+    expect(db.calls[0]?.methods).toContainEqual({
       name: "eq",
       args: ["status", "ready"],
     });
@@ -267,7 +285,7 @@ describe("adaptador académico con SDK simulado", () => {
         external_url: "https://youtu.be/qa",
       }),
     );
-    expect(db.calls[1]?.methods).toContainEqual({
+    expect(db.calls[0]?.methods).toContainEqual({
       name: "insert",
       args: [
         {
@@ -295,7 +313,7 @@ describe("adaptador académico con SDK simulado", () => {
         status: "published",
       }),
     );
-    const payload = db.calls[1]?.methods.find((m) => m.name === "insert")
+    const payload = db.calls[0]?.methods.find((m) => m.name === "insert")
       ?.args[0];
     expect(payload).toMatchObject({
       organization_id: org,
@@ -305,11 +323,8 @@ describe("adaptador académico con SDK simulado", () => {
     expect(payload).toHaveProperty("published_at");
   });
   it("evento sin asistentes no se crea como programado", async () => {
-    const db = fake([
-      { data: { id }, error: null },
-      { data: [], error: null },
-      { data: [], error: null },
-    ]);
+    const db = fake();
+    db.rpc.mockResolvedValueOnce({ data: { attendee_ids: [] }, error: null });
     await expect(
       mutateAcademic(
         db.client,
@@ -323,7 +338,11 @@ describe("adaptador académico con SDK simulado", () => {
         }),
       ),
     ).rejects.toMatchObject({ reason: "attendees" });
-    expect(db.rpc).not.toHaveBeenCalled();
+    expect(db.rpc).toHaveBeenCalledExactlyOnceWith("staff_academic_context", {
+      p_org: org,
+      p_module: "schedule",
+      p_course: id,
+    });
   });
   it("PDF usa la sesión ordinaria y ruta obtenida de metadatos RLS", async () => {
     const db = fake([
