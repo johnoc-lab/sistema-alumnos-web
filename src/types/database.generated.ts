@@ -1144,6 +1144,19 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
+      cancel_staff_registration: {
+        Args: { p_org: string; p_registration: string };
+        Returns: string;
+      };
+      claim_staff_activation: {
+        Args: {
+          p_identifier: string;
+          p_digest: string;
+          p_claim: string;
+          p_network: string;
+        };
+        Returns: Json;
+      };
       create_schedule_sessions: {
         Args: {
           p_org: string;
@@ -1163,6 +1176,19 @@ export type Database = {
           p_membership_ids: string[];
         };
         Returns: string;
+      };
+      finish_staff_activation: {
+        Args: { p_registration: string; p_claim: string; p_rejected: boolean };
+        Returns: boolean;
+      };
+      issue_staff_activation: {
+        Args: {
+          p_org: string;
+          p_registration: string;
+          p_actor: string;
+          p_digest: string;
+        };
+        Returns: boolean;
       };
       link_staff: {
         Args: {
@@ -1194,6 +1220,19 @@ export type Database = {
         };
         Returns: number;
       };
+      reserve_staff_registration: {
+        Args: {
+          p_org: string;
+          p_actor: string;
+          p_aal: string;
+          p_identifier: string;
+          p_first_name: string;
+          p_last_name: string;
+          p_rank: string;
+          p_modules: string[];
+        };
+        Returns: string;
+      };
       set_attendance: {
         Args: {
           p_organization_id: string;
@@ -1222,6 +1261,10 @@ export type Database = {
       };
       staff_academic_context: {
         Args: { p_org: string; p_module: string; p_course: string };
+        Returns: Json;
+      };
+      staff_registration_delivery: {
+        Args: { p_org: string; p_registration: string };
         Returns: Json;
       };
       update_announcement: {

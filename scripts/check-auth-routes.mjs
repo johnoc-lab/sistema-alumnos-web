@@ -22,6 +22,7 @@ for (const path of [
   "/auth/recuperar",
   "/auth/confirm",
   "/auth/actualizar-password",
+  "/auth/activar-personal",
   "/auth/mfa",
   "/o/impulso/admin",
   "/seleccionar-organizacion",
@@ -41,6 +42,7 @@ for (const path of [
   "mfa/challenge",
   "mfa/verify",
   "mfa/cancel",
+  "activar-personal/acciones",
 ]) {
   const r = await local("/auth/" + path, {
     method: "POST",
@@ -58,6 +60,7 @@ const callback = await local(
 assert.equal(callback.status, 303);
 assert(!callback.headers.get("location")?.includes("evil.test"));
 assert.equal((await local("/auth/logout")).status, 405);
+assert.equal((await local("/auth/activar-personal/acciones")).status, 405);
 for (const action of ["enroll", "challenge", "verify", "cancel"])
   assert.equal((await local("/auth/mfa/" + action)).status, 405);
 const demo = await local("/demo");

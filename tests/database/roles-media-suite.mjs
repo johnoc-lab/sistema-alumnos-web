@@ -159,6 +159,15 @@ try {
   });
   const beforeContent = await readContent();
   await db.exec(roles);
+  await db.exec(
+    await readFile(
+      new URL(
+        "../../supabase/migrations/20261112120000_staff_registration.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
   assert.deepEqual(await mediaSecurity(db), beforeSecurity);
   assert.deepEqual(await readContent(), beforeContent);
   assert.equal(
