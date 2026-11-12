@@ -40,8 +40,19 @@ function fake(replies: { data: unknown; error: unknown }[] = []) {
     return chain;
   });
   const rpc = vi.fn(
-    async (): Promise<{ data: unknown; error: unknown }> => ({
-      data: 2,
+    async (
+      name: string,
+      args?: Record<string, unknown>,
+    ): Promise<{ data: unknown; error: unknown }> => ({
+      data: name === "staff_academic_context"
+        ? {
+            courses: [{ id: args?.p_course, title: "QA", status: "published" }],
+            memberships: [],
+            enrollments: [],
+            events: [],
+            attendee_ids: [],
+          }
+        : 2,
       error: null,
     }),
   );

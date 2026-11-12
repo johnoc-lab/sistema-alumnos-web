@@ -230,6 +230,12 @@ async function loadModuleContext(
   ) as unknown as ModuleContext;
 }
 
+async function courseExists(client: AcademicClient, org: string, id: string) {
+  const context = await loadModuleContext(client, org, "announcements", id);
+  if (!context.courses.some((course) => course.id === id))
+    throw new AcademicError("unavailable");
+}
+
 export async function loadStaffAcademic(
   client: AcademicClient,
   org: string,
@@ -444,13 +450,16 @@ export async function mutateAcademic(
         );
       break;
     }
-   case "announcement": {
+    case "announcement": {
       await courseExists(client, org, c.course_id);
-      const patch = {
+      const legacyPatch = {
         title: c.title,
         body: c.body,
         status: c.status,
         published_at: c.status === "published" ? now() : null,
+      };
+      const patch = {
+        ...legacyPatch,
         image_url: null,
         video_url: null,
         image_asset_id: c.image_asset_id,
