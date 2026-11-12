@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run lint && npm run typecheck && npm run test && npm run db:test && npm run db:test:preflight && npm run db:types:check && npm run build",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run db:test && npm run db:test:preflight && npm run db:types:check && npm run db:test:staff && npm run build",
     "check:routes": "node scripts/check-routes.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -28,7 +28,8 @@
     "db:types:check": "node scripts/database/generate-types.mjs --check",
     "db:test:preflight": "node scripts/database/test-preflight.mjs",
     "check:auth-routes": "node scripts/check-auth-routes.mjs",
-    "db:test:academic": "node scripts/database/test-academic.mjs"
+    "db:test:academic": "node scripts/database/test-academic.mjs",
+    "db:test:staff": "node tests/database/staff-suite.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

@@ -16,6 +16,7 @@ vi.mock("@/lib/supabase/server", () => ({
 vi.mock("@/features/academic/data.server", () => ({
   loadAcademic: mocks.load,
 }));
+import { StaffPage } from "@/features/staff/staff-page";
 import { AcademicView, AcademicPage } from "@/features/academic/academic-page";
 import { ProtectedModule } from "@/features/auth/components/protected-module";
 import type { AcademicData } from "@/features/academic/data.server";
@@ -151,7 +152,12 @@ describe("vistas académicas", () => {
   it("fallo de consulta presenta error, nunca una lista vacía simulada", async () => {
     mocks.access.mockResolvedValue({
       allowed: true,
-      membership: { organizationId: "org-a", name: "QA" },
+      membership: {
+        organizationId: "org-a",
+        name: "QA",
+        staffRank: "principal",
+        allowedModules: [],
+      },
       session: {
         status: "authenticated",
         identity: { profileId: "profile-a" },
@@ -236,7 +242,12 @@ describe("recorrido y presentación académica", () => {
       expect(html).toContain("/o/qa/admin/" + path);
     mocks.access.mockResolvedValue({
       allowed: true,
-      membership: { organizationId: "org-a", name: "QA" },
+      membership: {
+        organizationId: "org-a",
+        name: "QA",
+        staffRank: "principal",
+        allowedModules: [],
+      },
       session: {
         status: "authenticated",
         identity: { profileId: "profile-a" },
@@ -257,7 +268,12 @@ describe("recorrido y presentación académica", () => {
   it("errores se muestran como alerta sin imprimir mensajes del proveedor", async () => {
     mocks.access.mockResolvedValue({
       allowed: true,
-      membership: { organizationId: "org-a", name: "QA" },
+      membership: {
+        organizationId: "org-a",
+        name: "QA",
+        staffRank: "principal",
+        allowedModules: [],
+      },
       session: {
         status: "authenticated",
         identity: { profileId: "profile-a" },
@@ -273,5 +289,106 @@ describe("recorrido y presentación académica", () => {
     );
     expect(html).toContain('role="alert"');
     expect(html).toContain("Ya existe ese taller o matrícula");
+  });
+});
+
+describe("vista de Administradores y navegación delegada", () => {
+  const member = {
+    organizationId: "org-a",
+    name: "QA",
+    staffRank: "principal",
+    allowedModules: [],
+  };
+  const grant = (membership = member) =>
+    mocks.access.mockResolvedValue({
+      allowed: true,
+      membership,
+      session: {
+        status: "authenticated",
+        identity: { profileId: "profile-a" },
+      },
+    });
+  it("la lista de personal se consulta solo para el principal y permite filtrar", async () => {
+    grant();
+    const rpc = vi.fn().mockResolvedValue({
+      error: null,
+      data: {
+        pending: [
+          {
+            id: "assignment",
+            name: "Cuenta nueva",
+            identifier: "u-nueva@cuentas.sistema-alumnos.invalid",
+          },
+        ],
+        staff: [
+          {
+            id: "admin",
+            name: "Principal QA",
+            identifier: "u-qa",
+            rank: "principal",
+            status: "active",
+            self: true,
+            modules: [],
+            version: 1,
+          },
+          {
+            id: "secretary",
+            name: "Secretaría <QA>",
+            identifier: "u-s",
+            rank: "secretary",
+            status: "suspended",
+            self: false,
+            modules: ["enrollments"],
+            version: 2,
+          },
+        ],
+      },
+    });
+    mocks.create.mockResolvedValue({ rpc });
+    const page = renderToStaticMarkup(
+      await StaffPage({
+        slug: "qa",
+        search: { q: "secretaria", status: "suspended", notice: "stale" },
+      }),
+    );
+    expect(mocks.access).toHaveBeenCalledExactlyOnceWith(
+      "qa",
+      "admin",
+      "staff.manage",
+    );
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("list_staff", {
+      p_org: "org-a",
+    });
+    expect(page).toContain("Secretaría &lt;QA&gt;");
+    expect(page).not.toContain("Principal QA");
+    expect(page).toContain("Cuenta nueva");
+    expect(page).toContain('value="2"');
+    expect(page).toContain("Activar");
+    expect(page).toContain('role="alert"');
+  });
+  it("el rechazo de Administradores no construye cliente de datos", async () => {
+    mocks.access.mockResolvedValue({
+      allowed: false,
+      reason: "module_required",
+      session: { status: "authenticated" },
+    });
+    expect((await StaffPage({ slug: "qa", search: {} })).type).toBe(
+      ProtectedModule,
+    );
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it("la navegación delegada solo enlaza los módulos asignados", async () => {
+    grant({
+      ...member,
+      staffRank: "secretary",
+      allowedModules: ["enrollments"],
+    } as typeof member);
+    const html = renderToStaticMarkup(
+      await AcademicPage({ slug: "qa", section: "admin" }),
+    );
+    expect(html).toContain("/o/qa/admin/matriculas");
+    expect(html).not.toContain("/o/qa/admin/alumnos");
+    expect(html).not.toContain("/o/qa/admin/administradores");
+    expect(mocks.create).not.toHaveBeenCalled();
   });
 });

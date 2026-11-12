@@ -14,6 +14,8 @@ function reader(): IdentityReader {
           profile_id: "profile-a",
           organization_id: "org-a",
           role: "admin",
+          staff_rank: "principal",
+          allowed_modules: [],
           status: "active",
         },
       ]),

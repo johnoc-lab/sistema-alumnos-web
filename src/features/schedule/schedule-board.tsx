@@ -66,12 +66,14 @@ function hourOf(session: ScheduleSession, day: string) {
 export function ScheduleBoard({
   slug,
   admin,
+  canOpenAttendance,
   initialQuery,
   initialData,
   initialNotice,
 }: {
   slug: string;
   admin: boolean;
+  canOpenAttendance: boolean;
   initialQuery: ScheduleQuery;
   initialData: ScheduleData | null;
   initialNotice: string;
@@ -411,6 +413,7 @@ export function ScheduleBoard({
             (panel.kind === "create" ? panel.date : panel.session.id)
           }
           panel={panel}
+          canOpenAttendance={canOpenAttendance}
           admin={admin}
           slug={slug}
           courses={data.courses}

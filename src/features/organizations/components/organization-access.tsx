@@ -1,3 +1,4 @@
+import { staffRanks } from "@/lib/authorization/staff";
 import Link from "next/link";
 import { Building2, ArrowRight, ShieldCheck } from "lucide-react";
 import type { AuthenticatedSession } from "@/lib/auth/resolve";
@@ -48,17 +49,19 @@ export function OrganizationAccess({
                   <OrganizationIdentity slug={m.slug} name={m.name} />
                 </h2>
                 <Badge tone={m.role === "admin" ? "purple" : "green"}>
-                  {m.role === "admin" ? "Administrador" : "Alumno"}
+                  {m.staffRank ? staffRanks[m.staffRank] : "Alumno"}
                 </Badge>
                 <p>
                   {m.role === "admin"
-                    ? "Gestiona alumnos, talleres y contenidos de este espacio."
+                    ? "Entra a las secciones habilitadas en este espacio."
                     : "Consulta tus talleres, materiales, avisos y calendario."}
                 </p>
                 <div className={styles.links}>
-                  <Link href={"/o/" + m.slug + "/dashboard"}>
-                    Dashboard <ArrowRight size={16} aria-hidden="true" />
-                  </Link>
+                  {m.role === "student" && (
+                    <Link href={"/o/" + m.slug + "/dashboard"}>
+                      Dashboard <ArrowRight size={16} aria-hidden="true" />
+                    </Link>
+                  )}
                   {m.role === "admin" && (
                     <Link href={"/o/" + m.slug + "/admin"}>
                       Panel administrativo{needsMfa ? " · requiere MFA" : ""}

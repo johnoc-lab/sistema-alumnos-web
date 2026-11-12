@@ -1,4 +1,12 @@
+import {
+  hasStaffPermission,
+  type StaffPermission,
+  type StaffRank,
+  type StaffRequirement,
+} from "./staff";
+
 export type OrganizationRole = "student" | "admin";
+export type OrganizationAccessRole = OrganizationRole | "member";
 export interface VerifiedIdentity {
   readonly profileId: string;
   readonly authUserId: string;
@@ -11,6 +19,8 @@ export interface VerifiedMembership {
   readonly organizationStatus: "active" | "suspended";
   readonly status: "active" | "suspended" | "invited";
   readonly role: OrganizationRole;
+  readonly staffRank: StaffRank | null;
+  readonly allowedModules: readonly StaffPermission[];
 }
 export type AccessDecision =
   | {
@@ -28,6 +38,8 @@ export type AccessDecision =
         | "organization_mismatch"
         | "inactive_membership"
         | "admin_required"
+        | "student_required"
+        | "module_required"
         | "mfa_required";
     };
 /** Solo admite identidad y membresía previamente verificadas por adaptadores de servidor.
@@ -36,7 +48,8 @@ export function authorizeOrganization(
   identity: VerifiedIdentity | null,
   membership: VerifiedMembership | null,
   organizationId: string,
-  requiredRole: OrganizationRole,
+  requiredRole: OrganizationAccessRole,
+  requirement: StaffRequirement = "staff.manage",
 ): AccessDecision {
   if (!identity) return { allowed: false, reason: "authentication_required" };
   if (identity.status !== "active")
@@ -50,10 +63,14 @@ export function authorizeOrganization(
     membership.organizationStatus !== "active"
   )
     return { allowed: false, reason: "inactive_membership" };
+  if (requiredRole === "student" && membership.role !== "student")
+    return { allowed: false, reason: "student_required" };
   if (requiredRole === "admin" && membership.role !== "admin")
     return { allowed: false, reason: "admin_required" };
   if (requiredRole === "admin" && identity.assuranceLevel !== "aal2")
     return { allowed: false, reason: "mfa_required" };
+  if (requiredRole === "admin" && !hasStaffPermission(membership, requirement))
+    return { allowed: false, reason: "module_required" };
   return {
     allowed: true,
     organizationId,

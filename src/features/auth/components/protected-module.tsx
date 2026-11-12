@@ -2,6 +2,7 @@ import Link from "next/link";
 import campus from "@/components/institutional/campus.module.css";
 import { redirect } from "next/navigation";
 import type { OrganizationRole } from "@/lib/authorization/access";
+import { staffSectionPermission } from "@/lib/authorization/staff";
 import { organizationAccess } from "@/lib/auth/access.server";
 import { AccessPending } from "./access-pending";
 import { LogoutForm } from "./auth-form";
@@ -17,7 +18,11 @@ export async function ProtectedModule({
   title: string;
   section: string;
 }) {
-  const access = await organizationAccess(slug, role);
+  const access = await organizationAccess(
+    slug,
+    role,
+    role === "admin" ? staffSectionPermission(section) : undefined,
+  );
   if (!access.allowed) {
     if (access.session.status === "anonymous")
       redirect(

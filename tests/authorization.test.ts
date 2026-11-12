@@ -16,13 +16,15 @@ const member: VerifiedMembership = {
   organizationStatus: "active",
   status: "active",
   role: "student",
+  staffRank: null,
+  allowedModules: [],
 };
 describe("autorización por organización (dominio, sin proveedor Auth)", () => {
   it("rechaza una membresía incluso Admin cuando falta identidad", () =>
     expect(
       authorizeOrganization(
         null,
-        { ...member, role: "admin" },
+        { ...member, role: "admin", staffRank: "principal" },
         "org-a",
         "admin",
       ),
@@ -49,7 +51,7 @@ describe("autorización por organización (dominio, sin proveedor Auth)", () => 
     expect(
       authorizeOrganization(
         identity,
-        { ...member, role: "admin" },
+        { ...member, role: "admin", staffRank: "principal" },
         "org-b",
         "admin",
       ),
@@ -78,7 +80,7 @@ describe("autorización por organización (dominio, sin proveedor Auth)", () => 
     expect(
       authorizeOrganization(
         { ...identity, assuranceLevel: "aal1" },
-        { ...member, role: "admin" },
+        { ...member, role: "admin", staffRank: "principal" },
         "org-a",
         "admin",
       ),
@@ -87,7 +89,7 @@ describe("autorización por organización (dominio, sin proveedor Auth)", () => 
     expect(
       authorizeOrganization(
         identity,
-        { ...member, role: "admin" },
+        { ...member, role: "admin", staffRank: "principal" },
         "org-a",
         "admin",
       ),

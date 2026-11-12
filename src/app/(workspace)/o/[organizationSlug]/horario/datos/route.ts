@@ -17,6 +17,7 @@ export async function GET(
   const access = await organizationAccess(
     organizationSlug,
     admin ? "admin" : "student",
+    "schedule",
   );
   if (!access.allowed || !access.membership) {
     const status =

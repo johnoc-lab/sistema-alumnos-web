@@ -122,6 +122,8 @@ beforeEach(() => {
                     profile_id: "profile-a",
                     organization_id: "org-a",
                     role: mocks.role,
+                    staff_rank: mocks.role === "admin" ? "principal" : null,
+                    allowed_modules: [],
                     status: "active",
                   },
                 ]

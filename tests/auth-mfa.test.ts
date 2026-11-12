@@ -75,6 +75,8 @@ function candidate(): Extract<SessionResult, { status: "authenticated" }> {
         organizationStatus: "active",
         status: "active",
         role: "admin",
+        staffRank: "principal",
+        allowedModules: [],
         slug: "qa",
         name: "QA",
       },
@@ -245,7 +247,12 @@ describe("MFA: acceso de candidato y overview con SDK simulado", () => {
   ] as const)("rechaza candidato %s sin operaciones MFA", async (kind) => {
     const session = candidate();
     if (kind === "student")
-      session.memberships[0] = { ...session.memberships[0]!, role: "student" };
+      session.memberships[0] = {
+        ...session.memberships[0]!,
+        role: "student",
+        staffRank: null,
+        allowedModules: [],
+      };
     if (kind === "missing-profile") session.identity = null;
     if (kind === "blocked-profile")
       session.identity = { ...session.identity!, status: "blocked" };
@@ -623,7 +630,12 @@ describe("prueba MFA aislada y guard administrativo intacto", () => {
       ),
     ).toEqual({ allowed: false, reason: "mfa_required" });
     session.identity = { ...session.identity!, assuranceLevel: "aal2" };
-    session.memberships[0] = { ...session.memberships[0]!, role: "student" };
+    session.memberships[0] = {
+      ...session.memberships[0]!,
+      role: "student",
+      staffRank: null,
+      allowedModules: [],
+    };
     expect(
       authorizeOrganization(
         session.identity,
@@ -720,7 +732,12 @@ describe("MFA: estado y autorización se revalidan durante el flujo", () => {
   it("alumno aal2 no puede configurar TOTP mediante el handler", async () => {
     const session = candidate();
     session.identity = { ...session.identity!, assuranceLevel: "aal2" };
-    session.memberships[0] = { ...session.memberships[0]!, role: "student" };
+    session.memberships[0] = {
+      ...session.memberships[0]!,
+      role: "student",
+      staffRank: null,
+      allowedModules: [],
+    };
     mocks.session.mockResolvedValue(session);
     mocks.getClaims.mockResolvedValue(claims("aal2"));
     expect((await mfaPost(request("enroll"), "enroll")).status).toBe(403);
@@ -761,7 +778,12 @@ describe("MFA: estado y autorización se revalidan durante el flujo", () => {
     mocks.verify.mockImplementation(async () => {
       mocks.getClaims.mockResolvedValue(claims("aal2"));
       const session = candidate();
-      session.memberships[0] = { ...session.memberships[0]!, role: "student" };
+      session.memberships[0] = {
+        ...session.memberships[0]!,
+        role: "student",
+        staffRank: null,
+        allowedModules: [],
+      };
       mocks.session.mockResolvedValue(session);
       return { data: {}, error: null };
     });
@@ -1110,7 +1132,12 @@ describe("MFA: cancelación explícita de TOTP pendiente", () => {
   ])("deniega %s sin unenroll", async (kind) => {
     const session = candidate();
     if (kind === "student")
-      session.memberships[0] = { ...session.memberships[0]!, role: "student" };
+      session.memberships[0] = {
+        ...session.memberships[0]!,
+        role: "student",
+        staffRank: null,
+        allowedModules: [],
+      };
     if (kind === "perfil_bloqueado")
       session.identity = { ...session.identity!, status: "blocked" };
     if (kind === "sin_perfil") session.identity = null;
@@ -1270,7 +1297,12 @@ describe("MFA enroll: etapas locales sanitizadas", () => {
         mocks.session.mockResolvedValue({ status: "anonymous", user: null });
       if (stage === "authorization") {
         const s = candidate();
-        s.memberships[0] = { ...s.memberships[0]!, role: "student" };
+        s.memberships[0] = {
+          ...s.memberships[0]!,
+          role: "student",
+          staffRank: null,
+          allowedModules: [],
+        };
         mocks.session.mockResolvedValue(s);
       }
       if (stage === "claims")

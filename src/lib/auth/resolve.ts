@@ -1,3 +1,8 @@
+import {
+  isStaffPermission,
+  isStaffRank,
+  validStaffPermissions,
+} from "@/lib/authorization/staff";
 import type {
   VerifiedIdentity,
   VerifiedMembership,
@@ -36,6 +41,8 @@ export interface IdentityReader {
         organization_id: string;
         role: string;
         status: string;
+        staff_rank?: string | null;
+        allowed_modules?: string[];
       }[]
     >
   >;
@@ -92,6 +99,17 @@ export async function resolveSession(
       const org = orgs.data?.find(
         (o) => o.id === m.organization_id && o.status === "active",
       );
+      const staffRank =
+        m.role === "admin" && isStaffRank(m.staff_rank) ? m.staff_rank : null;
+      const allowedModules = m.allowed_modules;
+      if (
+        m.role === "admin" &&
+        (!staffRank ||
+          !Array.isArray(allowedModules) ||
+          !allowedModules.every(isStaffPermission) ||
+          !validStaffPermissions(staffRank, allowedModules))
+      )
+        return [];
       return org
         ? [
             {
@@ -100,6 +118,10 @@ export async function resolveSession(
               organizationStatus: "active",
               status: "active",
               role: m.role as "admin" | "student",
+              staffRank,
+              allowedModules: staffRank
+                ? (allowedModules ?? []).filter(isStaffPermission)
+                : [],
               slug: org.slug,
               name: org.name,
             },

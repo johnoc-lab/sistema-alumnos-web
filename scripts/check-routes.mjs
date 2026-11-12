@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { URLSearchParams } from "node:url";
 const base = process.env.CHECK_BASE_URL || "http://127.0.0.1:3000";
 const origin = new URL(base);
 assert(
@@ -47,6 +48,21 @@ assert.match(
   /data-access-state="unconfigured"/,
 );
 assert.match(await page("/demo"), /data-preview="synthetic"/);
+assert.match(
+  await page("/o/impulso/admin/administradores"),
+  /data-access-state="unconfigured"/,
+);
+const staffAction = await fetch(
+  new URL("/o/impulso/admin/administradores/acciones", origin),
+  {
+    method: "POST",
+    headers: { origin: origin.origin },
+    body: new URLSearchParams({ action: "link" }),
+  },
+);
+assert.equal(staffAction.status, 503);
+assert.match(staffAction.headers.get("cache-control") ?? "", /no-store/);
+checked++;
 for (const slug of ["impulso", "incubadora"]) {
   for (const section of sections) {
     const workspaceSection = section.replace(/\/calendario$/, "/horario");

@@ -1027,6 +1027,8 @@ export type Database = {
           row_version: number;
           created_by_membership_id: string | null;
           updated_by_membership_id: string | null;
+          staff_rank: string | null;
+          allowed_modules: string[];
         };
         Insert: {
           id?: string;
@@ -1044,6 +1046,8 @@ export type Database = {
           row_version?: number;
           created_by_membership_id?: string | null;
           updated_by_membership_id?: string | null;
+          staff_rank?: string | null;
+          allowed_modules?: string[];
         };
         Update: {
           id?: string;
@@ -1061,6 +1065,8 @@ export type Database = {
           row_version?: number;
           created_by_membership_id?: string | null;
           updated_by_membership_id?: string | null;
+          staff_rank?: string | null;
+          allowed_modules?: string[];
         };
         Relationships: [
           {
@@ -1199,6 +1205,16 @@ export type Database = {
         };
         Returns: string;
       };
+      link_staff: {
+        Args: {
+          p_org: string;
+          p_assignment: string;
+          p_rank: string;
+          p_modules: string[];
+          p_status: string;
+        };
+        Returns: string;
+      };
       list_schedule: {
         Args: {
           p_org: string;
@@ -1209,6 +1225,7 @@ export type Database = {
         };
         Returns: Json;
       };
+      list_staff: { Args: { p_org: string }; Returns: Json };
       replace_event_attendees: {
         Args: {
           p_organization_id: string;
@@ -1243,6 +1260,10 @@ export type Database = {
           p_patch: Json;
         };
         Returns: number;
+      };
+      staff_academic_context: {
+        Args: { p_org: string; p_module: string; p_course: string };
+        Returns: Json;
       };
       update_announcement: {
         Args: {
@@ -1327,6 +1348,17 @@ export type Database = {
       };
       update_schedule_session: {
         Args: { p_org: string; p_id: string; p_version: number; p_patch: Json };
+        Returns: number;
+      };
+      update_staff: {
+        Args: {
+          p_org: string;
+          p_membership: string;
+          p_version: number;
+          p_rank: string;
+          p_modules: string[];
+          p_status: string;
+        };
         Returns: number;
       };
       update_student_contact: {
