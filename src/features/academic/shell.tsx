@@ -1,17 +1,17 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import {
-  LayoutDashboard,
-  Users,
-  BookOpen,
-  ClipboardList,
-  ClipboardCheck,
-  FolderOpen,
-  Megaphone,
-  CalendarDays,
-  UserRound,
-  ShieldCheck,
   ArrowLeftRight,
+  BookOpen,
+  CalendarDays,
+  ClipboardCheck,
+  ClipboardList,
+  FolderOpen,
+  LayoutDashboard,
+  Megaphone,
+  ShieldCheck,
+  UserRound,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 import type { VerifiedMembership } from "@/lib/authorization/access";
@@ -22,6 +22,7 @@ import {
   staffRanks,
 } from "@/lib/authorization/staff";
 import { LogoutForm } from "@/features/auth/components/auth-form";
+import { WorkspaceMobileNav } from "./workspace-mobile-nav";
 import {
   CampusHeader,
   OrganizationIdentity,
@@ -38,12 +39,12 @@ const icons: Record<string, LucideIcon> = {
   "admin/horario": CalendarDays,
   "admin/asistencia": ClipboardCheck,
   "admin/administradores": ShieldCheck,
-  "dashboard/asistencia": ClipboardCheck,
   dashboard: LayoutDashboard,
   "dashboard/cursos": BookOpen,
   "dashboard/materiales": FolderOpen,
   "dashboard/avisos": Megaphone,
   "dashboard/horario": CalendarDays,
+  "dashboard/asistencia": ClipboardCheck,
   "dashboard/perfil": UserRound,
 };
 export function AcademicShell({
@@ -61,14 +62,19 @@ export function AcademicShell({
   membership?: VerifiedMembership;
   children: ReactNode;
 }) {
-  const links = admin
+  const links: [string, string][] = admin
     ? [
         ["admin", "Resumen"],
         ...staffModuleKeys
           .filter((key) => membership && hasStaffPermission(membership, key))
-          .map((key) => [staffModules[key].path, staffModules[key].label]),
+          .map(
+            (key): [string, string] => [
+              staffModules[key].path,
+              staffModules[key].label,
+            ],
+          ),
         ...(membership && hasStaffPermission(membership, "staff.manage")
-          ? [["admin/administradores", "Administradores"]]
+          ? [["admin/administradores", "Administradores"] as [string, string]]
           : []),
       ]
     : [
@@ -82,64 +88,95 @@ export function AcademicShell({
       ];
   return (
     <div className={campus.page}>
-      <CampusHeader>
-        <div className={css.headerActions}>
-          <span className={css.role}>
-            {admin
-              ? membership?.staffRank
-                ? staffRanks[membership.staffRank]
-                : "Administración"
-              : "Espacio del alumno"}
-          </span>
-          {admin && (
-            <Link href="/auth/mfa">
-              <ShieldCheck size={16} aria-hidden="true" /> Seguridad MFA
+      <div className={css.workspaceShell}>
+        <aside className={css.desktopSidebar}>
+          <Link className={css.desktopBrand} href={"/o/" + encodeURIComponent(slug) + (admin ? "/admin" : "/dashboard")}>
+            <span className={css.desktopBrandMark} aria-hidden="true">S</span>
+            <strong>Sistema Alumnos</strong>
+          </Link>
+          <div className={css.desktopIdentity}>
+            <span className={css.desktopAvatar} aria-hidden="true">
+              {name.trim().slice(0, 1).toUpperCase() || "U"}
+            </span>
+            <div>
+              <strong>{name}</strong>
+              <small>
+                {admin
+                  ? membership?.staffRank
+                    ? staffRanks[membership.staffRank]
+                    : "Administración"
+                  : "Espacio del alumno"}
+              </small>
+            </div>
+          </div>
+          <nav className={css.desktopLinks} aria-label={admin ? "Administración" : "Alumno"}>
+            {links.map(([path, label]) => {
+              const Icon = icons[path] ?? BookOpen;
+              const active = section === path;
+              return (
+                <Link
+                  key={path}
+                  href={"/o/" + encodeURIComponent(slug) + "/" + path}
+                  className={active ? css.desktopLinkActive : undefined}
+                  aria-current={active ? "page" : undefined}
+                >
+                  <Icon size={19} aria-hidden="true" />
+                  <span>{label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+          <div className={css.desktopLogout}>
+            <LogoutForm />
+          </div>
+        </aside>
+        <div className={css.workspaceContent}>
+          <CampusHeader>
+            <div className={css.headerActions}>
+              <span className={css.role}>
+                {admin
+                  ? membership?.staffRank
+                    ? staffRanks[membership.staffRank]
+                    : "Administración"
+                  : "Espacio del alumno"}
+              </span>
+              {admin && (
+                <Link href="/auth/mfa">
+                  <ShieldCheck size={16} aria-hidden="true" /> Seguridad MFA
+                </Link>
+              )}
+            </div>
+          </CampusHeader>
+          <WorkspaceMobileNav
+            slug={slug}
+            name={name}
+            admin={admin}
+            section={section}
+            links={links}
+            logout={<LogoutForm />}
+          />
+          <div className={css.organizationBar}>
+            <OrganizationIdentity
+              slug={slug}
+              name={name}
+              detail={admin ? "Gestión académica" : "Tu organización"}
+            />
+            <Link href="/seleccionar-organizacion">
+              <ArrowLeftRight size={15} aria-hidden="true" /> Cambiar organización
             </Link>
-          )}
-          <LogoutForm />
+          </div>
+          <main
+            id="main-content"
+            className={css.main}
+            data-access-state="authorized"
+          >
+            {children}
+          </main>
+          <footer className={css.footer}>
+            Sistema Alumnos <span>Aprendizaje, comunidad y propósito.</span>
+          </footer>
         </div>
-      </CampusHeader>
-      <div className={css.navigation}>
-        <nav
-          aria-label={admin ? "Administración" : "Alumno"}
-          className={css.nav}
-        >
-          {links.map(([path, label]) => {
-            const Icon = icons[path!] ?? BookOpen;
-            return (
-              <Link
-                key={path}
-                href={"/o/" + slug + "/" + path}
-                className={section === path ? css.navActive : undefined}
-                aria-current={section === path ? "page" : undefined}
-              >
-                <Icon size={17} aria-hidden="true" />
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
       </div>
-      <div className={css.organizationBar}>
-        <OrganizationIdentity
-          slug={slug}
-          name={name}
-          detail={admin ? "Gestión académica" : "Tu organización"}
-        />
-        <Link href="/seleccionar-organizacion">
-          <ArrowLeftRight size={15} aria-hidden="true" /> Cambiar organización
-        </Link>
-      </div>
-      <main
-        id="main-content"
-        className={css.main}
-        data-access-state="authorized"
-      >
-        {children}
-      </main>
-      <footer className={css.footer}>
-        Sistema Alumnos <span>Aprendizaje, comunidad y propósito.</span>
-      </footer>
     </div>
   );
 }
