@@ -122,7 +122,7 @@ function sqlClient(db: PGlite): AcademicClient {
     ) {
       if (name === "staff_academic_context") {
         try {
-          const result = await db.query(
+          const result = await db.query<{ result: unknown }>(
             "SELECT public.staff_academic_context($1::uuid,$2::text,$3::text) AS result",
             [p.p_org, p.p_module, p.p_course],
           );
