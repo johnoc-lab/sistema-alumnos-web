@@ -131,10 +131,13 @@ describe("vistas académicas", () => {
     expect(html).toContain("/o/qa/archivos/asset-a");
     expect(html).not.toContain("/storage/v1/object/public");
   });
-  it("PDF administrativo informa que la subida no está habilitada", () =>
-    expect(render("admin/materiales")).toContain(
-      "subirlos requiere habilitar",
-    ));
+  it("materiales separa los enlaces de clase para los estudiantes", () => {
+    const html = render("admin/materiales");
+    expect(html).toContain("Clase en vivo");
+    expect(html).toContain("Clase grabada");
+    expect(html).toContain("Videos de ayuda");
+    expect(html).toContain("PDF del taller");
+  });
   it("guard denegado no consulta datos académicos", async () => {
     mocks.access.mockResolvedValue({
       allowed: false,
