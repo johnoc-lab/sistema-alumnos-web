@@ -26,6 +26,11 @@ export function shouldRefreshAuthPath(
   features: AuthFeatures,
 ) {
   const path = pathname.replace(/\/+$/, "");
+  if (
+    path === "/auth/activar-personal" ||
+    path === "/auth/activar-personal/acciones"
+  )
+    return false;
   if (["/auth/recover", "/auth/recuperar", "/auth/callback"].includes(path))
     return features.emailRecovery;
   if (

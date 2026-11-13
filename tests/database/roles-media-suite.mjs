@@ -1,15 +1,8 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { createEmbedded, migrate } from "./engine.mjs";
 import { ids } from "./fixture-ids.mjs";
 
-const mediaRef = "b64a6d9ddf8c3ff9c1be6a80401490f11765e9f3";
-const mediaMigrations = [
-  "20261110100000_announcement_media.sql",
-  "20261110120000_announcement_uploads.sql",
-  "20261110130000_material_links_and_pdf_upload.sql",
-];
 const name = "20261111120000_staff_permissions.sql";
 const roles = await readFile(
   new URL("../../supabase/migrations/" + name, import.meta.url),
@@ -52,17 +45,7 @@ const denied = { code: "42501" };
 
 const db = await createEmbedded();
 try {
-  assert.equal((await migrate(db, name)).length, 9);
-  await db.exec(
-    "ALTER TABLE storage.buckets ADD COLUMN file_size_limit bigint, ADD COLUMN allowed_mime_types text[]; ALTER TABLE storage.objects ADD COLUMN metadata jsonb; GRANT INSERT ON storage.objects TO authenticated",
-  );
-  for (const file of mediaMigrations) {
-    await db.exec(
-      execFileSync("git", ["show", mediaRef + ":supabase/migrations/" + file], {
-        encoding: "utf8",
-      }),
-    );
-  }
+  assert.equal((await migrate(db, name)).length, 12);
   await db.exec(
     "INSERT INTO private.allowed_resource_hosts(host) VALUES('example.test')",
   );
@@ -159,6 +142,15 @@ try {
   });
   const beforeContent = await readContent();
   await db.exec(roles);
+  await db.exec(
+    await readFile(
+      new URL(
+        "../../supabase/migrations/20261112120000_staff_registration.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
   assert.deepEqual(await mediaSecurity(db), beforeSecurity);
   assert.deepEqual(await readContent(), beforeContent);
   assert.equal(
@@ -332,7 +324,8 @@ try {
 }
 const partial = await createEmbedded();
 try {
-  await migrate(partial, name);
+  // El esquema parcial se reproduce aplicando solo el historial previo a Medios.
+  await migrate(partial, "20261110100000_announcement_media.sql");
   await partial.exec(
     "ALTER TABLE public.announcements ADD COLUMN image_url text",
   );

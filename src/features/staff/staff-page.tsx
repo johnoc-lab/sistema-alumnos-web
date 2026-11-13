@@ -4,6 +4,7 @@ import { ProtectedModule } from "@/features/auth/components/protected-module";
 import { PageHeading } from "@/components/ui/primitives";
 import { organizationAccess } from "@/lib/auth/access.server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { staffRegistrationEnabled } from "@/lib/supabase/staff-admin.server";
 import {
   isStaffRank,
   staffModuleKeys,
@@ -24,7 +25,9 @@ type StaffMember = {
   name: string;
   identifier: string | null;
   rank: StaffRank;
-  status: "active" | "suspended" | "archived";
+  status: "active" | "suspended" | "archived" | "invited";
+  registration?: string | null;
+  activationInProgress?: boolean;
   modules: StaffPermission[];
   version: number;
   self: boolean;
@@ -35,9 +38,22 @@ const statusLabels = {
   active: "Activo",
   suspended: "Suspendido",
   archived: "Archivado",
+  invited: "Pendiente de activación",
 } as const;
 const notices: Record<string, string> = {
   linked: "Personal incorporado.",
+  staff_rate_limited:
+    "Se alcanzó el límite temporal de altas. Vuelve a intentarlo en unos minutos.",
+  staff_duplicate:
+    "El identificador ya está reservado o pertenece a una cuenta existente.",
+  staff_pending:
+    "El alta no se completó. Si aparece pendiente en el listado, vuelve a preparar su código desde allí.",
+  staff_review:
+    "La activación sigue pendiente. Revisa el estado antes de emitir otro código.",
+  staff_cancelled:
+    "Alta cancelada. El identificador queda reservado y la cuenta no tiene acceso académico.",
+  staff_activated:
+    "La activación se completó. El titular ya puede iniciar sesión y configurar MFA.",
   saved: "Cambios guardados.",
   stale:
     "La membresía cambió. Revisa sus datos actuales antes de volver a guardar.",
@@ -99,6 +115,7 @@ export async function StaffPage({
           organization={access.membership.name}
           search={search}
           data={data}
+          registrationEnabled={staffRegistrationEnabled()}
         />
       ) : (
         <p className={academic.empty} role="alert">
@@ -114,11 +131,13 @@ function StaffDirectory({
   organization,
   search,
   data,
+  registrationEnabled,
 }: {
   slug: string;
   organization: string;
   search: StaffSearch;
   data: StaffData;
+  registrationEnabled: boolean;
 }) {
   const base = "/o/" + encodeURIComponent(slug) + "/admin/administradores";
   const post = base + "/acciones";
@@ -126,6 +145,14 @@ function StaffDirectory({
   const rank = field(search, "rank");
   const status = field(search, "status");
   const notice = field(search, "notice");
+  const noticeError = [
+    "failed",
+    "stale",
+    "staff_duplicate",
+    "staff_rate_limited",
+    "staff_pending",
+    "staff_review",
+  ].includes(notice);
   const filtered = data.staff.filter(
     (member) =>
       (!isStaffRank(rank) || member.rank === rank) &&
@@ -138,18 +165,68 @@ function StaffDirectory({
     <>
       {Object.hasOwn(notices, notice) && (
         <p
-          role={notice === "failed" || notice === "stale" ? "alert" : "status"}
-          className={
-            notice === "failed" || notice === "stale"
-              ? academic.error
-              : academic.success
-          }
+          role={noticeError ? "alert" : "status"}
+          className={noticeError ? academic.error : academic.success}
         >
           {notices[notice]}
         </p>
       )}
-      <details className={academic.section}>
-        <summary className={ui.primaryLink}>Agregar personal</summary>
+      <details className={academic.section + " " + css.registration}>
+        <summary className={ui.primaryLink + " " + css.addStaffSummary}>
+          Agregar personal
+        </summary>
+        {registrationEnabled && (
+          <form className={css.form} method="post" action={post}>
+            <input type="hidden" name="action" value="register" />
+            <label className={academic.field}>
+              Nombre
+              <input
+                name="first_name"
+                autoComplete="off"
+                required
+                maxLength={100}
+              />
+            </label>
+            <label className={academic.field}>
+              Apellidos
+              <input
+                name="last_name"
+                autoComplete="off"
+                required
+                maxLength={100}
+              />
+            </label>
+            <label className={academic.field}>
+              Identificador institucional
+              <input
+                name="identifier"
+                type="email"
+                autoComplete="off"
+                required
+                maxLength={254}
+                placeholder="u-ejemplo@cuentas.sistema-alumnos.invalid"
+              />
+            </label>
+            <StaffPermissionFields registering />
+            <p className={academic.hint}>
+              Estado inicial: pendiente de activación.
+            </p>
+            <label className={css.checkbox}>
+              <input
+                type="checkbox"
+                name="assignment"
+                value="confirmed"
+                required
+              />
+              Confirmo la asignación y entregaré el código al titular por un
+              canal privado.
+            </label>
+            <button type="submit" className={ui.primaryLink}>
+              Crear cuenta y preparar código
+            </button>
+          </form>
+        )}
+        {registrationEnabled && <h2>Vincular una cuenta autorizada</h2>}
         {data.pending.length ? (
           <form className={css.form} method="post" action={post}>
             <input type="hidden" name="action" value="link" />
@@ -272,7 +349,11 @@ function StaffDirectory({
                     )}
                   </td>
                   <td>
-                    <StaffActions member={member} post={post} />
+                    <StaffActions
+                      member={member}
+                      post={post}
+                      registrationEnabled={registrationEnabled}
+                    />
                   </td>
                 </tr>
               ))}
@@ -296,7 +377,7 @@ function StaffUpdateForm({
 }: {
   member: StaffMember;
   post: string;
-  status: StaffMember["status"];
+  status: "active" | "suspended";
   children: ReactNode;
 }) {
   return (
@@ -310,9 +391,45 @@ function StaffUpdateForm({
   );
 }
 
-function StaffActions({ member, post }: { member: StaffMember; post: string }) {
+function StaffActions({
+  member,
+  post,
+  registrationEnabled,
+}: {
+  member: StaffMember;
+  post: string;
+  registrationEnabled: boolean;
+}) {
   if (member.self) return <span>Tu cuenta</span>;
   if (member.status === "archived") return <span>Archivado</span>;
+  if (member.status === "invited") {
+    return registrationEnabled && member.registration ? (
+      <div className={css.actions}>
+        <form method="post" action={post}>
+          <input type="hidden" name="action" value="deliver" />
+          <input type="hidden" name="id" value={member.registration} />
+          <button type="submit" className={ui.secondaryLink}>
+            {member.activationInProgress
+              ? "Comprobar activación"
+              : "Preparar nuevo código"}
+          </button>
+        </form>
+        <details>
+          <summary>Cancelar alta pendiente</summary>
+          <form className={css.form} method="post" action={post}>
+            <input type="hidden" name="action" value="cancel_registration" />
+            <input type="hidden" name="id" value={member.registration} />
+            <p>
+              El código dejará de servir y este identificador seguirá reservado.
+            </p>
+            <button type="submit" className={ui.secondaryLink}>
+              Confirmar cancelación
+            </button>
+          </form>
+        </details>
+      </div>
+    ) : null;
+  }
   const active = member.status === "active";
   return (
     <div className={css.actions}>

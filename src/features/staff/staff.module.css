@@ -60,3 +60,41 @@
     justify-self: start;
   }
 }
+
+.registration > .addStaffSummary {
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+  min-block-size: 44px;
+  max-inline-size: 100%;
+  padding: 0.65rem 1rem;
+  list-style: none;
+  gap: 0.6rem;
+}
+
+.addStaffSummary::-webkit-details-marker {
+  display: none;
+}
+
+.addStaffSummary::after {
+  content: "";
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-inline-end: 2px solid currentColor;
+  border-block-end: 2px solid currentColor;
+  transform: rotate(45deg);
+  flex: none;
+}
+
+.registration[open] > .addStaffSummary::after {
+  transform: rotate(225deg);
+}
+
+.registration > .addStaffSummary:hover {
+  background: var(--accent-hover);
+  color: var(--on-accent, #fff);
+}
+
+.registration > .addStaffSummary:focus-visible {
+  outline: 3px solid var(--accent-hover);
+  outline-offset: 3px;
+}

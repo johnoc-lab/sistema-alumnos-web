@@ -6,12 +6,16 @@ const mocks = vi.hoisted(() => ({
   access: vi.fn(),
   load: vi.fn(),
   create: vi.fn(),
+  registrationEnabled: vi.fn(),
 }));
 vi.mock("@/lib/auth/access.server", () => ({
   organizationAccess: mocks.access,
 }));
 vi.mock("@/lib/supabase/server", () => ({
   createServerSupabaseClient: mocks.create,
+}));
+vi.mock("@/lib/supabase/staff-admin.server", () => ({
+  staffRegistrationEnabled: mocks.registrationEnabled,
 }));
 vi.mock("@/features/academic/data.server", () => ({
   loadAcademic: mocks.load,
@@ -44,6 +48,7 @@ const render = (section: string, data = empty(), search = {}) =>
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.create.mockResolvedValue({ mock: true });
+  mocks.registrationEnabled.mockReturnValue(false);
 });
 describe("vistas académicas", () => {
   it.each([
@@ -366,6 +371,48 @@ describe("vista de Administradores y navegación delegada", () => {
     expect(page).toContain("Activar");
     expect(page).toContain('role="alert"');
   });
+  it("mantiene el control nativo de alta y presenta las cuentas pendientes", async () => {
+    grant();
+    mocks.registrationEnabled.mockReturnValue(true);
+    mocks.create.mockResolvedValue({
+      rpc: vi.fn().mockResolvedValue({
+        data: {
+          pending: [],
+          staff: [
+            {
+              id: "member",
+              name: "Docente nuevo",
+              identifier: "u-docente@cuentas.sistema-alumnos.invalid",
+              rank: "teacher",
+              status: "invited",
+              modules: ["attendance"],
+              version: 1,
+              self: false,
+              registration: "registration",
+            },
+          ],
+        },
+      }),
+    });
+    const html = renderToStaticMarkup(
+      await StaffPage({ slug: "qa", search: {} }),
+    );
+    expect(html).toMatch(
+      /<details[^>]+><summary[^>]+>Agregar personal<\/summary>/,
+    );
+    expect(html).toContain('value="register"');
+    expect(html).toContain('name="assignment"');
+    const form = html.match(
+      /<form[^>]*>[^]*?value="register"[^]*?<\/form>/,
+    )?.[0];
+    expect(form).toBeDefined();
+    expect(form).not.toContain('value="principal"');
+    expect(form).not.toContain('value="certificates"');
+    expect(html).toContain("Pendiente de activación");
+    expect(html).toContain("Preparar nuevo código");
+    expect(html).toContain("Cancelar alta pendiente");
+  });
+
   it("el rechazo de Administradores no construye cliente de datos", async () => {
     mocks.access.mockResolvedValue({
       allowed: false,

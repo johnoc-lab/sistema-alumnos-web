@@ -10,6 +10,7 @@ import {
 import { authConfig, noStoreHeaders } from "@/lib/supabase/config";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { uuid } from "@/features/academic/forms";
+import { registerStaff } from "./registration.server";
 
 export async function staffPost(request: Request, slug: string) {
   const config = authConfig();
@@ -26,6 +27,25 @@ export async function staffPost(request: Request, slug: string) {
   try {
     const form = await readFields(request);
     const action = form.get("action");
+    if (form.getAll("action").length !== 1) return denied(400);
+    if (
+      action === "register" ||
+      action === "deliver" ||
+      action === "cancel_registration"
+    ) {
+      const actor =
+        access.session.status === "authenticated"
+          ? access.session.identity
+          : null;
+      if (actor?.assuranceLevel !== "aal2") return denied(403);
+      return registerStaff(
+        form,
+        access.membership.organizationId,
+        slug,
+        config.origin,
+        actor,
+      );
+    }
     const id = form.get("id") ?? "";
     const rank = form.get("rank");
     const modules = form.getAll("module");
