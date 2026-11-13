@@ -21,6 +21,8 @@ vi.mock("@/features/academic/data.server", () => ({
   loadAcademic: mocks.load,
 }));
 import { StaffPage } from "@/features/staff/staff-page";
+import ActivationPage from "@/app/auth/activar-personal/page";
+import { staffIdentifierPattern } from "@/features/staff/identifier";
 import { AcademicView, AcademicPage } from "@/features/academic/academic-page";
 import { ProtectedModule } from "@/features/auth/components/protected-module";
 import type { AcademicData } from "@/features/academic/data.server";
@@ -405,12 +407,26 @@ describe("vista de Administradores y navegación delegada", () => {
     const form = html.match(
       /<form[^>]*>[^]*?value="register"[^]*?<\/form>/,
     )?.[0];
-    expect(form).toBeDefined();
+    expect(form).toContain('pattern="' + staffIdentifierPattern + '"');
+    expect(form).toContain('aria-describedby="staff-identifier-help"');
     expect(form).not.toContain('value="principal"');
     expect(form).not.toContain('value="certificates"');
     expect(html).toContain("Pendiente de activación");
     expect(html).toContain("Preparar nuevo código");
     expect(html).toContain("Cancelar alta pendiente");
+  });
+
+  it("la activación asocia el formato institucional con el campo", async () => {
+    mocks.registrationEnabled.mockReturnValue(true);
+    const page = renderToStaticMarkup(
+      await ActivationPage({
+        searchParams: Promise.resolve({ notice: "invalid_identifier" }),
+      }),
+    );
+    expect(page).toContain('pattern="' + staffIdentifierPattern + '"');
+    expect(page).toContain('aria-describedby="activation-identifier-help"');
+    expect(page).toContain('role="alert"');
+    expect(page).toContain("u-profesor01@cuentas.sistema-alumnos.invalid");
   });
 
   it("el rechazo de Administradores no construye cliente de datos", async () => {

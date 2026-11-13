@@ -1,4 +1,9 @@
 import type { ReactNode } from "react";
+import {
+  staffIdentifierExample,
+  staffIdentifierHelp,
+  staffIdentifierPattern,
+} from "@/features/staff/identifier";
 import { AcademicShell } from "@/features/academic/shell";
 import { ProtectedModule } from "@/features/auth/components/protected-module";
 import { PageHeading } from "@/components/ui/primitives";
@@ -44,6 +49,7 @@ const notices: Record<string, string> = {
   linked: "Personal incorporado.",
   staff_rate_limited:
     "Se alcanzó el límite temporal de altas. Vuelve a intentarlo en unos minutos.",
+  invalid_identifier: staffIdentifierHelp,
   staff_duplicate:
     "El identificador ya está reservado o pertenece a una cuenta existente.",
   staff_pending:
@@ -148,6 +154,7 @@ function StaffDirectory({
   const noticeError = [
     "failed",
     "stale",
+    "invalid_identifier",
     "staff_duplicate",
     "staff_rate_limited",
     "staff_pending",
@@ -204,9 +211,15 @@ function StaffDirectory({
                 autoComplete="off"
                 required
                 maxLength={254}
-                placeholder="u-ejemplo@cuentas.sistema-alumnos.invalid"
+                pattern={staffIdentifierPattern}
+                title={staffIdentifierHelp}
+                aria-describedby="staff-identifier-help"
+                placeholder={staffIdentifierExample}
               />
             </label>
+            <p id="staff-identifier-help" className={academic.hint}>
+              {staffIdentifierHelp}
+            </p>
             <StaffPermissionFields registering />
             <p className={academic.hint}>
               Estado inicial: pendiente de activación.

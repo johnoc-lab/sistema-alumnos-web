@@ -112,6 +112,16 @@
   padding: 10px 12px;
   font-size: 15px;
 }
+.activationFields.fields input {
+  color: #192e3c;
+}
+.activationFields.fields input::placeholder {
+  color: #526674;
+  opacity: 1;
+}
+.activationFields small {
+  overflow-wrap: anywhere;
+}
 .fields input:focus {
   border-color: var(--accent);
 }

@@ -196,7 +196,6 @@ describe("alta de personal", () => {
     { module: "staff.manage" },
     { module: "certificates" },
     { assignment: "" },
-    { identifier: "u-test@example.test" },
   ])("rechaza un alta manipulada %o", async (patch) => {
     expect(
       (await staffPost(post({ ...register, ...patch }), "qa")).status,
@@ -204,6 +203,31 @@ describe("alta de personal", () => {
     expect(mocks.userRpc).not.toHaveBeenCalled();
     expect(mocks.createUser).not.toHaveBeenCalled();
   });
+
+  it.each([
+    "u-test@example.test",
+    "u-profesor-01@cuentas.sistema-alumnos.invalid",
+  ])(
+    "orienta sobre un identificador mal formado sin consultar cuentas",
+    async (invalidIdentifier) => {
+      const created = await staffPost(
+        post({ ...register, identifier: invalidIdentifier }),
+        "qa",
+      );
+      const activated = await activate(
+        post({ ...activation, identifier: invalidIdentifier }),
+      );
+      expect(created.headers.get("location")).toBe(
+        origin + "/o/qa/admin/administradores?notice=invalid_identifier",
+      );
+      expect(activated.headers.get("location")).toBe(
+        origin + "/auth/activar-personal?notice=invalid_identifier",
+      );
+      expect(mocks.privilegedRpc).not.toHaveBeenCalled();
+      expect(mocks.createUser).not.toHaveBeenCalled();
+      expect(mocks.updateUser).not.toHaveBeenCalled();
+    },
+  );
 
   it("registra el rango y módulos elegidos y muestra el código solo en la respuesta privada", async () => {
     const response = await staffPost(post(register), "qa");

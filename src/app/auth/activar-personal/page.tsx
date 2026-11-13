@@ -1,4 +1,9 @@
 import Link from "next/link";
+import {
+  staffIdentifierExample,
+  staffIdentifierHelp,
+  staffIdentifierPattern,
+} from "@/features/staff/identifier";
 import { AuthFeatureUnavailable } from "@/features/auth/components/feature-unavailable";
 import { staffRegistrationEnabled } from "@/lib/supabase/staff-admin.server";
 import ui from "@/components/ui/ui.module.css";
@@ -20,6 +25,11 @@ export default async function Page({
         Usa tu identificador institucional y el código entregado por tu
         organización.
       </p>
+      {notice === "invalid_identifier" && (
+        <p role="alert" className={styles.feedback}>
+          {staffIdentifierHelp}
+        </p>
+      )}
       {notice === "invalid" && (
         <p role="alert" className={styles.feedback}>
           Revisa los datos, el código y su vigencia. Usa una contraseña de al
@@ -33,18 +43,23 @@ export default async function Page({
         </p>
       )}
       <form action="/auth/activar-personal/acciones" method="post">
-        <fieldset className={styles.fields}>
+        <fieldset className={styles.fields + " " + styles.activationFields}>
           <legend>Datos de activación</legend>
           <label>
             Identificador institucional
             <input
               name="identifier"
               type="email"
+              pattern={staffIdentifierPattern}
+              title={staffIdentifierHelp}
+              aria-describedby="activation-identifier-help"
+              placeholder={staffIdentifierExample}
               autoComplete="username"
               maxLength={254}
               required
             />
           </label>
+          <small id="activation-identifier-help">{staffIdentifierHelp}</small>
           <label>
             Código de activación
             <input

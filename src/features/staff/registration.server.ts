@@ -13,11 +13,12 @@ import type { VerifiedIdentity } from "@/lib/authorization/access";
 import { authConfig, noStoreHeaders } from "@/lib/supabase/config";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createStaffAdminClient } from "@/lib/supabase/staff-admin.server";
+import { staffIdentifierPattern } from "./identifier";
 
 const activationPage = "/auth/activar-personal";
+const institutionalIdentifier = new RegExp("^" + staffIdentifierPattern + "$");
 const validIdentifier = (value: string) =>
-  value.length <= 254 &&
-  /^u-[a-z0-9]+@cuentas\.sistema-alumnos\.invalid$/.test(value);
+  value.length <= 254 && institutionalIdentifier.test(value);
 const digest = (code: string) =>
   createHash("sha256").update(code).digest("hex");
 
@@ -113,8 +114,9 @@ export async function registerStaff(
       const lastName = field(form, "last_name").trim();
       const rank = field(form, "rank");
       const modules = form.getAll("module");
+      if (!validIdentifier(identifier))
+        return redirect(back, origin, "invalid_identifier");
       if (
-        !validIdentifier(identifier) ||
         !firstName ||
         firstName.length > 100 ||
         !lastName ||
@@ -233,8 +235,9 @@ export async function activateStaff(request: Request) {
     const identifier = field(form, "identifier").trim().toLowerCase();
     const code = field(form, "code").trim();
     const password = field(form, "password");
+    if (!validIdentifier(identifier))
+      return redirect(activationPage, config.origin, "invalid_identifier");
     if (
-      !validIdentifier(identifier) ||
       !/^[A-Za-z0-9_-]{43}$/.test(code) ||
       password.length < 12 ||
       Buffer.byteLength(password, "utf8") > 72 ||
