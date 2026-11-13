@@ -24,6 +24,10 @@ export type Database = {
           body: string;
           published_at: string | null;
           status: string;
+          image_url: string | null;
+          video_url: string | null;
+          image_asset_id: string | null;
+          video_asset_id: string | null;
         };
         Insert: {
           id?: string;
@@ -38,6 +42,10 @@ export type Database = {
           body: string;
           published_at?: string | null;
           status?: string;
+          image_url?: string | null;
+          video_url?: string | null;
+          image_asset_id?: string | null;
+          video_asset_id?: string | null;
         };
         Update: {
           id?: string;
@@ -52,8 +60,19 @@ export type Database = {
           body?: string;
           published_at?: string | null;
           status?: string;
+          image_url?: string | null;
+          video_url?: string | null;
+          image_asset_id?: string | null;
+          video_asset_id?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "announcements_image_asset_course_fkey";
+            columns: ["organization_id", "course_id", "image_asset_id"];
+            isOneToOne: false;
+            referencedRelation: "file_assets";
+            referencedColumns: ["organization_id", "course_id", "id"];
+          },
           {
             foreignKeyName: "announcements_organization_id_course_id_fkey";
             columns: ["organization_id", "course_id"];
@@ -81,6 +100,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "organization_memberships";
             referencedColumns: ["organization_id", "id"];
+          },
+          {
+            foreignKeyName: "announcements_video_asset_course_fkey";
+            columns: ["organization_id", "course_id", "video_asset_id"];
+            isOneToOne: false;
+            referencedRelation: "file_assets";
+            referencedColumns: ["organization_id", "course_id", "id"];
           },
         ];
       };
@@ -911,6 +937,9 @@ export type Database = {
           file_asset_id: string | null;
           sort_order: number;
           status: string;
+          class_url: string | null;
+          recording_url: string | null;
+          help_url: string | null;
         };
         Insert: {
           id?: string;
@@ -927,6 +956,9 @@ export type Database = {
           file_asset_id?: string | null;
           sort_order?: number;
           status?: string;
+          class_url?: string | null;
+          recording_url?: string | null;
+          help_url?: string | null;
         };
         Update: {
           id?: string;
@@ -943,6 +975,9 @@ export type Database = {
           file_asset_id?: string | null;
           sort_order?: number;
           status?: string;
+          class_url?: string | null;
+          recording_url?: string | null;
+          help_url?: string | null;
         };
         Relationships: [
           {
@@ -1177,6 +1212,15 @@ export type Database = {
         };
         Returns: string;
       };
+      finalize_announcement_media: {
+        Args: {
+          p_organization_id: string;
+          p_asset_id: string;
+          p_size_bytes: number;
+          p_sha256: string;
+        };
+        Returns: undefined;
+      };
       finish_staff_activation: {
         Args: { p_registration: string; p_claim: string; p_rejected: boolean };
         Returns: boolean;
@@ -1211,6 +1255,17 @@ export type Database = {
         Returns: Json;
       };
       list_staff: { Args: { p_org: string }; Returns: Json };
+      prepare_announcement_media: {
+        Args: {
+          p_organization_id: string;
+          p_course_id: string;
+          p_purpose: string;
+          p_original_name: string;
+          p_mime_type: string;
+          p_size_bytes: number;
+        };
+        Returns: Json;
+      };
       replace_event_attendees: {
         Args: {
           p_organization_id: string;

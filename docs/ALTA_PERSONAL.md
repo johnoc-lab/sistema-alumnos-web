@@ -4,7 +4,7 @@ El administrador principal con sesión `aal2` puede crear una cuenta institucion
 
 ## Configuración y orden
 
-1. Verificar el destino y el historial remoto de 13 versiones, incluidas las tres de Medios, antes de una futura aplicación autorizada de `20261112120000_staff_registration.sql`. La rama contiene las diez migraciones de `main` y esta nueva versión. Para una futura comprobación remota se debe usar un checkout de publicación que reúna las 13 versiones exactas y esta migración, sin volver a aplicar las anteriores.
+1. Verificar el destino y el historial remoto de 13 versiones, incluidas las tres de Medios, antes de una futura aplicación autorizada de `20261112120000_staff_registration.sql`. La rama integrada contiene las 13 migraciones anteriores y esta nueva versión. Antes de una futura aplicación, comprobar mediante dry-run que solo quede pendiente la migración de Alta de Personal.
 2. Mantener deshabilitados el registro público, el acceso anónimo y los flujos de correo. Los identificadores de este flujo pertenecen a `cuentas.sistema-alumnos.invalid`. `email_confirm` es una confirmación técnica de Supabase Auth. La asignación al titular la confirma el administrador principal y queda registrada en PostgreSQL.
 3. Con autorización posterior, configurar `SUPABASE_STAFF_SECRET_KEY` con una clave secreta del proyecto en el entorno privado donde se pruebe el alta. Esa clave tiene privilegios amplios. Mantenerla exclusivamente en el servidor y usar el almacén de secretos del entorno. El login y MFA habituales no la requieren.
 4. Verificar `APP_ORIGIN` exacto, `SUPABASE_AUTH_ENABLED=true` y las variables Auth existentes. Habilitar `STAFF_REGISTRATION_ENABLED=true` solo en el entorno autorizado después de la migración. Por defecto el alta está apagada.

@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS private.local_test_environment(marker text PRIMARY KE
 REVOKE ALL ON private.local_test_environment FROM PUBLIC,anon,authenticated;
 ALTER TABLE private.local_test_environment ENABLE ROW LEVEL SECURITY;
 INSERT INTO private.local_test_environment VALUES('sistema-alumnos-web-phase4-local-fixtures') ON CONFLICT DO NOTHING;
-INSERT INTO private.allowed_resource_hosts VALUES('resources.example.test') ON CONFLICT DO NOTHING;
 INSERT INTO auth.users(id,email,email_confirmed_at,aud,role,raw_app_meta_data,raw_user_meta_data) VALUES
  ('00000000-0000-4000-8000-000000000011','admina@example.test','2026-11-01T00:00:00Z','authenticated','authenticated','{}','{}'),
  ('00000000-0000-4000-8000-000000000012','admina2@example.test','2026-11-01T00:00:00Z','authenticated','authenticated','{}','{}'),
@@ -88,12 +87,12 @@ INSERT INTO public.file_assets(id,organization_id,course_id,purpose,bucket_name,
  ('00000000-0000-4000-8000-000000000706','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000301','course_material','course-files','00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000706/private.pdf','private.pdf','application/pdf',123,'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff','ready'),
  ('00000000-0000-4000-8000-000000000707','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000301','course_material','course-files','00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000707/pending.pdf','pending.pdf','application/pdf',NULL,NULL,'pending')
 ON CONFLICT(id) DO NOTHING;
-INSERT INTO public.materials(id,organization_id,course_id,lesson_id,title,external_url,file_asset_id,status) VALUES
- ('00000000-0000-4000-8000-000000000751','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000301','00000000-0000-4000-8000-000000000411','Material A','https://resources.example.test/a',NULL,'published'),
- ('00000000-0000-4000-8000-000000000752','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000302',NULL,'Material A2','https://resources.example.test/a2',NULL,'published'),
- ('00000000-0000-4000-8000-000000000753','00000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000304','00000000-0000-4000-8000-000000000413','Material B','https://resources.example.test/b',NULL,'published'),
+INSERT INTO public.materials(id,organization_id,course_id,lesson_id,title,class_url,file_asset_id,status) VALUES
+ ('00000000-0000-4000-8000-000000000751','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000301','00000000-0000-4000-8000-000000000411','Material A','https://youtube.com/watch?v=seedA',NULL,'published'),
+ ('00000000-0000-4000-8000-000000000752','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000302',NULL,'Material A2','https://youtube.com/watch?v=seedA2',NULL,'published'),
+ ('00000000-0000-4000-8000-000000000753','00000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000304','00000000-0000-4000-8000-000000000413','Material B','https://youtu.be/seedB',NULL,'published'),
  ('00000000-0000-4000-8000-000000000754','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000301','00000000-0000-4000-8000-000000000411','Archivo A',NULL,'00000000-0000-4000-8000-000000000701','published'),
- ('00000000-0000-4000-8000-000000000755','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000301',NULL,'Material borrador','https://resources.example.test/draft',NULL,'draft')
+ ('00000000-0000-4000-8000-000000000755','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000301',NULL,'Material borrador','https://drive.google.com/file/d/seedDraft',NULL,'draft')
 ON CONFLICT(id) DO NOTHING;
 INSERT INTO public.calendar_events(id,organization_id,course_id,lesson_id,title,starts_at,ends_at) VALUES
  ('00000000-0000-4000-8000-000000000901','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000301','00000000-0000-4000-8000-000000000411','Sesión A','2026-11-10T18:00:00-05:00','2026-11-10T19:00:00-05:00'),

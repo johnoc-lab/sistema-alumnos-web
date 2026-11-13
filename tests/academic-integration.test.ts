@@ -118,13 +118,19 @@ function sqlClient(db: PGlite): AcademicClient {
     },
     async rpc(
       name: string,
-      p: {
-        p_organization_id: string;
-        p_id: string;
-        p_expected_version: number;
-        p_patch: unknown;
-      },
+      p: Record<string, unknown>,
     ) {
+      if (name === "staff_academic_context") {
+        try {
+          const result = await db.query<{ result: unknown }>(
+            "SELECT public.staff_academic_context($1::uuid,$2::text,$3::text) AS result",
+            [p.p_org, p.p_module, p.p_course],
+          );
+          return { data: result.rows[0]?.result, error: null };
+        } catch (error) {
+          return { data: null, error };
+        }
+      }
       if (
         ![
           "update_course",
@@ -222,8 +228,8 @@ it("formularios → adaptador de aplicación → SQL real: taller, matrícula, e
       course_id: course.id,
       title: "Guía del taller",
       status: "published",
-      source: "link",
-      external_url: "https://docs.google.com/document/d/qa-sintetico",
+      source: "links",
+      class_url: "https://meet.google.com/qa-sintetico",
     });
     await submit({
       action: "announcement",

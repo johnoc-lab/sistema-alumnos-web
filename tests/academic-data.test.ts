@@ -40,8 +40,19 @@ function fake(replies: { data: unknown; error: unknown }[] = []) {
     return chain;
   });
   const rpc = vi.fn(
-    async (): Promise<{ data: unknown; error: unknown }> => ({
-      data: 2,
+    async (
+      name: string,
+      args?: Record<string, unknown>,
+    ): Promise<{ data: unknown; error: unknown }> => ({
+      data: name === "staff_academic_context"
+        ? {
+            courses: [{ id: args?.p_course, title: "QA", status: "published" }],
+            memberships: [],
+            enrollments: [],
+            events: [],
+            attendee_ids: [],
+          }
+        : 2,
       error: null,
     }),
   );
@@ -75,9 +86,11 @@ describe("adaptador académico con SDK simulado", () => {
         name: "eq",
         args: ["organization_id", org],
       });
-      expect(
-        c.methods.find((method) => method.name === "limit")?.args[0],
-      ).toBeGreaterThan(0);
+      const expectedLimit =
+        c.table === "calendar_event_attendees" || c.table === "attendance_records"
+          ? 2000
+          : 500;
+      expect(c.methods).toContainEqual({ name: "limit", args: [expectedLimit] });
     }
   });
   it("carga solo matrículas y referencias mínimas para el módulo delegado", async () => {
@@ -271,7 +284,7 @@ describe("adaptador académico con SDK simulado", () => {
       args: ["status", "ready"],
     });
   });
-  it("publica un enlace sin generar un archivo ni alojar video", async () => {
+  it("publica los enlaces de materiales en sus campos separados", async () => {
     const db = fake([{ data: { id }, error: null }]);
     await mutateAcademic(
       db.client,
@@ -281,8 +294,10 @@ describe("adaptador académico con SDK simulado", () => {
         course_id: id,
         title: "Video",
         status: "published",
-        source: "link",
-        external_url: "https://youtu.be/qa",
+        source: "links",
+        class_url: "https://meet.google.com/qa-clase",
+        recording_url: "https://youtu.be/qa",
+        help_url: "https://www.youtube.com/watch?v=ayuda-qa",
       }),
     );
     expect(db.calls[0]?.methods).toContainEqual({
@@ -293,7 +308,10 @@ describe("adaptador académico con SDK simulado", () => {
           course_id: id,
           title: "Video",
           status: "published",
-          external_url: "https://youtu.be/qa",
+          external_url: null,
+          class_url: "https://meet.google.com/qa-clase",
+          recording_url: "https://youtu.be/qa",
+          help_url: "https://www.youtube.com/watch?v=ayuda-qa",
           file_asset_id: null,
         },
       ],
