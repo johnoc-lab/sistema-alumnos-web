@@ -8,6 +8,7 @@ import {
   CalendarDays,
   ClipboardCheck,
   ClipboardList,
+  Award,
   FolderOpen,
   LayoutDashboard,
   Megaphone,
@@ -37,6 +38,7 @@ const icons: Record<string, LucideIcon> = {
   "dashboard/horario": CalendarDays,
   "dashboard/asistencia": ClipboardCheck,
   "dashboard/perfil": UserRound,
+  "dashboard/certificados": Award,
 };
 
 export function WorkspaceMobileNav({

@@ -6,6 +6,7 @@ import {
   CalendarDays,
   ClipboardCheck,
   ClipboardList,
+  Award,
   FolderOpen,
   LayoutDashboard,
   Megaphone,
@@ -46,6 +47,7 @@ const icons: Record<string, LucideIcon> = {
   "dashboard/horario": CalendarDays,
   "dashboard/asistencia": ClipboardCheck,
   "dashboard/perfil": UserRound,
+  "dashboard/certificados": Award,
 };
 export function AcademicShell({
   slug,
@@ -84,6 +86,7 @@ export function AcademicShell({
         ["dashboard/avisos", "Avisos"],
         ["dashboard/horario", "Mi horario"],
         ["dashboard/asistencia", "Mi asistencia"],
+        ["dashboard/certificados", "Certificados"],
         ["dashboard/perfil", "Mi perfil"],
       ];
   return (
