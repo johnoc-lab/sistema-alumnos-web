@@ -1,13 +1,19 @@
-import { ProtectedModule } from "@/features/auth/components/protected-module";
+import { StaffCertificates } from "@/features/certificates/pages";
 import type { OrganizationPageProps } from "@/types/routes";
-export default async function Page({ params }: OrganizationPageProps) {
+
+export default async function Page({
+  params,
+  searchParams,
+}: OrganizationPageProps & {
+  searchParams: Promise<{ course?: string; notice?: string }>;
+}) {
   const { organizationSlug } = await params;
+  const { course, notice } = await searchParams;
   return (
-    <ProtectedModule
+    <StaffCertificates
       slug={organizationSlug}
-      role="admin"
-      title="Certificados"
-      section="admin/certificados"
+      course={course}
+      notice={notice}
     />
   );
 }

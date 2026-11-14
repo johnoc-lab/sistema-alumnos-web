@@ -1183,6 +1183,10 @@ export type Database = {
         Args: { p_org: string; p_registration: string };
         Returns: string;
       };
+      certificate_staff_context: {
+        Args: { p_org: string; p_course: string };
+        Returns: Json;
+      };
       claim_staff_activation: {
         Args: {
           p_identifier: string;
@@ -1210,6 +1214,10 @@ export type Database = {
           p_event: Json;
           p_membership_ids: string[];
         };
+        Returns: string;
+      };
+      decide_certificate: {
+        Args: { p_org: string; p_recommendation: string; p_approve: boolean };
         Returns: string;
       };
       finalize_announcement_media: {
@@ -1265,6 +1273,10 @@ export type Database = {
           p_size_bytes: number;
         };
         Returns: Json;
+      };
+      recommend_certificate: {
+        Args: { p_org: string; p_enrollment: string };
+        Returns: string;
       };
       replace_event_attendees: {
         Args: {
