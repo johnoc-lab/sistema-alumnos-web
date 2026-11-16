@@ -36,6 +36,8 @@ export default async function MfaPage({
       aal={state.aal}
       factors={state.factors}
       role={state.role}
+      recentTotp={state.recentTotp}
+      studentCanDisable={state.studentCanDisable}
       next={safeNext(query.next)}
       notice={typeof query.notice === "string" ? query.notice : undefined}
     />

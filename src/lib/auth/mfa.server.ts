@@ -11,6 +11,8 @@ export type MfaOverview =
       aal: "aal1" | "aal2";
       role: "admin" | "student";
       factors: MfaFactor[];
+      recentTotp: boolean;
+      studentCanDisable: boolean;
     };
 export const factorIdValid = (value: unknown): value is string =>
   typeof value === "string" &&
@@ -59,6 +61,19 @@ export async function mfaContext(
     c.is_anonymous
   )
     return { status: "anonymous" } as const;
+  const now = Math.floor(Date.now() / 1000);
+  const recentTotp =
+    c.aal === "aal2" &&
+    Array.isArray(c.amr) &&
+    c.amr.some(
+      (entry) =>
+        typeof entry === "object" &&
+        entry !== null &&
+        entry.method === "totp" &&
+        Number.isSafeInteger(entry.timestamp) &&
+        entry.timestamp <= now &&
+        now - entry.timestamp <= 5 * 60,
+    );
   return {
     status: "ready" as const,
     sub: session.user.id,
@@ -66,6 +81,9 @@ export async function mfaContext(
     profile_id: session.identity.profileId,
     organization_id: membership.organizationId,
     role: membership.role,
+    recentTotp,
+    studentCanDisable:
+      membership.role === "student" && !session.identity.hasStaffMembership,
     aal: c.aal === "aal2" ? ("aal2" as const) : ("aal1" as const),
   };
 }
@@ -99,6 +117,8 @@ export async function loadMfaOverview(): Promise<MfaOverview> {
       status: "ready",
       aal: context.aal,
       role: context.role,
+      recentTotp: context.recentTotp,
+      studentCanDisable: context.studentCanDisable,
       factors: await ownTotpFactors(client),
     };
   } catch {

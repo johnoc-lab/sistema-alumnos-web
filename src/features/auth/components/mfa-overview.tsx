@@ -9,6 +9,8 @@ import styles from "./mfa.module.css";
 const notices: Record<string, string> = {
   failed: "No se pudo completar la operación. Inténtalo nuevamente.",
   expired: "La verificación venció. Inicia una nueva solicitud.",
+  reauth: "Verifica de nuevo tu código TOTP para confirmar el cambio.",
+  factor_removed: "Se eliminó el autenticador.",
   invalid:
     "No se pudo verificar el código. Revisa tu aplicación autenticadora e inténtalo nuevamente.",
   verified: "La verificación en dos pasos está completada para esta sesión.",
@@ -21,12 +23,16 @@ export function MfaOverview({
   factors,
   notice,
   role = "admin",
+  recentTotp = false,
+  studentCanDisable = role === "student",
   next = "/seleccionar-organizacion",
 }: {
   aal: "aal1" | "aal2";
   factors: Array<{ id: string; status: "verified" | "unverified" }>;
   notice?: string | undefined;
   role?: "admin" | "student";
+  recentTotp?: boolean;
+  studentCanDisable?: boolean;
   next?: string;
 }) {
   const verifiedFactors = factors.filter(
@@ -34,7 +40,11 @@ export function MfaOverview({
   );
   const requiresVerification = aal === "aal1" && verifiedFactors.length > 0;
   const visibleFactors = requiresVerification ? verifiedFactors : factors;
-  const back = role === "admin" && aal === "aal1" ? "/seleccionar-organizacion" : next;
+  const studentAal2 = studentCanDisable && role === "student" && aal === "aal2";
+  const canRemove = studentAal2 && recentTotp;
+  const lastVerified = verifiedFactors.length === 1;
+  const back =
+    role === "admin" && aal === "aal1" ? "/seleccionar-organizacion" : next;
   const destination = <input type="hidden" name="next" value={next} />;
   const message =
     notice &&
@@ -96,6 +106,12 @@ export function MfaOverview({
           ) : (
             <section aria-labelledby="mfa-factors-title">
               <h2 id="mfa-factors-title">Aplicaciones autenticadoras</h2>
+              {studentAal2 && !recentTotp && verifiedFactors.length > 0 && (
+                <p>
+                  Para cambiar esta configuración, verifica un código de tu
+                  aplicación autenticadora.
+                </p>
+              )}
               <ul className={styles.factors}>
                 {visibleFactors.map((factor, index) => (
                   <li
@@ -116,15 +132,57 @@ export function MfaOverview({
                         y vuelve a comenzar.
                       </p>
                     )}
-                    <form action="/auth/mfa/challenge" method="post">
-                      {destination}
-                      <input type="hidden" name="factor_id" value={factor.id} />
-                      <button type="submit" className={ui.primaryLink}>
-                        {factor.status === "verified"
-                          ? "Verificar código TOTP"
-                          : "Verificar configuración"}
-                      </button>
-                    </form>
+                    {canRemove && factor.status === "verified" ? (
+                      <form
+                        action="/auth/mfa/disable"
+                        method="post"
+                        className={styles.removeFactor}
+                      >
+                        {destination}
+                        <input
+                          type="hidden"
+                          name="factor_id"
+                          value={factor.id}
+                        />
+                        <label>
+                          <input
+                            type="checkbox"
+                            name="confirmed"
+                            value="yes"
+                            required
+                          />
+                          {lastVerified
+                            ? "Confirmo que quiero desactivar la verificación en dos pasos."
+                            : "Confirmo que quiero eliminar este autenticador. La verificación en dos pasos seguirá activada."}
+                        </label>
+                        <button type="submit" className={ui.secondaryLink}>
+                          {lastVerified
+                            ? "Desactivar verificación en dos pasos"
+                            : "Eliminar este autenticador"}
+                        </button>
+                      </form>
+                    ) : (
+                      <form action="/auth/mfa/challenge" method="post">
+                        {destination}
+                        <input
+                          type="hidden"
+                          name="factor_id"
+                          value={factor.id}
+                        />
+                        {studentAal2 && factor.status === "verified" && (
+                          <input
+                            type="hidden"
+                            name="return_to_settings"
+                            value="yes"
+                          />
+                        )}
+                        <button type="submit" className={ui.primaryLink}>
+                          {factor.status === "verified"
+                            ? "Verificar código TOTP"
+                            : "Verificar configuración"}
+                        </button>
+                      </form>
+                    )}
                     {factor.status === "unverified" && (
                       <form action="/auth/mfa/cancel" method="post">
                         {destination}

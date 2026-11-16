@@ -13,6 +13,8 @@ export interface VerifiedIdentity {
   readonly status: "active" | "blocked";
   readonly assuranceLevel: "aal1" | "aal2";
   readonly mfaPending?: true;
+  readonly totpEnabled?: boolean;
+  readonly hasStaffMembership?: true;
 }
 export interface VerifiedMembership {
   readonly organizationId: string;

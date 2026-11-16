@@ -24,6 +24,41 @@ function reader(): IdentityReader {
   };
 }
 describe("resolución SSR simulada, sin usuarios Cloud", () => {
+  it.each([
+    ["unverified", false],
+    ["verified", true],
+  ] as const)(
+    "exhibe el estado de TOTP %s aun con una sesión aal2",
+    async (status, enabled) => {
+      const r = reader();
+      r.user = async () =>
+        ok({
+          id: "auth-a",
+          email_confirmed_at: "verified",
+          factors: [{ factor_type: "totp", status }],
+        });
+      const session = await resolveSession(r);
+      expect(session).toMatchObject({ identity: { totpEnabled: enabled } });
+      if (session.status !== "authenticated") throw Error("estado inesperado");
+      expect(session.identity?.mfaPending).toBeUndefined();
+    },
+  );
+  it("conserva el vínculo de personal suspendido para el control MFA sin autorizar sus módulos", async () => {
+    const r = reader();
+    const original = r.memberships;
+    r.memberships = async (profile) => {
+      const staff = (await original(profile)).data![0]!;
+      return ok([
+        { ...staff, status: "suspended" },
+        { ...staff, role: "student", staff_rank: null },
+      ]);
+    };
+    const session = await resolveSession(r);
+    expect(session).toMatchObject({
+      identity: { hasStaffMembership: true },
+      memberships: [{ role: "student" }],
+    });
+  });
   it("resuelve identidad/membresía verificadas por el proveedor y RLS", async () => {
     const session = await resolveSession(reader());
     expect(session.status).toBe("authenticated");

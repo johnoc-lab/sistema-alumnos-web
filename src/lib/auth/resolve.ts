@@ -81,24 +81,31 @@ export async function resolveSession(
       memberships: [],
     };
     if (!profile.data || profile.data.status !== "active") return base;
+    // getUser consulta el estado actual del factor, incluso para sesiones abiertas antes del alta.
+    const totpEnabled =
+      user.data.factors?.some(
+        (factor) => factor.factor_type === "totp" && factor.status === "verified",
+      ) ?? false;
+    const membership = await reader.memberships(profile.data.id);
+    if (membership.error) return { status: "unavailable", user: null };
+    const ownMemberships = (membership.data ?? []).filter(
+      (m) => m.profile_id === profile.data!.id,
+    );
     const identity: VerifiedIdentity = {
       profileId: profile.data.id,
       authUserId: user.data.id,
       status: "active",
       assuranceLevel: claims.data.aal === "aal2" ? "aal2" : "aal1",
-      // getUser consulta el estado de los factores, incluso para sesiones abiertas antes del alta.
-      ...(claims.data.aal !== "aal2" &&
-        user.data.factors?.some(
-          (factor) => factor.factor_type === "totp" && factor.status === "verified",
-        ) && { mfaPending: true as const }),
+      totpEnabled,
+      ...(ownMemberships.some(
+        (m) => m.role === "admin" && m.status !== "archived",
+      ) && { hasStaffMembership: true as const }),
+      ...(totpEnabled && claims.data.aal !== "aal2" && {
+        mfaPending: true as const,
+      }),
     };
-    const membership = await reader.memberships(profile.data.id);
-    if (membership.error) return { status: "unavailable", user: null };
-    const valid = (membership.data ?? []).filter(
-      (m) =>
-        m.profile_id === profile.data!.id &&
-        m.status === "active" &&
-        ["student", "admin"].includes(m.role),
+    const valid = ownMemberships.filter(
+      (m) => m.status === "active" && ["student", "admin"].includes(m.role),
     );
     if (!valid.length) return { ...base, identity };
     const orgs = await reader.organizations([

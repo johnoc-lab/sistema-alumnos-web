@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
   listFactors: vi.fn(),
   enroll: vi.fn(),
   unenroll: vi.fn(),
+  refreshSession: vi.fn(),
+  signOut: vi.fn(),
   challenge: vi.fn(),
   verify: vi.fn(),
   resetPasswordForEmail: vi.fn(),
@@ -30,7 +32,8 @@ vi.mock("@/lib/supabase/server", () => ({
 vi.mock("@/lib/auth/session.server", () => ({
   readSessionForClient: mocks.session,
 }));
-import { mfaPost } from "@/lib/auth/mfa-handlers.server";
+import { mfaPost, type MfaAction } from "@/lib/auth/mfa-handlers.server";
+import { POST as disablePost } from "@/app/auth/mfa/disable/route";
 import { POST as cancelPost } from "@/app/auth/mfa/cancel/route";
 import { loadMfaOverview, privateQrDataUri } from "@/lib/auth/mfa.server";
 import { createElement } from "react";
@@ -96,7 +99,7 @@ function factors(status: "verified" | "unverified" = "unverified") {
   };
 }
 function request(
-  action: "enroll" | "challenge" | "verify" | "cancel",
+  action: MfaAction,
   fields: Record<string, string> = {},
   origin: string | null = base,
 ) {
@@ -193,6 +196,13 @@ beforeEach(() => {
   mocks.verify.mockResolvedValue({ data: {}, error: null });
   mocks.unenroll.mockReset();
   mocks.unenroll.mockResolvedValue({ data: { id: factor }, error: null });
+  mocks.refreshSession.mockReset();
+  mocks.refreshSession.mockResolvedValue({
+    data: { session: { user: { id: "user-a" } } },
+    error: null,
+  });
+  mocks.signOut.mockReset();
+  mocks.signOut.mockResolvedValue({ error: null });
   mocks.set.mockImplementation(
     (name: string, value: string, options?: { maxAge?: number }) => {
       if (options?.maxAge === 0) mocks.cookies.delete(name);
@@ -203,6 +213,8 @@ beforeEach(() => {
     auth: {
       getClaims: mocks.getClaims,
       getUser: mocks.getUser,
+      refreshSession: mocks.refreshSession,
+      signOut: mocks.signOut,
       mfa: {
         listFactors: mocks.listFactors,
         enroll: mocks.enroll,
@@ -636,6 +648,238 @@ describe("prueba MFA aislada y guard administrativo intacto", () => {
         "admin",
       ),
     ).toEqual({ allowed: false, reason: "admin_required" });
+  });
+});
+
+describe("desactivación de TOTP confirmado del alumno", () => {
+  const next = "/o/qa/dashboard/perfil";
+  const fields = { factor_id: factor, confirmed: "yes", next };
+  const freshClaims = (aal = "aal2", age = 60, method = "totp") => ({
+    data: {
+      claims: {
+        ...claims(aal).data.claims,
+        iat: Math.floor(Date.now() / 1000),
+        amr: [{ method, timestamp: Math.floor(Date.now() / 1000) - age }],
+      },
+    },
+    error: null,
+  });
+
+  beforeEach(() => {
+    const session = candidate();
+    session.identity = { ...session.identity!, assuranceLevel: "aal2" };
+    session.memberships[0] = {
+      ...session.memberships[0]!,
+      role: "student",
+      staffRank: null,
+    };
+    mocks.session.mockResolvedValue(session);
+    mocks.getClaims.mockResolvedValue(freshClaims());
+    mocks.listFactors.mockResolvedValue(factors("verified"));
+  });
+
+  it("elimina exclusivamente el TOTP seleccionado y renueva la sesión", async () => {
+    proof();
+    mocks.listFactors.mockResolvedValue({
+      data: {
+        all: [
+          { id: factor, status: "verified", factor_type: "totp" },
+          { id: otherFactor, status: "verified", factor_type: "totp" },
+        ],
+      },
+      error: null,
+    });
+    const response = await disablePost(request("disable", fields));
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe(
+      base + "/auth/mfa?notice=factor_removed&next=" + encodeURIComponent(next),
+    );
+    expect(response.headers.get("cache-control")).toContain("no-store");
+    expect(mocks.unenroll).toHaveBeenCalledExactlyOnceWith({
+      factorId: factor,
+    });
+    expect(mocks.refreshSession).toHaveBeenCalledTimes(1);
+    expect(mocks.cookies.has(mfaCookie)).toBe(false);
+  });
+
+  it.each([
+    ["aal1", 60, "totp"],
+    ["aal2", 301, "totp"],
+    ["aal2", -60, "totp"],
+    ["aal2", 10, "password"],
+  ])(
+    "pide revalidar para %s, antigüedad %s y método %s",
+    async (aal, age, method) => {
+      mocks.getClaims.mockResolvedValue(freshClaims(aal, age, method));
+      const response = await disablePost(request("disable", fields));
+      expect(response.headers.get("location")).toContain(
+        "/auth/mfa?notice=reauth",
+      );
+      expect(mocks.unenroll).not.toHaveBeenCalled();
+    },
+  );
+
+  it("pide revalidar cuando el AMR solo identifica el método sin indicar su fecha", async () => {
+    const current = freshClaims();
+    mocks.getClaims.mockResolvedValue({
+      ...current,
+      data: { claims: { ...current.data.claims, amr: ["totp"] } },
+    });
+    const response = await disablePost(request("disable", fields));
+    expect(response.headers.get("location")).toContain("notice=reauth");
+    expect(mocks.unenroll).not.toHaveBeenCalled();
+  });
+
+  it("no usa la renovación del JWT como prueba de verificación reciente", async () => {
+    mocks.getClaims.mockResolvedValue(claims("aal2"));
+    expect(
+      (await disablePost(request("disable", fields))).headers.get("location"),
+    ).toContain("notice=reauth");
+    expect(mocks.unenroll).not.toHaveBeenCalled();
+  });
+
+  it.each(["principal", "administrator", "teacher", "secretary"] as const)(
+    "deniega al personal %s incluso con membresía estudiantil en otra organización",
+    async (staffRank) => {
+      const mixed = candidate();
+      mixed.memberships[0] = {
+        ...mixed.memberships[0]!,
+        staffRank,
+        organizationId: "org-z",
+      };
+      mixed.memberships.unshift({
+        ...mixed.memberships[0]!,
+        organizationId: "org-a",
+        role: "student",
+        staffRank: null,
+      });
+      mocks.session.mockResolvedValue(mixed);
+      expect((await disablePost(request("disable", fields))).status).toBe(403);
+      expect(mocks.unenroll).not.toHaveBeenCalled();
+    },
+  );
+
+  it("deniega una cuenta de personal suspendido aunque conserve acceso como alumno", async () => {
+    const eligible = candidate();
+    eligible.identity = { ...eligible.identity!, hasStaffMembership: true };
+    eligible.memberships[0] = {
+      ...eligible.memberships[0]!,
+      role: "student",
+      staffRank: null,
+    };
+    mocks.session.mockResolvedValue(eligible);
+    expect(await loadMfaOverview()).toMatchObject({ studentCanDisable: false });
+    expect((await disablePost(request("disable", fields))).status).toBe(403);
+    expect(mocks.unenroll).not.toHaveBeenCalled();
+  });
+
+  it("rechaza Origin ajeno, confirmación ausente, y campos repetidos", async () => {
+    expect(
+      (
+        await disablePost(
+          request("disable", fields, "https://external.example"),
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (await disablePost(request("disable", { factor_id: factor }))).status,
+    ).toBe(400);
+    const repeated = request("disable", fields);
+    const body = new URLSearchParams({ ...fields });
+    body.append("confirmed", "yes");
+    expect(
+      (
+        await disablePost(
+          new Request(repeated.url, {
+            method: "POST",
+            headers: repeated.headers,
+            body,
+          }),
+        )
+      ).status,
+    ).toBe(400);
+    expect(mocks.unenroll).not.toHaveBeenCalled();
+  });
+
+  it("rechaza un factor ajeno o pendiente, y una sesión ausente", async () => {
+    expect(
+      (
+        await disablePost(
+          request("disable", { ...fields, factor_id: otherFactor }),
+        )
+      ).status,
+    ).toBe(403);
+    mocks.listFactors.mockResolvedValue(factors());
+    expect((await disablePost(request("disable", fields))).status).toBe(403);
+    mocks.session.mockResolvedValue({ status: "anonymous", user: null });
+    expect((await disablePost(request("disable", fields))).status).toBe(401);
+    expect(mocks.unenroll).not.toHaveBeenCalled();
+  });
+
+  it("revalidar desde seguridad vuelve a la confirmación sin quitar el factor", async () => {
+    mocks.getClaims.mockResolvedValue(freshClaims("aal2", 600));
+    const started = await mfaPost(
+      request("challenge", {
+        factor_id: factor,
+        next,
+        return_to_settings: "yes",
+      }),
+      "challenge",
+    );
+    expect(started.status).toBe(200);
+    mocks.verify.mockImplementation(async () => {
+      mocks.getClaims.mockResolvedValue(freshClaims());
+      return { data: {}, error: null };
+    });
+    const verified = await mfaPost(verification(), "verify");
+    expect(verified.headers.get("location")).toBe(
+      base + "/auth/mfa?notice=verified&next=" + encodeURIComponent(next),
+    );
+    expect((await loadMfaOverview()).status).toBe("ready");
+    expect(mocks.unenroll).not.toHaveBeenCalled();
+  });
+
+  it("si la renovación falla después de quitar el factor, termina la sesión local", async () => {
+    const authCookie = "sb-rnxgrunnrdlgjsbsrjev-auth-token.0";
+    mocks.cookies.set(authCookie, "synthetic");
+    mocks.refreshSession.mockRejectedValue(Error("provider unavailable"));
+    mocks.signOut.mockRejectedValue(Error("provider unavailable"));
+    const response = await disablePost(request("disable", fields));
+    expect(mocks.signOut).toHaveBeenCalledExactlyOnceWith({ scope: "local" });
+    expect(mocks.cookies.has(authCookie)).toBe(false);
+    expect(response.headers.get("location")).toContain(
+      "/login?notice=mfa_session_ended",
+    );
+  });
+
+  it("muestra la confirmación únicamente a un alumno con verificación reciente", () => {
+    const common = {
+      aal: "aal2" as const,
+      factors: [{ id: factor, status: "verified" as const }],
+    };
+    const student = renderToStaticMarkup(
+      createElement(MfaOverview, {
+        ...common,
+        role: "student",
+        recentTotp: true,
+      }),
+    );
+    expect(student).toContain("Desactivar verificación en dos pasos");
+    expect(student).toContain('name="confirmed"');
+    expect(student).toContain("required");
+    const admin = renderToStaticMarkup(
+      createElement(MfaOverview, {
+        ...common,
+        role: "admin",
+        recentTotp: true,
+      }),
+    );
+    expect(admin).not.toContain("/auth/mfa/disable");
+    const stale = renderToStaticMarkup(
+      createElement(MfaOverview, { ...common, role: "student" }),
+    );
+    expect(stale).not.toContain("/auth/mfa/disable");
+    expect(stale).toContain('name="return_to_settings"');
   });
 });
 

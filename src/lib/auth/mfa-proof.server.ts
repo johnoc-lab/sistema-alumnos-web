@@ -10,6 +10,7 @@ export type MfaBinding = {
   factor_id: string;
   challenge_id: string;
   next?: string;
+  return_to_settings?: true;
 };
 type MfaProof = MfaBinding & { purpose: "mfa-totp"; exp: number };
 export function makeMfaProof(
@@ -56,7 +57,8 @@ export function readMfaProof(
       !Number.isInteger(p.exp) ||
       p.exp! <= now / 1000 ||
       p.exp! > now / 1000 + 300 ||
-      (p.next !== undefined && safeNext(p.next) !== p.next)
+      (p.next !== undefined && safeNext(p.next) !== p.next) ||
+      (p.return_to_settings !== undefined && p.return_to_settings !== true)
     )
       return null;
     for (const key of [
