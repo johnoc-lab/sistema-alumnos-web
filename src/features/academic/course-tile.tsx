@@ -30,9 +30,7 @@ export function CourseTile({
       </div>
       <div className={css.tileBody}>
         <span className={css.tileTag}>{tag || "Taller académico"}</span>
-        <h3>
-          <Link href={href}>{title}</Link>
-        </h3>
+        <h3>{title}</h3>
         <p>
           {description ||
             "Consulta los materiales y actividades de este taller."}
@@ -49,10 +47,10 @@ export function CourseTile({
             />
           </>
         ) : (
-          <span className={css.hint}>Avance por registrar</span>
+          <span className={css.hint}>Sin avance registrado</span>
         )}
-        <Link href={href}>
-          Ver taller y materiales <ArrowRight size={15} aria-hidden="true" />
+        <Link href={href} className={css.openCourse} aria-label={"Abrir taller: " + title}>
+          Abrir taller <ArrowRight size={15} aria-hidden="true" />
         </Link>
       </div>
     </article>

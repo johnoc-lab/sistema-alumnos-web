@@ -1,12 +1,13 @@
 import Link from "next/link";
 import {
-  BookOpen,
-  FolderOpen,
-  Megaphone,
+  Award,
   CalendarDays,
+  ClipboardCheck,
+  FolderOpen,
   UserRound,
 } from "lucide-react";
 import { CourseTile } from "./course-tile";
+import { formatDay, limaDay, limaTime } from "@/features/schedule/model";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import {
@@ -26,8 +27,10 @@ import { AnnouncementMediaPicker } from "./announcement-media-picker";
 import { MaterialSourceFields } from "./material-source-fields";
 import {
   loadAcademic,
+  loadNextStudentSession,
   loadStaffAcademic,
   type AcademicData,
+  type NextStudentSession,
 } from "./data.server";
 import { labels, noticeText, resourceUrl, states, uuid } from "./forms";
 import ui from "@/components/ui/ui.module.css";
@@ -991,17 +994,24 @@ function StudentCourses({
   slug,
   data,
   membershipId,
+  limit,
 }: {
   slug: string;
   data: AcademicData;
   membershipId?: string | undefined;
+  limit?: number;
 }) {
+  const enrollments = new Map(
+    data.enrollments
+      .filter((enrollment) => enrollment.membership_id === membershipId)
+      .map((enrollment) => [enrollment.course_id, enrollment]),
+  );
+  const active = (id: string) => Number(enrollments.get(id)?.status === "active");
+  const courses = [...data.courses].sort((a, b) => active(b.id) - active(a.id));
   return (
     <div className={css.courseGrid}>
-      {data.courses.map((c, index) => {
-        const enrollment = data.enrollments.find(
-          (e) => e.course_id === c.id && e.membership_id === membershipId,
-        );
+      {courses.slice(0, limit).map((c, index) => {
+        const enrollment = enrollments.get(c.id);
         return (
           <CourseTile
             key={c.id}
@@ -1017,6 +1027,52 @@ function StudentCourses({
     </div>
   );
 }
+
+function NextSession({
+  slug,
+  session,
+}: {
+  slug: string;
+  session: NextStudentSession | null | undefined;
+}) {
+  if (!session) {
+    return (
+      <section className={css.section}>
+        <h2>Próxima sesión</h2>
+        <p>
+          {session === undefined
+            ? "No se pudo consultar tu próxima sesión."
+            : "No tienes sesiones próximas programadas."}
+        </p>
+      </section>
+    );
+  }
+
+  const day = limaDay(new Date(session.starts_at));
+  const params = new URLSearchParams({ course: session.course_id, date: day });
+  return (
+    <section className={css.section}>
+      <h2>Próxima sesión</h2>
+      <p className={css.hint}>{session.course.title}</p>
+      <h3>{session.title}</h3>
+      <p>
+        <time dateTime={session.starts_at}>
+          {formatDay(day)}, {limaTime(session.starts_at)}
+        </time>
+        {" – "}
+        <time dateTime={session.ends_at}>{limaTime(session.ends_at)}</time>
+        {" · Hora de Perú"}
+      </p>
+      <Link
+        className={ui.secondaryLink}
+        href={`/o/${slug}/dashboard/horario?${params}`}
+      >
+        Ver horario del taller
+      </Link>
+    </section>
+  );
+}
+
 export function AcademicView({
   slug,
   section,
@@ -1026,6 +1082,7 @@ export function AcademicView({
   courseId,
   canOpenSchedule = false,
   canOpenEnrollments = false,
+  nextSession,
 }: {
   slug: string;
   section: string;
@@ -1035,6 +1092,7 @@ export function AcademicView({
   courseId?: string;
   canOpenSchedule?: boolean;
   canOpenEnrollments?: boolean;
+  nextSession?: NextStudentSession | null | undefined;
 }) {
   const admin = section.startsWith("admin"),
     own = data.memberships.find((m) => m.profile_id === profileId);
@@ -1113,8 +1171,9 @@ export function AcademicView({
             <p>{c.description || "Sin descripción."}</p>
             {enrollment && (
               <p>
-                Avance: {enrollment.progress_percent ?? 0}% ·{" "}
-                {labels[enrollment.status]}
+                {enrollment.progress_percent === null
+                  ? "Sin avance registrado"
+                  : "Avance: " + enrollment.progress_percent + "%"} · {labels[enrollment.status]}
               </p>
             )}
           </section>
@@ -1169,29 +1228,24 @@ export function AcademicView({
             : "Continúa tus talleres, descubre tus materiales y mantente al día con las actividades de tu organización."}
         </p>
       </section>
-      <div className={css.metrics}>
-        {(admin
-          ? [
-              [
-                data.memberships.filter((m) => m.role === "student").length,
-                "Alumnos",
-                "admin/alumnos",
-              ],
-              [data.courses.length, "Talleres", "admin/cursos"],
-              [data.enrollments.length, "Matrículas", "admin/matriculas"],
-            ]
-          : [
-              [data.courses.length, "Mis talleres", "dashboard/cursos"],
-              [data.materials.length, "Materiales", "dashboard/materiales"],
-              [data.announcements.length, "Avisos", "dashboard/avisos"],
-            ]
-        ).map(([count, label, path]) => (
-          <Link key={path} href={"/o/" + slug + "/" + path}>
-            <strong>{count}</strong>
-            {label}
-          </Link>
-        ))}
-      </div>
+      {admin && (
+        <div className={css.metrics}>
+          {[
+            [
+              data.memberships.filter((m) => m.role === "student").length,
+              "Alumnos",
+              "admin/alumnos",
+            ],
+            [data.courses.length, "Talleres", "admin/cursos"],
+            [data.enrollments.length, "Matrículas", "admin/matriculas"],
+          ].map(([count, label, path]) => (
+            <Link key={path} href={"/o/" + slug + "/" + path}>
+              <strong>{count}</strong>
+              {label}
+            </Link>
+          ))}
+        </div>
+      )}
       {admin && (
         <section className={css.section}>
           <h2>Prepara tu espacio académico</h2>
@@ -1225,36 +1279,22 @@ export function AcademicView({
       )}
       {!admin && (
         <>
+          <NextSession slug={slug} session={nextSession} />
           <div className={css.blockHeading}>
-            <h2>Recursos académicos</h2>
+            <h2>Accesos rápidos</h2>
           </div>
           <div className={css.resourceGrid}>
             {[
               {
-                path: "cursos",
-                label: "Mis talleres",
-                description: "Continúa tu aprendizaje",
-                icon: BookOpen,
-              },
-              {
                 path: "materiales",
                 label: "Materiales",
-                description: "Consulta tus recursos",
                 icon: FolderOpen,
+                count: data.materials.length,
               },
-              {
-                path: "avisos",
-                label: "Avisos",
-                description: "Novedades de tus talleres",
-                icon: Megaphone,
-              },
-              {
-                path: "horario",
-                label: "Mi horario",
-                description: "Organiza tus actividades",
-                icon: CalendarDays,
-              },
-            ].map(({ path, label, description, icon: Icon }) => (
+              { path: "horario", label: "Mi horario", icon: CalendarDays },
+              { path: "asistencia", label: "Mi asistencia", icon: ClipboardCheck },
+              { path: "certificados", label: "Certificados", icon: Award },
+            ].map(({ path, label, count, icon: Icon }) => (
               <Link
                 className={css.resource}
                 key={path}
@@ -1263,7 +1303,7 @@ export function AcademicView({
                 <Icon aria-hidden="true" />
                 <span>
                   <strong>{label}</strong>
-                  <small>{description}</small>
+                  {count !== undefined && <small>{count} disponibles</small>}
                 </span>
               </Link>
             ))}
@@ -1271,7 +1311,7 @@ export function AcademicView({
           <div className={css.blockHeading}>
             <h2>Mis talleres</h2>
             <Link href={"/o/" + slug + "/dashboard/cursos"}>
-              Ver todos los talleres →
+              Ver todos ({data.courses.length}) →
             </Link>
           </div>
           {!data.courses.length ? (
@@ -1282,37 +1322,27 @@ export function AcademicView({
           ) : (
             <StudentCourses
               slug={slug}
-              data={{ ...data, courses: data.courses.slice(0, 3) }}
+              data={data}
               membershipId={own?.id}
+              limit={3}
             />
           )}
-          <div className={css.overviewColumns}>
-            <section>
-              <div className={css.blockHeading}>
-                <h2>Avisos recientes</h2>
-                <Link href={"/o/" + slug + "/dashboard/avisos"}>
-                  Ver avisos →
-                </Link>
-              </div>
-              <Announcements
-                slug={slug}
-                data={{
-                  ...data,
-                  announcements: data.announcements.slice(0, 3),
-                }}
-                admin={false}
-              />
-            </section>
-            <section>
-              <div className={css.blockHeading}>
-                <h2>Agenda de talleres</h2>
-                <Link href={"/o/" + slug + "/dashboard/horario"}>
-                  Ver mi horario →
-                </Link>
-              </div>
-              <p className={css.hint}>Consulta las próximas sesiones de tus talleres y los cambios de horario.</p>
-            </section>
-          </div>
+          <section>
+            <div className={css.blockHeading}>
+              <h2>Avisos recientes</h2>
+              <Link href={"/o/" + slug + "/dashboard/avisos"}>
+                Ver avisos ({data.announcements.length}) →
+              </Link>
+            </div>
+            <Announcements
+              slug={slug}
+              data={{
+                ...data,
+                announcements: data.announcements.slice(0, 3),
+              }}
+              admin={false}
+            />
+          </section>
         </>
       )}
     </>
@@ -1406,6 +1436,7 @@ export async function AcademicPage({
       : permission;
   if (limited && !academicModule) notFound();
   let data: AcademicData;
+  let nextSession: NextStudentSession | null | undefined = null;
   try {
     const client = await createServerSupabaseClient();
     const selectedCourse = value(search, "course");
@@ -1418,6 +1449,22 @@ export async function AcademicPage({
             uuid(selectedCourse) ? selectedCourse : null,
           )
         : await loadAcademic(client, membership.organizationId);
+    if (section === "dashboard") {
+      const student = data.memberships.find(
+        (item) => item.profile_id === membership.profileId && item.role === "student",
+      );
+      if (student) {
+        try {
+          nextSession = await loadNextStudentSession(
+            client,
+            membership.organizationId,
+            student.id,
+          );
+        } catch {
+          nextSession = undefined;
+        }
+      }
+    }
   } catch {
     return (
       <AcademicShell
@@ -1480,6 +1527,7 @@ export async function AcademicPage({
           admin && hasStaffPermission(membership, "enrollments")
         }
         search={search}
+        nextSession={nextSession}
         {...(courseId ? { courseId } : {})}
       />
     </AcademicShell>

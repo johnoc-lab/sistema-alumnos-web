@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 import {
   loadAcademic,
+  loadNextStudentSession,
   loadStaffAcademic,
   mutateAcademic,
   privatePdf,
@@ -23,6 +24,7 @@ function fake(replies: { data: unknown; error: unknown }[] = []) {
     for (const name of [
       "select",
       "eq",
+      "gte",
       "in",
       "order",
       "limit",
@@ -92,6 +94,27 @@ describe("adaptador académico con SDK simulado", () => {
           : 500;
       expect(c.methods).toContainEqual({ name: "limit", args: [expectedLimit] });
     }
+  });
+  it("busca una próxima sesión programada de una matrícula activa", async () => {
+    const session = { title: "Sesión QA", course: { title: "Taller QA" } };
+    const db = fake([{ data: session, error: null }]);
+    const now = new Date("2026-11-16T23:30:00Z");
+    expect(await loadNextStudentSession(db.client, org, id, now)).toEqual(session);
+    expect(db.calls).toHaveLength(1);
+    expect(db.calls[0]?.table).toBe("calendar_events");
+    expect(db.calls[0]?.methods).toEqual([
+      { name: "select", args: [expect.stringContaining("!inner(membership_id)")] },
+      { name: "eq", args: ["organization_id", org] },
+      { name: "eq", args: ["status", "scheduled"] },
+      { name: "eq", args: ["course.status", "published"] },
+      { name: "eq", args: ["course.enrollments.membership_id", id] },
+      { name: "eq", args: ["course.enrollments.status", "active"] },
+      { name: "gte", args: ["starts_at", "2026-11-16T23:30:00.000Z"] },
+      { name: "order", args: ["starts_at"] },
+      { name: "order", args: ["id"] },
+      { name: "limit", args: [1] },
+      { name: "maybeSingle", args: [] },
+    ]);
   });
   it("carga solo matrículas y referencias mínimas para el módulo delegado", async () => {
     const db = fake();

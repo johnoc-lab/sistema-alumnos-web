@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import {
@@ -57,20 +57,44 @@ export function WorkspaceMobileNav({
   logout: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const Overlay = admin ? "div" : "dialog";
+
+  function closeMenu() {
+    dialog.current?.close();
+    setOpen(false);
+    if (!admin) menuButton.current?.focus();
+  }
 
   useEffect(() => {
     if (!open) return;
+    if (!admin) {
+      const panel = dialog.current;
+      if (panel && !panel.open) panel.showModal();
+      closeButton.current?.focus();
+      const desktop = window.matchMedia("(width > 760px)");
+      function closeOnDesktop() {
+        if (!desktop.matches) return;
+        panel?.close();
+        setOpen(false);
+      }
+      desktop.addEventListener("change", closeOnDesktop);
+      return () => desktop.removeEventListener("change", closeOnDesktop);
+    }
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [open]);
+  }, [open, admin]);
 
   return (
     <div className={css.mobileNav}>
       <button
         className={css.menuButton}
+        ref={menuButton}
         type="button"
         aria-label="Abrir menú de navegación"
         aria-expanded={open}
@@ -81,9 +105,23 @@ export function WorkspaceMobileNav({
         <span>Menú</span>
       </button>
       {open && (
-        <div className={css.scrim} onClick={() => setOpen(false)}>
+        <Overlay
+          id={admin ? undefined : "workspace-mobile-drawer"}
+          className={admin ? css.scrim : css.scrim + " " + css.studentDialog}
+          onClick={closeMenu}
+          {...(!admin && {
+            ref: (node: HTMLElement | null) => {
+              dialog.current = node instanceof HTMLDialogElement ? node : null;
+            },
+            "aria-label": "Menú del alumno",
+            onCancel: (event: React.SyntheticEvent) => {
+              event.preventDefault();
+              closeMenu();
+            },
+          })}
+        >
           <aside
-            id="workspace-mobile-drawer"
+            id={admin ? "workspace-mobile-drawer" : undefined}
             className={css.drawer}
             aria-label={admin ? "Menú de administración" : "Menú del alumno"}
             onClick={(event) => event.stopPropagation()}
@@ -95,9 +133,10 @@ export function WorkspaceMobileNav({
               </div>
               <button
                 className={css.closeButton}
+                ref={closeButton}
                 type="button"
                 aria-label="Cerrar menú"
-                onClick={() => setOpen(false)}
+                onClick={closeMenu}
               >
                 <X size={22} aria-hidden="true" />
               </button>
@@ -121,7 +160,7 @@ export function WorkspaceMobileNav({
                     href={`/o/${encodeURIComponent(slug)}/${path}`}
                     className={active ? css.active : undefined}
                     aria-current={active ? "page" : undefined}
-                    onClick={() => setOpen(false)}
+                    onClick={closeMenu}
                   >
                     <Icon size={19} aria-hidden="true" />
                     <span>{label}</span>
@@ -131,7 +170,7 @@ export function WorkspaceMobileNav({
             </nav>
             <div className={css.logout}>{logout}</div>
           </aside>
-        </div>
+        </Overlay>
       )}
     </div>
   );

@@ -842,10 +842,6 @@
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
-.tile h3 a:hover {
-  color: var(--accent);
-  text-decoration: underline;
-}
 .tile p {
   font-size: 13px;
   color: var(--muted);
@@ -864,12 +860,20 @@
   gap: 9px;
   font-size: 12px;
 }
-.tileFooter a {
-  display: flex;
+.openCourse {
+  display: inline-flex;
   align-items: center;
   justify-content: space-between;
+  min-height: 44px;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
   color: var(--accent);
   font-weight: 600;
+}
+.openCourse:hover {
+  background: #e5f0eb;
 }
 .tileFooter progress {
   appearance: none;
@@ -927,15 +931,6 @@
 .resource:hover {
   border-color: #80ad9e;
   background: #fdfefe;
-}
-.overviewColumns {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-  gap: 24px;
-  margin-top: 24px;
-}
-.overviewColumns > section {
-  min-width: 0;
 }
 @media (max-width: 1368px) {
   .organizationBar,
@@ -1001,10 +996,6 @@
   }
   .form {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .overviewColumns {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
   }
   .hero {
     padding: 24px;

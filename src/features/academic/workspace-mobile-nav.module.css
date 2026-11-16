@@ -30,6 +30,19 @@
   background: rgb(8 16 20 / 58%);
 }
 
+.studentDialog {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.studentDialog::backdrop {
+  background: transparent;
+}
+
 .drawer {
   width: min(360px, 88vw);
   height: 100%;
