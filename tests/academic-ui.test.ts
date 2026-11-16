@@ -186,6 +186,11 @@ describe("vistas académicas", () => {
 });
 
 describe("portada del alumno", () => {
+  it("ofrece gestionar la verificación en dos pasos desde Mi perfil", () => {
+    const html = render("dashboard/perfil", empty());
+    expect(html).toContain("Verificación en dos pasos");
+    expect(html).toContain("/auth/mfa?next=%2Fo%2Fqa%2Fdashboard%2Fperfil");
+  });
   const courseId = "11111111-1111-4111-8111-111111111111";
   const otherId = "22222222-2222-4222-8222-222222222222";
   const membership = { name: "QA", organizationId: "org-a", profileId: "profile-a", role: "student" };

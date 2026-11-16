@@ -238,7 +238,6 @@ describe("MFA: acceso de candidato y overview con SDK simulado", () => {
     expect(mocks.enroll).not.toHaveBeenCalled();
   });
   it.each([
-    "student",
     "missing-profile",
     "inactive-membership",
     "suspended-organization",
@@ -246,13 +245,6 @@ describe("MFA: acceso de candidato y overview con SDK simulado", () => {
     "missing-membership",
   ] as const)("rechaza candidato %s sin operaciones MFA", async (kind) => {
     const session = candidate();
-    if (kind === "student")
-      session.memberships[0] = {
-        ...session.memberships[0]!,
-        role: "student",
-        staffRank: null,
-        allowedModules: [],
-      };
     if (kind === "missing-profile") session.identity = null;
     if (kind === "blocked-profile")
       session.identity = { ...session.identity!, status: "blocked" };
@@ -729,20 +721,36 @@ describe("vista de seguridad y QR del titular", () => {
 });
 
 describe("MFA: estado y autorización se revalidan durante el flujo", () => {
-  it("alumno aal2 no puede configurar TOTP mediante el handler", async () => {
+  it("alumno activo aal1 puede iniciar su primer TOTP desde Mi perfil", async () => {
     const session = candidate();
-    session.identity = { ...session.identity!, assuranceLevel: "aal2" };
     session.memberships[0] = {
       ...session.memberships[0]!,
       role: "student",
       staffRank: null,
-      allowedModules: [],
     };
     mocks.session.mockResolvedValue(session);
-    mocks.getClaims.mockResolvedValue(claims("aal2"));
-    expect((await mfaPost(request("enroll"), "enroll")).status).toBe(403);
-    expect(mocks.listFactors).not.toHaveBeenCalled();
+    mocks.listFactors.mockResolvedValue({ data: { all: [] }, error: null });
+    expect(await loadMfaOverview()).toMatchObject({ status: "ready", role: "student", aal: "aal1" });
     expect(mocks.enroll).not.toHaveBeenCalled();
+    const next = "/o/qa/dashboard/perfil";
+    const response = await mfaPost(request("enroll", { next }), "enroll");
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain('name="next" value="' + next + '"');
+    expect(mocks.enroll).toHaveBeenCalledTimes(1);
+  });
+  it("aal1 no puede verificar un factor pendiente cuando ya existe uno confirmado", async () => {
+    mocks.listFactors.mockResolvedValue({
+      data: { all: [
+        { id: factor, status: "unverified", factor_type: "totp" },
+        { id: otherFactor, status: "verified", factor_type: "totp" },
+      ] },
+      error: null,
+    });
+    expect((await mfaPost(request("challenge", { factor_id: factor }), "challenge")).status).toBe(403);
+    proof();
+    expect((await mfaPost(verification(), "verify")).status).toBe(403);
+    expect(mocks.challenge).not.toHaveBeenCalled();
+    expect(mocks.verify).not.toHaveBeenCalled();
   });
   it("membresía revocada después del challenge impide consumir el código", async () => {
     proof();
@@ -1124,20 +1132,12 @@ describe("MFA: cancelación explícita de TOTP pendiente", () => {
     expect(mocks.unenroll).not.toHaveBeenCalled();
   });
   it.each([
-    "student",
     "perfil_bloqueado",
     "sin_perfil",
     "membresia_suspendida",
     "organizacion_suspendida",
   ])("deniega %s sin unenroll", async (kind) => {
     const session = candidate();
-    if (kind === "student")
-      session.memberships[0] = {
-        ...session.memberships[0]!,
-        role: "student",
-        staffRank: null,
-        allowedModules: [],
-      };
     if (kind === "perfil_bloqueado")
       session.identity = { ...session.identity!, status: "blocked" };
     if (kind === "sin_perfil") session.identity = null;
@@ -1297,12 +1297,7 @@ describe("MFA enroll: etapas locales sanitizadas", () => {
         mocks.session.mockResolvedValue({ status: "anonymous", user: null });
       if (stage === "authorization") {
         const s = candidate();
-        s.memberships[0] = {
-          ...s.memberships[0]!,
-          role: "student",
-          staffRank: null,
-          allowedModules: [],
-        };
+        s.memberships = [];
         mocks.session.mockResolvedValue(s);
       }
       if (stage === "claims")

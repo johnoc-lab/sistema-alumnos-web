@@ -1,5 +1,6 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { safeNext } from "./security";
 export const mfaCookie = "sa-mfa-challenge";
 export type MfaBinding = {
   sub: string;
@@ -8,6 +9,7 @@ export type MfaBinding = {
   organization_id: string;
   factor_id: string;
   challenge_id: string;
+  next?: string;
 };
 type MfaProof = MfaBinding & { purpose: "mfa-totp"; exp: number };
 export function makeMfaProof(
@@ -53,7 +55,8 @@ export function readMfaProof(
       p.purpose !== "mfa-totp" ||
       !Number.isInteger(p.exp) ||
       p.exp! <= now / 1000 ||
-      p.exp! > now / 1000 + 300
+      p.exp! > now / 1000 + 300 ||
+      (p.next !== undefined && safeNext(p.next) !== p.next)
     )
       return null;
     for (const key of [

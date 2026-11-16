@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { CookieOptions } from "@supabase/ssr";
+import { NextRequest } from "next/server";
 vi.mock("server-only", () => ({}));
 type Adapter = {
   setAll(
@@ -8,6 +9,8 @@ type Adapter = {
 };
 const mocks = vi.hoisted(() => ({
   create: vi.fn(),
+  signInWithPassword: vi.fn(),
+  factorStatus: "verified" as "verified" | "unverified" | null,
   set: vi.fn(),
   getUser: vi.fn(),
   getClaims: vi.fn(),
@@ -32,6 +35,12 @@ vi.mock("next/headers", () => ({
   }),
 }));
 import { mfaPost } from "@/lib/auth/mfa-handlers.server";
+import { authPost } from "@/lib/auth/handlers.server";
+import { organizationAccess } from "@/lib/auth/access.server";
+import { ProtectedModule } from "@/features/auth/components/protected-module";
+import { safeNext } from "@/lib/auth/security";
+import { GET as scheduleData } from "@/app/(workspace)/o/[organizationSlug]/horario/datos/route";
+import { GET as privateMedia } from "@/app/(workspace)/o/[organizationSlug]/medios/[assetId]/route";
 import { makeMfaProof, mfaCookie } from "@/lib/auth/mfa-proof.server";
 const factor = "11111111-2222-3333-4444-555555555555";
 const challenge = "66666666-7777-8888-9999-aaaaaaaaaaaa";
@@ -43,6 +52,8 @@ beforeEach(() => {
   mocks.role = "admin";
   mocks.profileStatus = "active";
   mocks.revoked = false;
+  mocks.factorStatus = "verified";
+  mocks.signInWithPassword.mockResolvedValue({ error: null });
   vi.stubEnv("SUPABASE_AUTH_ENABLED", "true");
   vi.stubEnv(
     "NEXT_PUBLIC_SUPABASE_URL",
@@ -60,16 +71,19 @@ beforeEach(() => {
     "AUTH_INVITATION_ACCEPT_ENABLED",
   ])
     vi.stubEnv(f, "false");
-  mocks.getUser.mockResolvedValue({
+  mocks.getUser.mockImplementation(async () => ({
     data: {
       user: {
         id: "user-a",
         email_confirmed_at: "2026-01-01",
         is_anonymous: false,
+        factors: mocks.factorStatus
+          ? [{ id: factor, status: mocks.factorStatus, factor_type: "totp" }]
+          : [],
       },
     },
     error: null,
-  });
+  }));
   mocks.getClaims.mockImplementation(async () => ({
     data: {
       claims: {
@@ -80,8 +94,20 @@ beforeEach(() => {
     },
     error: null,
   }));
-  mocks.listFactors.mockResolvedValue({
-    data: { all: [{ id: factor, status: "verified", factor_type: "totp" }] },
+  mocks.listFactors.mockImplementation(async () => ({
+    data: {
+      all: mocks.factorStatus
+        ? [{ id: factor, status: mocks.factorStatus, factor_type: "totp" }]
+        : [],
+    },
+    error: null,
+  }));
+  mocks.challenge.mockResolvedValue({
+    data: {
+      id: challenge,
+      type: "totp",
+      expires_at: Math.floor(Date.now() / 1000) + 120,
+    },
     error: null,
   });
   mocks.set.mockImplementation((name: string, value: string) =>
@@ -89,6 +115,7 @@ beforeEach(() => {
   );
   mocks.verify.mockImplementation(async () => {
     mocks.aal = "aal2";
+    mocks.factorStatus = "verified";
     if (mocks.revoked) mocks.profileStatus = "blocked";
     mocks.options!.setAll([
       {
@@ -104,6 +131,7 @@ beforeEach(() => {
     return {
       auth: {
         getUser: mocks.getUser,
+        signInWithPassword: mocks.signInWithPassword,
         getClaims: mocks.getClaims,
         mfa: {
           listFactors: mocks.listFactors,
@@ -156,7 +184,8 @@ beforeEach(() => {
   );
 });
 afterEach(() => vi.unstubAllEnvs());
-const request = () =>
+const base = "http://127.0.0.1:3000";
+const request = (next?: string) =>
   new Request("http://127.0.0.1:3000/auth/mfa/verify", {
     method: "POST",
     headers: {
@@ -168,6 +197,7 @@ const request = () =>
       factor_id: factor,
       challenge_id: challenge,
       code: "123456",
+      ...(next ? { next } : {}),
     }),
   });
 describe("MFA compuesto con resolución real y adaptador SSR; proveedor simulado", () => {
@@ -195,12 +225,112 @@ describe("MFA compuesto con resolución real y adaptador SSR; proveedor simulado
     );
     expect(mocks.profileStatus).toBe("blocked");
   });
-  it("la resolución real no concede Admin a un alumno aunque sus claims digan aal2", async () => {
+  const destination = "/o/qa/dashboard/horario";
+  const submitPassword = (next = destination) =>
+    authPost(
+      new Request(base + "/auth/login", {
+        method: "POST",
+        headers: {
+          origin: base,
+          "content-type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          email: "qa@example.test",
+          password: "synthetic",
+          next,
+        }),
+      }),
+      "login",
+    );
+
+  it.each([null, "unverified"] as const)(
+    "alumno con factor %s entra con contraseña",
+    async (status) => {
+      mocks.role = "student";
+      mocks.factorStatus = status;
+      const response = await submitPassword();
+      expect(response.headers.get("location")).toBe(base + destination);
+      expect((await organizationAccess("qa", "student")).allowed).toBe(true);
+      expect(mocks.challenge).not.toHaveBeenCalled();
+    },
+  );
+
+  it("confirmar el primer TOTP del alumno activa el requisito en el siguiente login", async () => {
     mocks.role = "student";
+    mocks.factorStatus = "unverified";
+    expect((await mfaPost(request(), "verify")).status).toBe(303);
+    expect(mocks.factorStatus).toBe("verified");
+    mocks.aal = "aal1";
+    const next = new URL((await submitPassword()).headers.get("location")!);
+    expect(next.pathname).toBe("/auth/mfa");
+    expect(next.searchParams.get("next")).toBe(destination);
+  });
+
+  it("alumno con TOTP confirmado debe verificarlo y vuelve al destino firmado", async () => {
+    mocks.role = "student";
+    const login = await submitPassword();
+    const challengePage = new URL(login.headers.get("location")!);
+    expect(challengePage.pathname).toBe("/auth/mfa");
+    expect(challengePage.searchParams.get("next")).toBe(destination);
+    expect(await organizationAccess("qa", "student")).toMatchObject({
+      allowed: false,
+      reason: "mfa_required",
+    });
+
+    await expect(ProtectedModule({
+      slug: "qa", role: "student", title: "Mi horario", section: "dashboard/horario",
+    })).rejects.toMatchObject({
+      digest: expect.stringContaining("/auth/mfa?next=" + encodeURIComponent(destination)),
+    });
+
+    const params = Promise.resolve({ organizationSlug: "qa" });
+    expect(
+      (
+        await scheduleData(new NextRequest(base + "/o/qa/horario/datos"), {
+          params,
+        })
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await privateMedia(new Request(base + "/o/qa/medios/" + factor), {
+          params: Promise.resolve({ organizationSlug: "qa", assetId: factor }),
+        })
+      ).status,
+    ).toBe(404);
+
+    const started = await mfaPost(
+      new Request(base + "/auth/mfa/challenge", {
+        method: "POST",
+        headers: {
+          origin: base,
+          "content-type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({ factor_id: factor, next: destination }),
+      }),
+      "challenge",
+    );
+    expect(started.status).toBe(200);
+    const response = await mfaPost(request("/o/qa/admin"), "verify");
+    expect(response.headers.get("location")).toBe(base + destination);
+    expect((await organizationAccess("qa", "student")).allowed).toBe(true);
+    expect(await organizationAccess("qa", "admin")).toMatchObject({
+      allowed: false,
+      reason: "admin_required",
+    });
+  });
+
+  it("personal sin factor sigue necesitando aal2 y un destino externo se descarta", async () => {
+    mocks.factorStatus = null;
+    const attempted = "//external.example/o/qa/admin";
+    expect((await submitPassword(attempted)).headers.get("location")).toBe(
+      base + safeNext(attempted),
+    );
+    expect(await organizationAccess("qa", "admin")).toMatchObject({
+      allowed: false,
+      reason: "mfa_required",
+    });
     mocks.aal = "aal2";
-    const response = await mfaPost(request(), "verify");
-    expect(response.status).toBe(403);
-    expect(mocks.listFactors).not.toHaveBeenCalled();
-    expect(mocks.verify).not.toHaveBeenCalled();
+    expect((await organizationAccess("qa", "admin")).allowed).toBe(true);
   });
 });

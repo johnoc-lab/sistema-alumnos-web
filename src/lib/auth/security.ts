@@ -11,6 +11,13 @@ export function safeNext(value: unknown): string {
     return value;
   return "/seleccionar-organizacion";
 }
+export function mfaUrl(destination: unknown, notice?: string) {
+  const next = safeNext(destination);
+  const query = new URLSearchParams();
+  if (notice) query.set("notice", notice);
+  if (next !== "/seleccionar-organizacion") query.set("next", next);
+  return query.size ? "/auth/mfa?" + query.toString() : "/auth/mfa";
+}
 export function sameOriginPost(request: Request, origin: string) {
   return (
     request.method === "POST" &&

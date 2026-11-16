@@ -12,6 +12,7 @@ export interface VerifiedIdentity {
   readonly authUserId: string;
   readonly status: "active" | "blocked";
   readonly assuranceLevel: "aal1" | "aal2";
+  readonly mfaPending?: true;
 }
 export interface VerifiedMembership {
   readonly organizationId: string;
@@ -67,7 +68,10 @@ export function authorizeOrganization(
     return { allowed: false, reason: "student_required" };
   if (requiredRole === "admin" && membership.role !== "admin")
     return { allowed: false, reason: "admin_required" };
-  if (requiredRole === "admin" && identity.assuranceLevel !== "aal2")
+  if (
+    identity.assuranceLevel !== "aal2" &&
+    (identity.mfaPending || requiredRole === "admin")
+  )
     return { allowed: false, reason: "mfa_required" };
   if (requiredRole === "admin" && !hasStaffPermission(membership, requirement))
     return { allowed: false, reason: "module_required" };
