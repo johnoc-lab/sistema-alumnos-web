@@ -50,7 +50,7 @@ describe("identidad institucional y presentación segura", () => {
     const unknown = render(
       createElement(CourseTile, { ...props, progress: null }),
     );
-    expect(unknown).toContain("Avance por registrar");
+    expect(unknown).toContain("Sin avance registrado");
     expect(unknown).not.toContain("<progress");
     expect(unknown).not.toContain("0% completado");
   });

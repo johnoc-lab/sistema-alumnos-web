@@ -5,6 +5,13 @@ CREATE ROLE authenticated NOLOGIN NOSUPERUSER NOBYPASSRLS;
 CREATE ROLE service_role NOLOGIN NOSUPERUSER BYPASSRLS;
 CREATE SCHEMA auth;
 CREATE TABLE auth.users(id uuid PRIMARY KEY,email text,email_confirmed_at timestamptz,is_anonymous boolean DEFAULT false,deleted_at timestamptz,banned_until timestamptz,aud text,role text,raw_app_meta_data jsonb,raw_user_meta_data jsonb);
+-- Solo los campos de factores que consume la regla de acceso académico.
+CREATE TABLE auth.mfa_factors (
+ id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ user_id uuid NOT NULL REFERENCES auth.users(id),
+ factor_type text NOT NULL,
+ status text NOT NULL
+);
 -- Helper limitado al contrato de claims del contexto de prueba.
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$
  SELECT (nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub')::uuid

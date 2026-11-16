@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { mfaUrl } from "@/lib/auth/security";
 import {
   Award,
   CalendarDays,
@@ -1145,8 +1146,17 @@ export function AcademicView({
         <p>Estado: {own ? labels[own.status] : ""}</p>
         <p className={css.hint}>
           Si necesitas corregir tus datos, solicita el cambio al administrador.
-          No se cambian credenciales desde este módulo.
         </p>
+        <section aria-labelledby="profile-mfa-title">
+          <h3 id="profile-mfa-title">Verificación en dos pasos</h3>
+          <p>Protege tu cuenta con un código de tu aplicación autenticadora.</p>
+          <Link
+            className={ui.secondaryLink}
+            href={mfaUrl("/o/" + slug + "/dashboard/perfil")}
+          >
+            Gestionar verificación en dos pasos
+          </Link>
+        </section>
       </section>
     );
   if (section === "dashboard/cursos") {

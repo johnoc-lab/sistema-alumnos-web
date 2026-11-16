@@ -20,11 +20,22 @@ export function MfaOverview({
   aal,
   factors,
   notice,
+  role = "admin",
+  next = "/seleccionar-organizacion",
 }: {
   aal: "aal1" | "aal2";
   factors: Array<{ id: string; status: "verified" | "unverified" }>;
   notice?: string | undefined;
+  role?: "admin" | "student";
+  next?: string;
 }) {
+  const verifiedFactors = factors.filter(
+    (factor) => factor.status === "verified",
+  );
+  const requiresVerification = aal === "aal1" && verifiedFactors.length > 0;
+  const visibleFactors = requiresVerification ? verifiedFactors : factors;
+  const back = role === "admin" && aal === "aal1" ? "/seleccionar-organizacion" : next;
+  const destination = <input type="hidden" name="next" value={next} />;
   const message =
     notice &&
     Object.hasOwn(notices, notice) &&
@@ -48,8 +59,9 @@ export function MfaOverview({
             <p className={ui.eyebrow}>SEGURIDAD DE LA CUENTA</p>
             <h1>Verificación en dos pasos</h1>
             <p>
-              Configura o verifica tu aplicación autenticadora para acceder al
-              panel administrativo.
+              {role === "admin"
+                ? "La verificación en dos pasos es obligatoria para acceder al panel administrativo."
+                : "Puedes configurar un autenticador. Una vez confirmado, necesitarás su código cada vez que inicies sesión."}
             </p>
           </header>
           {message && (
@@ -61,12 +73,9 @@ export function MfaOverview({
             <p className={ui.notice} role="status">
               Tu sesión tiene la verificación en dos pasos completada.
             </p>
-          ) : (
-            <p className={ui.notice}>
-              Completa la verificación con tu código TOTP para continuar al
-              panel administrativo.
-            </p>
-          )}
+          ) : requiresVerification ? (
+            <p className={ui.notice}>Verifica tu código TOTP para continuar.</p>
+          ) : null}
           {factors.length === 0 ? (
             <section className={ui.panel} aria-labelledby="mfa-setup-title">
               <h2 id="mfa-setup-title">
@@ -78,6 +87,7 @@ export function MfaOverview({
                 control.
               </p>
               <form action="/auth/mfa/enroll" method="post">
+                {destination}
                 <button type="submit" className={ui.primaryLink}>
                   Configurar TOTP
                 </button>
@@ -87,7 +97,7 @@ export function MfaOverview({
             <section aria-labelledby="mfa-factors-title">
               <h2 id="mfa-factors-title">Aplicaciones autenticadoras</h2>
               <ul className={styles.factors}>
-                {factors.map((factor, index) => (
+                {visibleFactors.map((factor, index) => (
                   <li
                     className={ui.panel}
                     key={factor.id}
@@ -107,6 +117,7 @@ export function MfaOverview({
                       </p>
                     )}
                     <form action="/auth/mfa/challenge" method="post">
+                      {destination}
                       <input type="hidden" name="factor_id" value={factor.id} />
                       <button type="submit" className={ui.primaryLink}>
                         {factor.status === "verified"
@@ -116,6 +127,7 @@ export function MfaOverview({
                     </form>
                     {factor.status === "unverified" && (
                       <form action="/auth/mfa/cancel" method="post">
+                        {destination}
                         <input
                           type="hidden"
                           name="factor_id"
@@ -132,9 +144,15 @@ export function MfaOverview({
             </section>
           )}
           <nav className={ui.row} aria-label="Navegación de seguridad">
-            <Link href="/seleccionar-organizacion" className={ui.secondaryLink}>
-              Volver a mis organizaciones
-            </Link>
+            {!requiresVerification && (
+              <Link href={back} className={ui.secondaryLink}>
+                {back.endsWith("/dashboard/perfil")
+                  ? "Volver a Mi perfil"
+                  : back === "/seleccionar-organizacion"
+                    ? "Volver a mis organizaciones"
+                    : "Continuar"}
+              </Link>
+            )}
             <LogoutForm />
           </nav>
         </div>

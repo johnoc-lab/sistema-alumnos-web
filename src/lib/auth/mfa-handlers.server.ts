@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { authConfig, noStoreHeaders } from "@/lib/supabase/config";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { readFields, sameOriginPost } from "./security";
+import { mfaUrl, readFields, safeNext, sameOriginPost } from "./security";
 import {
   mfaContext,
   ownTotpFactors,
@@ -84,9 +84,11 @@ export async function mfaPost(request: Request, action: MfaAction) {
       action === "verify"
         ? readMfaProof(jar.get(mfaCookie)?.value, config.secret)
         : null;
+    const next = safeNext(proof?.next ?? fields.get("next"));
+    const returnToMfa = (notice?: string) => go(mfaUrl(next, notice));
     if (action === "verify" && !proof) {
       clear();
-      return go("/auth/mfa?notice=expired");
+      return returnToMfa("expired");
     }
     if (
       action !== "enroll" &&
@@ -96,7 +98,7 @@ export async function mfaPost(request: Request, action: MfaAction) {
           (!factorIdValid(challengeId) || !code || !/^[0-9]{6}$/.test(code))))
     ) {
       clear();
-      return go("/auth/mfa?notice=invalid");
+      return returnToMfa("invalid");
     }
     diagnostic.at("client");
     const client = await createServerSupabaseClient(true);
@@ -143,7 +145,7 @@ export async function mfaPost(request: Request, action: MfaAction) {
     if (action === "enroll") {
       if (factors.length) {
         diagnostic.stop("existing_factor");
-        return go("/auth/mfa?notice=exists");
+        return returnToMfa("exists");
       }
       diagnostic.at("challenge_state_clear");
       clear();
@@ -174,7 +176,7 @@ export async function mfaPost(request: Request, action: MfaAction) {
       if (!qr) return failure(503);
       diagnostic.ok();
       diagnostic.at("html_render");
-      const body = enrollmentHtml(qr, data.id);
+      const body = enrollmentHtml(qr, data.id, next);
       diagnostic.ok();
       diagnostic.at("http_response");
       const response = html(body);
@@ -193,7 +195,15 @@ export async function mfaPost(request: Request, action: MfaAction) {
         factorId: factor.id,
       });
       if (error || !data || data.id !== factor.id) return failure(503);
-      return go("/auth/mfa");
+      return returnToMfa();
+    }
+    if (
+      context.aal !== "aal2" &&
+      factor.status === "unverified" &&
+      factors.some((item) => item.status === "verified")
+    ) {
+      clear();
+      return failure(403);
     }
     if (action === "challenge") {
       clear();
@@ -208,7 +218,7 @@ export async function mfaPost(request: Request, action: MfaAction) {
         !Number.isFinite(data.expires_at) ||
         data.expires_at <= Date.now() / 1000
       )
-        return go("/auth/mfa?notice=failed");
+        return returnToMfa("failed");
       const expires = Math.min(
         Math.floor(data.expires_at),
         Math.floor(Date.now() / 1000) + 300,
@@ -221,6 +231,7 @@ export async function mfaPost(request: Request, action: MfaAction) {
           organization_id: context.organization_id,
           factor_id: factor.id,
           challenge_id: data.id,
+          next,
         },
         config.secret,
         expires,
@@ -232,7 +243,7 @@ export async function mfaPost(request: Request, action: MfaAction) {
         path: "/auth/mfa",
         maxAge: Math.max(1, expires - Math.floor(Date.now() / 1000)),
       });
-      return html(challengeHtml(factor.id, data.id));
+      return html(challengeHtml(factor.id, data.id, next));
     }
     // El proveedor consume el challenge. La prueba local no se reutiliza en la UI.
     clear();
@@ -242,9 +253,8 @@ export async function mfaPost(request: Request, action: MfaAction) {
       code: code!,
     });
     if (error)
-      return go(
-        "/auth/mfa?notice=" +
-          (error.code === "mfa_challenge_expired" ? "expired" : "failed"),
+      return returnToMfa(
+        error.code === "mfa_challenge_expired" ? "expired" : "failed",
       );
     // El mismo cliente writable contiene la sesión nueva guardada por el SDK.
     const user = await client.auth.getUser();
@@ -261,16 +271,17 @@ export async function mfaPost(request: Request, action: MfaAction) {
       typeof claims.data.claims.session_id !== "string" ||
       !claims.data.claims.session_id
     )
-      return go("/auth/mfa?notice=failed");
+      return returnToMfa("failed");
     const fresh = await mfaContext(client, context.organization_id);
     if (
       fresh.status !== "ready" ||
       fresh.sub !== context.sub ||
       fresh.profile_id !== context.profile_id ||
+      fresh.role !== context.role ||
       fresh.aal !== "aal2"
     )
-      return go("/auth/mfa?notice=failed");
-    return go("/seleccionar-organizacion");
+      return returnToMfa("failed");
+    return go(next);
   } catch (error) {
     diagnostic.fail("unexpected_exception", error);
     return failure(503);

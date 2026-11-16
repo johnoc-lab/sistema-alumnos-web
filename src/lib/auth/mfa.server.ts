@@ -6,7 +6,12 @@ export type MfaClient = Awaited<ReturnType<typeof createServerSupabaseClient>>;
 export type MfaFactor = { id: string; status: "verified" | "unverified" };
 export type MfaOverview =
   | { status: "unconfigured" | "anonymous" | "forbidden" | "unavailable" }
-  | { status: "ready"; aal: "aal1" | "aal2"; factors: MfaFactor[] };
+  | {
+      status: "ready";
+      aal: "aal1" | "aal2";
+      role: "admin" | "student";
+      factors: MfaFactor[];
+    };
 export const factorIdValid = (value: unknown): value is string =>
   typeof value === "string" &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
@@ -22,21 +27,24 @@ export async function mfaContext(
   if (session.status !== "authenticated")
     return { status: "anonymous" } as const;
   onStage?.("authorization");
-  const admin = session.memberships
+  const membership = session.memberships
     .filter(
       (m) =>
-        m.role === "admin" &&
         m.status === "active" &&
         m.organizationStatus === "active" &&
         (!organizationId || m.organizationId === organizationId) &&
         m.profileId === session.identity?.profileId,
     )
-    .sort((a, b) => a.organizationId.localeCompare(b.organizationId))[0];
+    .sort(
+      (a, b) =>
+        a.role.localeCompare(b.role) ||
+        a.organizationId.localeCompare(b.organizationId),
+    )[0];
   if (
     !session.identity ||
     session.identity.status !== "active" ||
     session.identity.authUserId !== session.user.id ||
-    !admin
+    !membership
   )
     return { status: "forbidden" } as const;
   onStage?.("claims");
@@ -56,7 +64,8 @@ export async function mfaContext(
     sub: session.user.id,
     session_id: c.session_id,
     profile_id: session.identity.profileId,
-    organization_id: admin.organizationId,
+    organization_id: membership.organizationId,
+    role: membership.role,
     aal: c.aal === "aal2" ? ("aal2" as const) : ("aal1" as const),
   };
 }
@@ -89,6 +98,7 @@ export async function loadMfaOverview(): Promise<MfaOverview> {
     return {
       status: "ready",
       aal: context.aal,
+      role: context.role,
       factors: await ownTotpFactors(client),
     };
   } catch {

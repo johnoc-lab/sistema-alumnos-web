@@ -23,7 +23,12 @@ export type SessionResult =
 type Result<T> = { data: T | null; error: unknown };
 export interface IdentityReader {
   user(): Promise<
-    Result<{ id: string; is_anonymous?: boolean; email_confirmed_at?: string }>
+    Result<{
+      id: string;
+      is_anonymous?: boolean;
+      email_confirmed_at?: string;
+      factors?: { factor_type: string; status: string }[];
+    }>
   >;
   claims(): Promise<
     Result<{
@@ -81,6 +86,11 @@ export async function resolveSession(
       authUserId: user.data.id,
       status: "active",
       assuranceLevel: claims.data.aal === "aal2" ? "aal2" : "aal1",
+      // getUser consulta el estado de los factores, incluso para sesiones abiertas antes del alta.
+      ...(claims.data.aal !== "aal2" &&
+        user.data.factors?.some(
+          (factor) => factor.factor_type === "totp" && factor.status === "verified",
+        ) && { mfaPending: true as const }),
     };
     const membership = await reader.memberships(profile.data.id);
     if (membership.error) return { status: "unavailable", user: null };

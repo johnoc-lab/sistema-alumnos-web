@@ -9,7 +9,8 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { authConfig, authOrigin, noStoreHeaders } from "@/lib/supabase/config";
-import { readFields, safeNext, sameOriginPost } from "./security";
+import { mfaUrl, readFields, safeNext, sameOriginPost } from "./security";
+import { readSessionForClient } from "./session.server";
 import {
   readRecoveryProof,
   makeRecoveryProof,
@@ -129,7 +130,15 @@ export async function authPost(request: Request, action: Action) {
         password,
       });
       if (error) return go("/login?notice=credentials");
-      return go(safeNext(fields.get("next")));
+      const next = safeNext(fields.get("next"));
+      const session = await readSessionForClient(client);
+      if (
+        session.status === "authenticated" &&
+        session.identity?.mfaPending &&
+        session.memberships.length > 0
+      )
+        return go(mfaUrl(next));
+      return go(next);
     }
     if (action === "confirm") {
       const type = fields.get("type"),

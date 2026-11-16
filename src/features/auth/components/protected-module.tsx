@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import type { OrganizationRole } from "@/lib/authorization/access";
 import { staffSectionPermission } from "@/lib/authorization/staff";
 import { organizationAccess } from "@/lib/auth/access.server";
+import { mfaUrl } from "@/lib/auth/security";
 import { AccessPending } from "./access-pending";
 import { LogoutForm } from "./auth-form";
 import styles from "@/components/ui/ui.module.css";
@@ -29,23 +30,7 @@ export async function ProtectedModule({
         "/login?next=" + encodeURIComponent("/o/" + slug + "/" + section),
       );
     if (access.reason === "mfa_required")
-      return (
-        <main
-          id="main-content"
-          className={campus.page + " " + styles.centered}
-          data-access-state="forbidden"
-        >
-          <h1>Acceso no disponible</h1>
-          <p>El panel administrativo requiere verificación MFA aal2.</p>
-          <Link href="/auth/mfa" className={styles.primaryLink}>
-            Configurar/verificar MFA
-          </Link>
-          <Link href="/seleccionar-organizacion">
-            Volver a mis organizaciones
-          </Link>
-          <LogoutForm />
-        </main>
-      );
+      redirect(mfaUrl("/o/" + slug + "/" + section));
     return (
       <AccessPending
         state={
