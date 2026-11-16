@@ -44,6 +44,7 @@ export async function proxy(request: NextRequest) {
       "/auth/mfa/challenge",
       "/auth/mfa/verify",
       "/auth/mfa/cancel",
+      "/auth/mfa/disable",
     ].includes(path) ||
     /^\/o\/[a-z0-9-]+\/acciones$/.test(path)
   )

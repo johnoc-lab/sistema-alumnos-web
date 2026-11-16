@@ -1084,6 +1084,7 @@ export function AcademicView({
   canOpenSchedule = false,
   canOpenEnrollments = false,
   nextSession,
+  totpEnabled = false,
 }: {
   slug: string;
   section: string;
@@ -1094,6 +1095,7 @@ export function AcademicView({
   canOpenSchedule?: boolean;
   canOpenEnrollments?: boolean;
   nextSession?: NextStudentSession | null | undefined;
+  totpEnabled?: boolean;
 }) {
   const admin = section.startsWith("admin"),
     own = data.memberships.find((m) => m.profile_id === profileId);
@@ -1136,28 +1138,33 @@ export function AcademicView({
     return <Announcements slug={slug} data={data} admin={admin} />;
   if (section === "dashboard/perfil")
     return (
-      <section className={css.section}>
-        <div className={css.row}>
-          <UserRound size={30} aria-hidden="true" />
-          <h2>{own ? name(own) : "Mi perfil"}</h2>
-        </div>
-        <p>Contacto: {own?.contact_email ?? "Sin correo de contacto"}</p>
-        <p>Organización: {slug}</p>
-        <p>Estado: {own ? labels[own.status] : ""}</p>
-        <p className={css.hint}>
-          Si necesitas corregir tus datos, solicita el cambio al administrador.
-        </p>
-        <section aria-labelledby="profile-mfa-title">
-          <h3 id="profile-mfa-title">Verificación en dos pasos</h3>
+      <>
+        <section className={css.section} aria-labelledby="profile-title">
+          <div className={css.row}>
+            <UserRound size={30} aria-hidden="true" />
+            <h2 id="profile-title">{own ? name(own) : "Mi perfil"}</h2>
+          </div>
+          <p>Contacto: {own?.contact_email ?? "Sin correo de contacto"}</p>
+          <p>Organización: {slug}</p>
+          <p>Estado: {own ? labels[own.status] : ""}</p>
+          <p className={css.hint}>
+            Si necesitas corregir tus datos, solicita el cambio al administrador.
+          </p>
+        </section>
+        <section className={css.section} aria-labelledby="profile-mfa-title">
+          <h2 id="profile-mfa-title">Verificación en dos pasos</h2>
+          <Badge tone={totpEnabled ? "green" : "neutral"}>
+            {totpEnabled ? "Activada" : "Desactivada"}
+          </Badge>
           <p>Protege tu cuenta con un código de tu aplicación autenticadora.</p>
           <Link
-            className={ui.secondaryLink}
+            className={ui.primaryLink}
             href={mfaUrl("/o/" + slug + "/dashboard/perfil")}
           >
             Gestionar verificación en dos pasos
           </Link>
         </section>
-      </section>
+      </>
     );
   if (section === "dashboard/cursos") {
     if (courseId) {
@@ -1532,6 +1539,7 @@ export async function AcademicPage({
         section={section}
         data={data}
         profileId={access.session.identity.profileId}
+        totpEnabled={access.session.identity.totpEnabled ?? false}
         canOpenSchedule={admin && hasStaffPermission(membership, "schedule")}
         canOpenEnrollments={
           admin && hasStaffPermission(membership, "enrollments")

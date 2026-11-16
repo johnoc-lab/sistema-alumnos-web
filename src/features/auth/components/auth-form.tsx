@@ -10,6 +10,7 @@ export const notices: Record<string, string> = {
     "No se pudo iniciar sesión. Revisa tus datos o contacta al responsable de tu organización.",
   invalid: "Revisa los datos del formulario.",
   logged_out: "La sesión local está cerrada.",
+  mfa_session_ended: "Se eliminó el autenticador. Vuelve a iniciar sesión.",
   password_updated: "Contraseña actualizada. Inicia sesión nuevamente.",
   password_invalid:
     "La contraseña debe tener entre 12 y 128 caracteres y coincidir en ambos campos.",

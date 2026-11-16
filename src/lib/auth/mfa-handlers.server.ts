@@ -13,7 +13,13 @@ import {
 import { mfaCookie, makeMfaProof, readMfaProof } from "./mfa-proof.server";
 import { enrollmentHtml, challengeHtml } from "./mfa-html";
 import { enrollmentDiagnostics } from "./mfa-diagnostics.server";
-export type MfaAction = "enroll" | "challenge" | "verify" | "cancel";
+import { clearSupabaseSessionCookies } from "./session-cookies.server";
+export type MfaAction =
+  | "enroll"
+  | "challenge"
+  | "verify"
+  | "cancel"
+  | "disable";
 const failure = (status: number) =>
   NextResponse.json(
     {
@@ -66,6 +72,14 @@ export async function mfaPost(request: Request, action: MfaAction) {
       return failure(400);
     }
     diagnostic.ok();
+    if (
+      action === "disable" &&
+      (fields.getAll("confirmed").length !== 1 ||
+        fields.get("confirmed") !== "yes" ||
+        fields.getAll("factor_id").length !== 1 ||
+        !factorIdValid(fields.get("factor_id")))
+    )
+      return failure(400);
     diagnostic.at("cookies");
     const jar = await cookies();
     diagnostic.ok();
@@ -137,6 +151,9 @@ export async function mfaPost(request: Request, action: MfaAction) {
       clear();
       return failure(403);
     }
+    if (action === "disable" && !context.studentCanDisable) return failure(403);
+    if (action === "disable" && !context.recentTotp)
+      return returnToMfa("reauth");
     diagnostic.at("list_factors");
     const factors = await ownTotpFactors(client, (error) =>
       diagnostic.fail("factor_list_failed", error),
@@ -188,14 +205,30 @@ export async function mfaPost(request: Request, action: MfaAction) {
       clear();
       return failure(403);
     }
-    if (action === "cancel") {
+    if (action === "cancel" || action === "disable") {
       clear();
-      if (factor.status !== "unverified") return failure(403);
+      if (factor.status !== (action === "cancel" ? "unverified" : "verified"))
+        return failure(403);
       const { data, error } = await client.auth.mfa.unenroll({
         factorId: factor.id,
       });
       if (error || !data || data.id !== factor.id) return failure(503);
-      return returnToMfa();
+      if (action === "cancel") return returnToMfa();
+      try {
+        const refreshed = await client.auth.refreshSession();
+        if (!refreshed.error && refreshed.data.session?.user.id === context.sub)
+          return returnToMfa("factor_removed");
+      } catch {
+        // El factor ya fue eliminado. Invalida la sesión local si no se pudo renovar.
+      }
+      try {
+        await client.auth.signOut({ scope: "local" });
+      } catch {
+        // También se limpian las cookies si Auth no responde.
+      }
+      clearSupabaseSessionCookies(jar, config);
+      const query = new URLSearchParams({ notice: "mfa_session_ended", next });
+      return go("/login?" + query.toString());
     }
     if (
       context.aal !== "aal2" &&
@@ -232,6 +265,12 @@ export async function mfaPost(request: Request, action: MfaAction) {
           factor_id: factor.id,
           challenge_id: data.id,
           next,
+          ...(context.studentCanDisable &&
+            context.aal === "aal2" &&
+            factor.status === "verified" &&
+            fields.get("return_to_settings") === "yes" && {
+              return_to_settings: true,
+            }),
         },
         config.secret,
         expires,
@@ -281,7 +320,7 @@ export async function mfaPost(request: Request, action: MfaAction) {
       fresh.aal !== "aal2"
     )
       return returnToMfa("failed");
-    return go(next);
+    return proof?.return_to_settings ? returnToMfa("verified") : go(next);
   } catch (error) {
     diagnostic.fail("unexpected_exception", error);
     return failure(503);

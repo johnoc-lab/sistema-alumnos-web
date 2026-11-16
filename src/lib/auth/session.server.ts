@@ -30,8 +30,7 @@ export async function readSessionForClient(
         .select(
           "profile_id,organization_id,role,status,staff_rank,allowed_modules",
         )
-        .eq("profile_id", profileId)
-        .eq("status", "active"),
+        .eq("profile_id", profileId),
     organizations: async (ids) =>
       await client
         .from("organizations")

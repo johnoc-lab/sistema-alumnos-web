@@ -11,6 +11,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { authConfig, authOrigin, noStoreHeaders } from "@/lib/supabase/config";
 import { mfaUrl, readFields, safeNext, sameOriginPost } from "./security";
 import { readSessionForClient } from "./session.server";
+import { clearSupabaseSessionCookies } from "./session-cookies.server";
 import {
   readRecoveryProof,
   makeRecoveryProof,
@@ -88,16 +89,7 @@ export async function authPost(request: Request, action: Action) {
         path: "/auth/mfa",
         maxAge: 0,
       });
-    const clearAuthCookies = () => {
-      for (const item of jar.getAll())
-        if (item.name.startsWith("sb-rnxgrunnrdlgjsbsrjev-auth-token"))
-          jar.set(item.name, "", {
-            path: "/",
-            sameSite: "lax",
-            secure: config.origin.startsWith("https:"),
-            maxAge: 0,
-          });
-    };
+    const clearAuthCookies = () => clearSupabaseSessionCookies(jar, config);
     if (action === "logout") {
       clearMfa();
       try {
