@@ -5,6 +5,7 @@ vi.mock("server-only", () => ({}));
 const mocks = vi.hoisted(() => ({
   access: vi.fn(),
   load: vi.fn(),
+  nextSession: vi.fn(),
   create: vi.fn(),
   registrationEnabled: vi.fn(),
 }));
@@ -19,6 +20,7 @@ vi.mock("@/lib/supabase/staff-admin.server", () => ({
 }));
 vi.mock("@/features/academic/data.server", () => ({
   loadAcademic: mocks.load,
+  loadNextStudentSession: mocks.nextSession,
 }));
 import { StaffPage } from "@/features/staff/staff-page";
 import ActivationPage from "@/app/auth/activar-personal/page";
@@ -50,6 +52,7 @@ const render = (section: string, data = empty(), search = {}) =>
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.create.mockResolvedValue({ mock: true });
+  mocks.nextSession.mockResolvedValue(null);
   mocks.registrationEnabled.mockReturnValue(false);
 });
 describe("vistas académicas", () => {
@@ -179,6 +182,77 @@ describe("vistas académicas", () => {
     expect(html).toContain("No se pudo consultar la información");
     expect(html).not.toContain("PRIVATE_DB_DETAIL");
     expect(html).not.toContain("No tienes talleres disponibles");
+  });
+});
+
+describe("portada del alumno", () => {
+  const courseId = "11111111-1111-4111-8111-111111111111";
+  const otherId = "22222222-2222-4222-8222-222222222222";
+  const membership = { name: "QA", organizationId: "org-a", profileId: "profile-a", role: "student" };
+  function studentData() {
+    const data = empty();
+    data.memberships = [
+      { id: "member-a", profile_id: "profile-a", role: "student", first_name: "Ana" } as AcademicData["memberships"][number],
+    ];
+    data.courses = [
+      { id: otherId, title: "Taller terminado", status: "published" },
+      { id: courseId, title: "Taller activo", status: "published" },
+    ];
+    data.enrollments = [
+      { course_id: otherId, membership_id: "member-a", status: "completed", progress_percent: null },
+      { course_id: courseId, membership_id: "member-a", status: "active", progress_percent: 0 },
+    ] as AcademicData["enrollments"];
+    return data;
+  }
+  beforeEach(() => {
+    mocks.access.mockResolvedValue({
+      allowed: true,
+      membership,
+      session: { status: "authenticated", identity: { profileId: "profile-a" } },
+    });
+    mocks.load.mockResolvedValue(studentData());
+  });
+  it("muestra la próxima sesión en hora peruana y enlaza al día local de su taller", async () => {
+    mocks.nextSession.mockResolvedValue({
+      title: "Sesión de práctica",
+      course_id: courseId,
+      course: { title: "Taller activo" },
+      starts_at: "2026-11-17T01:30:00Z",
+      ends_at: "2026-11-17T02:30:00Z",
+    });
+    const html = renderToStaticMarkup(await AcademicPage({ slug: "qa", section: "dashboard" }));
+    expect(mocks.nextSession).toHaveBeenCalledWith({ mock: true }, "org-a", "member-a");
+    expect(html).toContain("Sesión de práctica");
+    expect(html).toContain("20:30");
+    expect(html).toContain("21:30");
+    expect(html).toContain("Hora de Perú");
+    expect(html).toContain("/dashboard/horario?course=" + courseId + "&amp;date=2026-11-16");
+  });
+  it("distingue entre agenda sin próximas sesiones y consulta no disponible", async () => {
+    const html = renderToStaticMarkup(await AcademicPage({ slug: "qa", section: "dashboard" }));
+    expect(html).toContain("No tienes sesiones próximas programadas.");
+    mocks.nextSession.mockRejectedValueOnce(Error("PRIVATE_DB_DETAIL"));
+    const failed = renderToStaticMarkup(await AcademicPage({ slug: "qa", section: "dashboard" }));
+    expect(failed).toContain("No se pudo consultar tu próxima sesión.");
+    expect(failed).toContain("Taller activo");
+    expect(failed).not.toContain("PRIVATE_DB_DETAIL");
+  });
+  it("ordena matrículas activas y mantiene un acceso por tarjeta", () => {
+    const html = render("dashboard", studentData());
+    expect(html.indexOf("Taller activo")).toBeLessThan(html.indexOf("Taller terminado"));
+    expect(html).toContain("0% completado");
+    expect(html).toContain("Sin avance registrado");
+    expect(html.match(new RegExp('href="/o/qa/dashboard/cursos/' + courseId + '"', "g"))).toHaveLength(1);
+    expect(html).toContain('href="/o/qa/dashboard/horario"');
+    expect(html).toContain('href="/o/qa/dashboard/asistencia"');
+    expect(html).toContain('href="/o/qa/dashboard/certificados"');
+  });
+  it("mantiene Mis talleres destacado en el detalle y no convierte avance ausente en cero", async () => {
+    const html = renderToStaticMarkup(await AcademicPage({ slug: "qa", section: "dashboard/cursos", courseId: otherId }));
+    expect(html).toMatch(/<a[^>]*href="\/o\/qa\/dashboard\/cursos"[^>]*aria-current="page"|<a[^>]*aria-current="page"[^>]*href="\/o\/qa\/dashboard\/cursos"/);
+    expect(html).toContain("Sin avance registrado");
+    expect(html).not.toContain("Avance: 0%");
+    expect(mocks.nextSession).not.toHaveBeenCalled();
   });
 });
 

@@ -89,6 +89,33 @@ const readyPdfs = (client: AcademicClient, org: string) =>
     .eq("status", "ready")
     .limit(500);
 
+export async function loadNextStudentSession(
+  client: AcademicClient,
+  org: string,
+  membershipId: string,
+  now = new Date(),
+) {
+  // Las relaciones internas aplican los mismos criterios de matrícula que Mi horario.
+  const result = await client
+    .from("calendar_events")
+    .select("title,course_id,starts_at,ends_at,course:courses!calendar_events_organization_id_course_id_fkey!inner(title,enrollments!enrollments_organization_id_course_id_fkey!inner(membership_id))")
+    .eq("organization_id", org)
+    .eq("status", "scheduled")
+    .eq("course.status", "published")
+    .eq("course.enrollments.membership_id", membershipId)
+    .eq("course.enrollments.status", "active")
+    .gte("starts_at", now.toISOString())
+    .order("starts_at")
+    .order("id")
+    .limit(1)
+    .maybeSingle();
+  return checked(result);
+}
+
+export type NextStudentSession = NonNullable<
+  Awaited<ReturnType<typeof loadNextStudentSession>>
+>;
+
 export async function loadAcademic(client: AcademicClient, org: string) {
   const [
     courses,
