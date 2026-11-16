@@ -1274,6 +1274,16 @@ export type Database = {
         };
         Returns: Json;
       };
+      provision_registered_student: {
+        Args: {
+          p_auth_user_id: string;
+          p_organization_slug: string;
+          p_email: string;
+          p_first_name: string;
+          p_last_name: string;
+        };
+        Returns: boolean;
+      };
       recommend_certificate: {
         Args: { p_org: string; p_enrollment: string };
         Returns: string;

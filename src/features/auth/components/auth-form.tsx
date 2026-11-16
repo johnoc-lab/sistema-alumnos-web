@@ -9,6 +9,8 @@ export const notices: Record<string, string> = {
   credentials:
     "No se pudo iniciar sesión. Revisa tus datos o contacta al responsable de tu organización.",
   invalid: "Revisa los datos del formulario.",
+  student_registered:
+    "Tu cuenta está lista. Inicia sesión para entrar a tu Dashboard.",
   logged_out: "La sesión local está cerrada.",
   mfa_session_ended: "Se eliminó el autenticador. Vuelve a iniciar sesión.",
   password_updated: "Contraseña actualizada. Inicia sesión nuevamente.",

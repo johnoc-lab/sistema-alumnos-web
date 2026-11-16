@@ -1,4 +1,5 @@
 import { authConfig } from "@/lib/supabase/config";
+import { studentRegistrationConfig } from "@/features/auth/student-registration.server";
 import { AuthForm, Notice } from "./auth-form";
 import Link from "next/link";
 import {
@@ -71,6 +72,12 @@ export function LoginScreen({
           </p>
           <Notice code={notice} />
           <AuthForm next={next} />
+          {studentRegistrationConfig() && (
+            <Link className={styles.preview} href="/auth/crear-cuenta">
+              Crear cuenta
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          )}
           <div className={styles.divider}>EXPLORAR SIN CUENTA</div>
           <Link className={styles.preview} href="/demo">
             <Eye size={17} aria-hidden="true" />
