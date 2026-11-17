@@ -6,6 +6,7 @@ import {
 } from "@/features/auth/student-registration.server";
 import styles from "@/features/auth/components/login.module.css";
 import ui from "@/components/ui/ui.module.css";
+import campus from "@/components/institutional/campus.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,10 @@ export default async function Page({
   if (!studentRegistrationConfig()) return <AuthFeatureUnavailable />;
   const { notice } = await searchParams;
   return (
-    <main id="main-content" className={ui.centered}>
+    <main
+      id="main-content"
+      className={`${campus.page} ${ui.centered} ${styles.registrationPage}`}
+    >
       <h1>Crear cuenta de alumno</h1>
       <p>Usa el correo de prueba autorizado por tu institución.</p>
       {notice === "invalid" && (

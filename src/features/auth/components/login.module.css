@@ -120,6 +120,17 @@
   color: #526674;
   opacity: 1;
 }
+.registrationPage .fields select,
+.registrationPage .fields option {
+  color: var(--text);
+  background: #fff;
+}
+.registrationPage .fields option:disabled {
+  color: var(--muted);
+}
+.registrationPage .feedback {
+  color: #7d401c;
+}
 .activationFields small {
   overflow-wrap: anywhere;
 }
