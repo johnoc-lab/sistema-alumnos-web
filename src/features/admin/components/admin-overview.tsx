@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   Users,
@@ -11,25 +12,74 @@ import {
 } from "lucide-react";
 import { getPreviewData } from "@/features/preview/fixtures";
 import { previewHref, type OrganizationSlug } from "@/features/preview/routes";
-import { Badge, PageHeading } from "@/components/ui/primitives";
+import { Badge } from "@/components/ui/primitives";
 import styles from "@/features/dashboard/components/dashboard.module.css";
+
 export function AdminOverview({
   organizationSlug,
 }: {
   organizationSlug: OrganizationSlug;
 }) {
   const data = getPreviewData(organizationSlug);
+  const isImpulso = organizationSlug === "impulso";
   return (
-    <>
-      <PageHeading
-        eyebrow="ADMINISTRACIÓN · VISTA DE EJEMPLO"
-        title="Todo empieza con una buena visión"
-        description="Una mirada al aprendizaje y a las personas que lo hacen posible."
-        action={<Badge tone="amber">Solo visualización</Badge>}
-      />
-      <section className={styles.stats} aria-label="Resumen de datos ficticios">
-        <div className={styles.stat}>
-          <div className={styles.statIcon}>
+    <div className={styles.adminDashboard} data-organization={organizationSlug}>
+      <section className={styles.adminHero}>
+        <div className={styles.adminHeroCopy}>
+          <span className={styles.adminEyebrow}>PANEL DE ADMINISTRACIÓN</span>
+          <h1>
+            {isImpulso
+              ? "Ideas que se convierten en acción"
+              : "Un espacio para crear y crecer"}
+          </h1>
+          <p>
+            {isImpulso
+              ? "Acompaña cada iniciativa y mantén a tu comunidad en movimiento."
+              : "Organiza el aprendizaje y acompaña cada nueva idea de tu comunidad."}
+          </p>
+        </div>
+        {isImpulso && (
+          <div
+            className={styles.adminHeroLogos}
+            aria-label="Identidad de Impulso Cero Academy"
+          >
+            <span className={styles.adminLogoCard}>
+              <Image
+                src="/brands/impulso-cero-lockup.png"
+                width={2388}
+                height={926}
+                alt="Impulso Cero Academy"
+                priority
+              />
+            </span>
+            <span className={styles.adminMarkCard}>
+              <Image
+                src="/brands/impulso-cero-marca.png"
+                width={2305}
+                height={2257}
+                alt=""
+                aria-hidden="true"
+                priority
+              />
+            </span>
+          </div>
+        )}
+      </section>
+
+      <div className={styles.adminOverviewHeading}>
+        <div>
+          <h2>Tu comunidad, en perspectiva</h2>
+          <p>Un resumen para empezar a gestionar el día.</p>
+        </div>
+        <Badge tone={isImpulso ? "amber" : "purple"}>Solo visualización</Badge>
+      </div>
+
+      <section
+        className={styles.stats + " " + styles.adminStats}
+        aria-label="Resumen de datos ficticios"
+      >
+        <div className={styles.stat + " " + styles.adminStat}>
+          <div className={styles.statIcon + " " + styles.adminStatIcon}>
             <Users size={20} />
           </div>
           <div>
@@ -37,21 +87,22 @@ export function AdminOverview({
             <span>Alumnos de ejemplo</span>
           </div>
         </div>
-        <div className={styles.stat}>
-          <div className={styles.statIcon}>
+        <div className={styles.stat + " " + styles.adminStat}>
+          <div className={styles.statIcon + " " + styles.adminStatIcon}>
             <BookOpen size={20} />
           </div>
           <div>
             <strong>
               {String(
-                data.courses.filter((c) => c.status === "published").length,
+                data.courses.filter((course) => course.status === "published")
+                  .length,
               ).padStart(2, "0")}
             </strong>
             <span>Talleres publicados ficticios</span>
           </div>
         </div>
-        <div className={styles.stat}>
-          <div className={styles.statIcon}>
+        <div className={styles.stat + " " + styles.adminStat}>
+          <div className={styles.statIcon + " " + styles.adminStatIcon}>
             <CalendarDays size={20} />
           </div>
           <div>
@@ -60,16 +111,22 @@ export function AdminOverview({
           </div>
         </div>
       </section>
-      <div className={styles.lower}>
-        <section className={styles.panel}>
-          <div className={styles.sectionHeading}>
-            <h2>Personas que avanzan</h2>
+
+      <div className={styles.lower + " " + styles.adminLower}>
+        <section className={styles.panel + " " + styles.adminPanel}>
+          <div
+            className={styles.sectionHeading + " " + styles.adminSectionHeading}
+          >
+            <div>
+              <span className={styles.adminPanelEyebrow}>COMUNIDAD</span>
+              <h2>Personas que avanzan</h2>
+            </div>
             <Link href={previewHref(organizationSlug, "admin/alumnos")}>
               Ver alumnos
               <ArrowRight size={13} />
             </Link>
           </div>
-          <div className={styles.list}>
+          <div className={styles.list + " " + styles.adminList}>
             {data.students.map((student) => (
               <Link
                 href={previewHref(organizationSlug, "admin/alumnos")}
@@ -90,9 +147,12 @@ export function AdminOverview({
             ))}
           </div>
         </section>
-        <section className={styles.panel}>
-          <h2 className={styles.panelTitle}>Tu espacio de gestión</h2>
-          <div className={styles.quickGrid}>
+        <section className={styles.panel + " " + styles.adminPanel}>
+          <span className={styles.adminPanelEyebrow}>ACCESOS DIRECTOS</span>
+          <h2 className={styles.panelTitle + " " + styles.adminPanelTitle}>
+            Tu espacio de gestión
+          </h2>
+          <div className={styles.quickGrid + " " + styles.adminQuickGrid}>
             <Link href={previewHref(organizationSlug, "admin/cursos")}>
               <BookOpen size={18} />
               Talleres
@@ -124,6 +184,6 @@ export function AdminOverview({
         Vista pública de diseño. No hay una cuenta administrativa iniciada,
         datos reales ni operaciones de gestión habilitadas.
       </p>
-    </>
+    </div>
   );
 }

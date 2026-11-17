@@ -153,3 +153,59 @@
 .card:hover .bottom svg {
   transform: translateX(3px);
 }
+
+/* Identidad institucional de las tarjetas del panel de estudiante. */
+.card[data-organization="impulso"],
+.card[data-organization="incubadora"] {
+  --accent: #d78133;
+  --muted: #545b78;
+  --border: #b9c1cc;
+  color: #2c3159;
+  border-color: #b9c1cc;
+  background: #fff;
+}
+.card[data-organization="incubadora"] {
+  --accent: #2c3159;
+}
+.card[data-organization="impulso"]:hover,
+.card[data-organization="incubadora"]:hover {
+  border-color: var(--accent);
+}
+.art[data-organization="impulso"] {
+  background:
+    radial-gradient(ellipse at 70% 70%, #d781335c, transparent 65%),
+    linear-gradient(145deg, #2c3159, #343a67);
+  color: #f6c29f;
+}
+.art[data-organization="incubadora"] {
+  background:
+    radial-gradient(ellipse at 70% 70%, #f6c29f99, transparent 65%),
+    linear-gradient(145deg, #b9c1cc, #e9ebef);
+  color: #2c3159;
+}
+.art[data-organization="impulso"]::before,
+.art[data-organization="impulso"]::after {
+  border-color: #f6c29f55;
+}
+.art[data-organization="incubadora"]::before,
+.art[data-organization="incubadora"]::after {
+  border-color: #2c315933;
+}
+.card[data-organization="impulso"] .meta,
+.card[data-organization="incubadora"] .meta,
+.card[data-organization="impulso"] .progressLabel,
+.card[data-organization="incubadora"] .progressLabel {
+  color: #545b78;
+}
+.card[data-organization="impulso"] .progress,
+.card[data-organization="incubadora"] .progress {
+  background: #e9ebef;
+}
+.card[data-organization="impulso"] .progress span,
+.card[data-organization="incubadora"] .progress span {
+  background: var(--accent);
+}
+.card[data-organization="impulso"] .bottom,
+.card[data-organization="incubadora"] .bottom {
+  border-top-color: #b9c1cc80;
+}

@@ -90,7 +90,7 @@ export function AcademicShell({
         ["dashboard/perfil", "Mi perfil"],
       ];
   return (
-    <div className={campus.page}>
+    <div className={campus.page} data-admin={admin ? "true" : "false"} data-organization={slug}>
       <div className={css.workspaceShell}>
         <aside className={css.desktopSidebar}>
           <Link className={css.desktopBrand} href={"/o/" + encodeURIComponent(slug) + (admin ? "/admin" : "/dashboard")}>

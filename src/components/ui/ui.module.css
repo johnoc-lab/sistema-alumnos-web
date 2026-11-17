@@ -50,17 +50,17 @@
   transform: translateY(-1px);
 }
 .secondaryLink {
-  background: #ffffff05;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
   border: 1px solid var(--border);
   color: var(--text);
 }
 .secondaryLink:hover {
-  background: #ffffff0b;
+  background: color-mix(in srgb, var(--surface-raised, var(--surface)) 88%, transparent);
 }
 .panel {
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: linear-gradient(135deg, #ffffff05, #ffffff02);
+  border-radius: var(--radius, 16px);
+  background: var(--surface);
   padding: 24px;
 }
 .heading {
@@ -101,27 +101,27 @@
   background: currentColor;
 }
 .green {
-  background: #76d9b50c;
+  background: color-mix(in srgb, var(--green) 9%, var(--surface));
   color: var(--green);
-  border-color: #76d9b529;
+  border-color: color-mix(in srgb, var(--green) 28%, var(--border));
 }
 .amber {
-  background: #e6c7840c;
+  background: color-mix(in srgb, var(--amber) 9%, var(--surface));
   color: var(--amber);
-  border-color: #e6c78429;
+  border-color: color-mix(in srgb, var(--amber) 28%, var(--border));
 }
 .purple {
-  background: #ac9af80c;
+  background: color-mix(in srgb, var(--purple) 8%, var(--surface));
   color: var(--purple);
-  border-color: #ac9af829;
+  border-color: color-mix(in srgb, var(--purple) 26%, var(--border));
 }
 .cyan {
-  background: #60d4ec0c;
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
   color: var(--accent);
-  border-color: #60d4ec29;
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
 }
 .neutral {
-  background: #ffffff03;
+  background: var(--surface);
 }
 .iconBox {
   width: 48px;
@@ -130,9 +130,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #60d4ec10;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
   color: var(--accent);
-  border: 1px solid #60d4ec20;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
 }
 .empty {
   min-height: 340px;
@@ -143,9 +143,9 @@
   text-align: center;
   gap: 16px;
   padding: 40px;
-  border: 1px dashed #304157;
-  border-radius: var(--radius);
-  background: #ffffff02;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius, 16px);
+  background: var(--surface);
 }
 .empty h2 {
   font-size: 21px;
@@ -164,8 +164,8 @@
 }
 .notice {
   padding: 14px 18px;
-  background: #e6c78408;
-  border: 1px solid #e6c78425;
+  background: color-mix(in srgb, var(--amber) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--amber) 24%, var(--border));
   border-radius: 10px;
   color: var(--notice-text, #d5c59f);
   font-size: 12px;

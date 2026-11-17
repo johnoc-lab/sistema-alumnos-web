@@ -393,3 +393,401 @@
     gap: 12px;
   }
 }
+
+/* Resumen administrativo con identidad propia por organización. */
+.adminDashboard {
+  --admin-ink: #2c3159;
+  --admin-accent: #d78133;
+  --admin-canvas: #f7f4ee;
+  --admin-surface: #fff;
+  --admin-border: #b9c1cc;
+  color: var(--admin-ink);
+}
+.adminDashboard[data-organization="incubadora"] {
+  --admin-accent: #2c3159;
+  --admin-canvas: #f7f4ee;
+  --admin-surface: #e9ebef;
+  --admin-border: #b9c1cc;
+}
+.adminHero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  min-height: 184px;
+  padding: 30px 34px;
+  margin: 0 0 28px;
+  overflow: hidden;
+  border: 1px solid var(--admin-border);
+  border-radius: 18px;
+  background: linear-gradient(115deg, #fff 0%, var(--admin-canvas) 100%);
+  box-shadow: 0 14px 38px #2c31590d;
+}
+.adminDashboard[data-organization="impulso"] .adminHero {
+  border-color: #d7813355;
+  background: linear-gradient(112deg, #2c3159 0%, #343a67 66%, #d78133 150%);
+  color: #fff;
+}
+.adminDashboard[data-organization="incubadora"] .adminHero {
+  background: linear-gradient(112deg, #e9ebef 0%, #f7f4ee 68%, #f6c29f 150%);
+}
+.adminHeroCopy {
+  max-width: 620px;
+}
+.adminEyebrow,
+.adminPanelEyebrow {
+  display: block;
+  color: var(--admin-accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+.adminDashboard[data-organization="impulso"] .adminEyebrow {
+  color: #f6c29f;
+}
+.adminHero h1 {
+  margin: 10px 0 8px;
+  font-size: clamp(25px, 3vw, 36px);
+  font-weight: 650;
+  letter-spacing: -1.2px;
+  line-height: 1.12;
+}
+.adminHero p {
+  max-width: 520px;
+  color: inherit;
+  opacity: 0.78;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.adminHeroLogos {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.adminLogoCard,
+.adminMarkCard {
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 1px solid #ffffffa8;
+  border-radius: 14px;
+  box-shadow: 0 10px 26px #14183124;
+}
+.adminLogoCard {
+  width: 190px;
+  height: 94px;
+  padding: 12px;
+}
+.adminLogoCard img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.adminMarkCard {
+  width: 88px;
+  height: 88px;
+  padding: 10px;
+}
+.adminMarkCard img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.adminOverviewHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 16px;
+}
+.adminOverviewHeading h2 {
+  margin: 0 0 5px;
+  font-size: 18px;
+  letter-spacing: -0.4px;
+}
+.adminOverviewHeading p {
+  color: #697087;
+  font-size: 12px;
+}
+.adminStats {
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.adminStat {
+  border-color: var(--admin-border);
+  border-radius: 14px;
+  background: var(--admin-surface);
+  box-shadow: 0 8px 24px #2c31590a;
+}
+.adminStatIcon {
+  color: var(--admin-accent);
+  border-color: color-mix(in srgb, var(--admin-accent) 24%, transparent);
+  background: color-mix(in srgb, var(--admin-accent) 10%, white);
+}
+.adminStat strong {
+  color: var(--admin-ink);
+  font-weight: 700;
+}
+.adminStat span {
+  color: #697087;
+}
+.adminLower {
+  align-items: stretch;
+}
+.adminPanel {
+  border-color: var(--admin-border);
+  border-radius: 16px;
+  background: var(--admin-surface);
+  box-shadow: 0 9px 28px #2c31590a;
+}
+.adminSectionHeading {
+  align-items: flex-end;
+}
+.adminSectionHeading h2 {
+  margin-top: 7px;
+  color: var(--admin-ink);
+  font-size: 16px;
+  font-weight: 650;
+}
+.adminSectionHeading a {
+  color: var(--admin-ink);
+  font-weight: 650;
+}
+.adminSectionHeading a:hover {
+  color: var(--admin-accent);
+}
+.adminPanelTitle {
+  margin-top: 8px;
+  color: var(--admin-ink);
+  font-weight: 650;
+}
+.adminPanelTitle svg {
+  color: var(--admin-accent);
+}
+.adminList a {
+  border-bottom-color: color-mix(in srgb, var(--admin-border) 45%, transparent);
+}
+.adminList a:hover {
+  background: color-mix(in srgb, var(--admin-accent) 7%, white);
+}
+.adminList strong {
+  color: var(--admin-ink);
+}
+.adminQuickGrid a {
+  min-height: 74px;
+  border-color: var(--admin-border);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--admin-canvas) 55%, white);
+  color: var(--admin-ink);
+  font-weight: 600;
+  transition:
+    transform 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+}
+.adminQuickGrid a:hover {
+  transform: translateY(-2px);
+  border-color: var(--admin-accent);
+  background: color-mix(in srgb, var(--admin-accent) 12%, white);
+}
+.adminQuickGrid svg {
+  color: var(--admin-accent);
+}
+@media (max-width: 760px) {
+  .adminHero {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 25px 22px;
+  }
+  .adminHeroLogos {
+    align-self: flex-end;
+  }
+  .adminLogoCard {
+    width: 156px;
+    height: 76px;
+  }
+  .adminMarkCard {
+    width: 72px;
+    height: 72px;
+  }
+}
+@media (max-width: 480px) {
+  .adminHeroLogos {
+    gap: 8px;
+  }
+  .adminLogoCard {
+    width: 132px;
+    height: 68px;
+    padding: 8px;
+  }
+  .adminMarkCard {
+    width: 64px;
+    height: 64px;
+    padding: 8px;
+  }
+  .adminOverviewHeading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* Panel del estudiante con la paleta y los logos de su organización. */
+.hero[data-organization="impulso"] {
+  min-height: 176px;
+  padding: 30px 34px;
+  border: 1px solid #d7813355;
+  border-radius: 18px;
+  background: linear-gradient(112deg, #2c3159 0%, #343a67 68%, #d78133 150%);
+  color: #fff;
+}
+.hero[data-organization="impulso"] h1 span {
+  color: #f6c29f;
+}
+.hero[data-organization="impulso"] p {
+  color: #f7f4ee;
+  opacity: 0.82;
+}
+.hero[data-organization="incubadora"] {
+  min-height: 176px;
+  padding: 30px 34px;
+  border: 1px solid #b9c1cc;
+  border-radius: 18px;
+  background: linear-gradient(112deg, #e9ebef 0%, #f7f4ee 68%, #f6c29f 150%);
+  color: #2c3159;
+}
+.hero[data-organization="incubadora"] h1 span,
+.hero[data-organization="incubadora"] .heroIcon {
+  color: #2c3159;
+}
+.hero[data-organization="incubadora"] p {
+  color: #41496b;
+}
+.heroLogos {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.studentLogoCard,
+.studentMarkCard {
+  display: grid;
+  place-items: center;
+  border: 1px solid #ffffffa8;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 10px 26px #14183124;
+}
+.studentLogoCard {
+  width: 190px;
+  height: 94px;
+  padding: 12px;
+}
+.studentLogoCard img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.studentMarkCard {
+  width: 88px;
+  height: 88px;
+  padding: 10px;
+}
+.studentMarkCard img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.stats[data-organization="impulso"] .stat,
+.stats[data-organization="incubadora"] .stat {
+  border-color: #b9c1cc;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 24px #2c31590a;
+}
+.stats[data-organization="impulso"] .statIcon {
+  color: #d78133;
+  border-color: #d7813355;
+  background: #d7813315;
+}
+.stats[data-organization="incubadora"] .statIcon {
+  color: #2c3159;
+  border-color: #b9c1cc;
+  background: #e9ebef;
+}
+.stats[data-organization="impulso"] .stat strong,
+.stats[data-organization="incubadora"] .stat strong {
+  color: #2c3159;
+}
+.stats[data-organization="impulso"] .stat span,
+.stats[data-organization="incubadora"] .stat span {
+  color: #545b78;
+}
+.lower[data-organization="impulso"] .panel,
+.lower[data-organization="incubadora"] .panel {
+  border-color: #b9c1cc;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 9px 28px #2c31590a;
+}
+.lower[data-organization="impulso"] .panelTitle,
+.lower[data-organization="incubadora"] .panelTitle {
+  color: #2c3159;
+}
+.lower[data-organization="impulso"] .panelTitle svg {
+  color: #d78133;
+}
+.lower[data-organization="incubadora"] .panelTitle svg {
+  color: #2c3159;
+}
+.lower[data-organization="impulso"] .agenda,
+.lower[data-organization="incubadora"] .agenda {
+  border-bottom-color: #b9c1cc80;
+}
+.lower[data-organization="impulso"] .date,
+.lower[data-organization="incubadora"] .date {
+  border-color: #b9c1cc;
+  background: #f7f4ee;
+}
+.lower[data-organization="impulso"] .date strong,
+.lower[data-organization="incubadora"] .date strong {
+  color: #2c3159;
+}
+.lower[data-organization="impulso"] .agendaLink,
+.lower[data-organization="incubadora"] .agendaLink {
+  color: #2c3159;
+}
+@media (max-width: 760px) {
+  .hero[data-organization="impulso"],
+  .hero[data-organization="incubadora"] {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 25px 22px;
+  }
+  .heroLogos {
+    align-self: flex-end;
+  }
+  .studentLogoCard {
+    width: 156px;
+    height: 76px;
+  }
+  .studentMarkCard {
+    width: 72px;
+    height: 72px;
+  }
+}
+@media (max-width: 480px) {
+  .heroLogos {
+    gap: 8px;
+  }
+  .studentLogoCard {
+    width: 132px;
+    height: 68px;
+    padding: 8px;
+  }
+  .studentMarkCard {
+    width: 64px;
+    height: 64px;
+    padding: 8px;
+  }
+}

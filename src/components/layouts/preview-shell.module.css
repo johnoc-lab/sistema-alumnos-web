@@ -334,3 +334,117 @@
     gap: 6px;
   }
 }
+
+/* Paletas institucionales para los paneles administrativos. */
+[data-admin="true"][data-organization="impulso"] .sidebar {
+  background: linear-gradient(165deg, #2c3159, #232747);
+  border-right-color: #2c315922;
+}
+[data-admin="true"][data-organization="impulso"] .workspace {
+  background: #f7f4ee;
+}
+[data-admin="true"][data-organization="impulso"] .header,
+[data-admin="true"][data-organization="impulso"] .footer {
+  border-color: #b9c1cc80;
+}
+[data-admin="true"][data-organization="impulso"] .brandIcon {
+  color: #d78133;
+  border-color: #d7813380;
+  background: #d7813320;
+}
+[data-admin="true"][data-organization="impulso"] .nav .active {
+  color: #fff;
+  background: #d78133;
+  border-color: #d78133;
+}
+[data-admin="true"][data-organization="impulso"] .nav a:hover {
+  color: #fff;
+  background: #ffffff12;
+}
+[data-admin="true"][data-organization="impulso"] .org,
+[data-admin="true"][data-organization="impulso"] .switch {
+  border-color: #ffffff35;
+  background: #ffffff0c;
+  color: #f7f4ee;
+}
+[data-admin="true"][data-organization="incubadora"] .sidebar {
+  color: #2c3159;
+  background: #b9c1cc;
+  border-right-color: #aeb7c3;
+}
+[data-admin="true"][data-organization="incubadora"] .brand small,
+[data-admin="true"][data-organization="incubadora"] .navLabel,
+[data-admin="true"][data-organization="incubadora"] .user span {
+  color: #41496b;
+}
+[data-admin="true"][data-organization="incubadora"] .org,
+[data-admin="true"][data-organization="incubadora"] .switch {
+  color: #2c3159;
+  border-color: #2c315933;
+  background: #e9ebef;
+}
+[data-admin="true"][data-organization="incubadora"] .nav a {
+  color: #41496b;
+}
+[data-admin="true"][data-organization="incubadora"] .nav a:hover,
+[data-admin="true"][data-organization="incubadora"] .nav .active {
+  color: #2c3159;
+  background: #f6c29f;
+  border-color: #f6c29f;
+}
+[data-admin="true"][data-organization="incubadora"] .user,
+[data-admin="true"][data-organization="incubadora"] .header,
+[data-admin="true"][data-organization="incubadora"] .footer {
+  border-color: #2c315922;
+}
+[data-admin="true"][data-organization="impulso"] .workspace,
+[data-admin="true"][data-organization="incubadora"] .workspace {
+  background-image: radial-gradient(
+    ellipse 70% 36% at 80% 0,
+    #f6c29f35,
+    transparent 78%
+  );
+}
+
+/* Las vistas de estudiante comparten la identidad cromática institucional. */
+[data-admin="false"][data-organization="impulso"] .sidebar {
+  background: linear-gradient(165deg, #2c3159, #232747);
+}
+[data-admin="false"][data-organization="impulso"] .nav .active {
+  color: #fff;
+  background: #d78133;
+  border-color: #d78133;
+}
+[data-admin="false"][data-organization="impulso"] .nav a:hover {
+  color: #fff;
+  background: #ffffff12;
+}
+[data-admin="false"][data-organization="incubadora"] .sidebar {
+  color: #2c3159;
+  background: #b9c1cc;
+}
+[data-admin="false"][data-organization="incubadora"] .brand small,
+[data-admin="false"][data-organization="incubadora"] .navLabel,
+[data-admin="false"][data-organization="incubadora"] .user span {
+  color: #41496b;
+}
+[data-admin="false"][data-organization="incubadora"] .org,
+[data-admin="false"][data-organization="incubadora"] .switch {
+  color: #2c3159;
+  border-color: #2c315933;
+  background: #e9ebef;
+}
+[data-admin="false"][data-organization="incubadora"] .nav a {
+  color: #41496b;
+}
+[data-admin="false"][data-organization="incubadora"] .nav a:hover,
+[data-admin="false"][data-organization="incubadora"] .nav .active {
+  color: #2c3159;
+  background: #f6c29f;
+  border-color: #f6c29f;
+}
+[data-admin="false"][data-organization="impulso"] .workspace,
+[data-admin="false"][data-organization="incubadora"] .workspace {
+  background-color: #f7f4ee;
+  background-image: radial-gradient(ellipse 70% 36% at 80% 0, #f6c29f35, transparent 78%);
+}
