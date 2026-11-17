@@ -45,6 +45,33 @@ const provision = (
 const count = async (relation) =>
   Number((await db.query("select count(*) from " + relation)).rows[0].count);
 
+test("service_role puede consultar el estado de una institución con solo tres columnas", async () => {
+  const { rows } = await db.query(`
+    select attname
+    from pg_attribute
+    where attrelid = 'public.organizations'::regclass and attnum > 0
+      and not attisdropped and has_column_privilege('service_role', attrelid, attnum, 'SELECT')
+    order by attname
+  `);
+  assert.deepEqual(
+    rows.map((row) => row.attname),
+    ["id", "slug", "status"],
+  );
+  await withRole("service_role", async () => {
+    const lookup = await db.query(
+      "select id from public.organizations where slug=$1 and status='active'",
+      ["incubadora"],
+    );
+    assert.deepEqual(lookup.rows, [{ id: ids.orgB }]);
+  });
+  await assert.rejects(
+    withRole("service_role", () =>
+      db.query("select name from public.organizations"),
+    ),
+    { code: "42501" },
+  );
+});
+
 test("solo service_role ejecuta la operación y un Auth sin marca no obtiene perfil ni membresía nueva", async () => {
   for (const role of ["anon", "authenticated"])
     await assert.rejects(
