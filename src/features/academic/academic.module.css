@@ -1028,3 +1028,390 @@
     padding: 20px;
   }
 }
+
+/* Navegación y superficies para los paneles de cada organización. */
+[data-admin="true"][data-organization="impulso"] .desktopSidebar,
+[data-admin="true"][data-organization="impulso-cero"] .desktopSidebar {
+  color: #f7f4ee;
+  background: #2c3159;
+}
+[data-admin="true"][data-organization="impulso"] .desktopBrand,
+[data-admin="true"][data-organization="impulso-cero"] .desktopBrand,
+[data-admin="true"][data-organization="incubadora"] .desktopBrand {
+  border-bottom-color: #ffffff24;
+}
+[data-admin="true"][data-organization="impulso"] .desktopBrandMark,
+[data-admin="true"][data-organization="impulso-cero"] .desktopBrandMark {
+  color: #fff;
+  background: #d78133;
+}
+[data-admin="true"][data-organization="impulso"] .desktopAvatar,
+[data-admin="true"][data-organization="impulso-cero"] .desktopAvatar {
+  color: #2c3159;
+  background: #f6c29f;
+}
+[data-admin="true"][data-organization="impulso"]
+  .desktopLinks
+  a.desktopLinkActive,
+[data-admin="true"][data-organization="impulso-cero"]
+  .desktopLinks
+  a.desktopLinkActive {
+  color: #fff;
+  background: #d78133;
+  border-left-color: #f6c29f;
+}
+[data-admin="true"][data-organization="incubadora"] .desktopSidebar {
+  color: #2c3159;
+  background: #b9c1cc;
+}
+[data-admin="true"][data-organization="incubadora"] .desktopBrand,
+[data-admin="true"][data-organization="incubadora"] .desktopLinks a,
+[data-admin="true"][data-organization="incubadora"] .desktopLogout button {
+  color: #2c3159;
+}
+[data-admin="true"][data-organization="incubadora"] .desktopIdentity small {
+  color: #41496b;
+}
+[data-admin="true"][data-organization="incubadora"] .desktopAvatar {
+  color: #2c3159;
+  background: #f6c29f;
+}
+[data-admin="true"][data-organization="incubadora"] .desktopLinks a:hover,
+[data-admin="true"][data-organization="incubadora"]
+  .desktopLinks
+  a.desktopLinkActive {
+  color: #2c3159;
+  background: #f6c29f;
+  border-left-color: #2c3159;
+}
+[data-admin="true"][data-organization="incubadora"] .desktopIdentity,
+[data-admin="true"][data-organization="incubadora"] .desktopBrand,
+[data-admin="true"][data-organization="incubadora"] .desktopLogout {
+  border-color: #2c315922;
+}
+[data-admin="true"][data-organization="impulso"] .organizationBar,
+[data-admin="true"][data-organization="impulso-cero"] .organizationBar,
+[data-admin="true"][data-organization="incubadora"] .organizationBar {
+  border-bottom-color: #b9c1cc;
+}
+.adminHero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  min-height: 190px;
+  padding: 30px 34px;
+  margin: 4px 0 26px;
+  overflow: hidden;
+  border: 1px solid #b9c1cc;
+  border-radius: 18px;
+  background: linear-gradient(110deg, #e9ebef, #f7f4ee 70%, #f6c29f);
+  color: #2c3159;
+}
+.adminHero[data-organization="impulso"],
+.adminHero[data-organization="impulso-cero"] {
+  border-color: #d7813355;
+  background: linear-gradient(112deg, #2c3159 0%, #343a67 68%, #d78133 150%);
+  color: #fff;
+}
+.adminHeroCopy {
+  max-width: 680px;
+}
+.adminHero h2 {
+  max-width: 650px;
+  margin: 0 0 10px;
+  font-size: clamp(26px, 3vw, 36px);
+  letter-spacing: -1px;
+  line-height: 1.15;
+}
+.adminHero p {
+  max-width: 590px;
+  color: inherit;
+  opacity: 0.82;
+  line-height: 1.7;
+}
+.adminHeroLogos {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.adminLogoCard,
+.adminMarkCard {
+  display: grid;
+  place-items: center;
+  border: 1px solid #ffffffa8;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 10px 26px #14183124;
+}
+.adminLogoCard {
+  width: 190px;
+  height: 94px;
+  padding: 12px;
+}
+.adminLogoCard img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.adminMarkCard {
+  width: 88px;
+  height: 88px;
+  padding: 10px;
+}
+.adminMarkCard img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+[data-admin="true"][data-organization="impulso"] .metrics a,
+[data-admin="true"][data-organization="impulso-cero"] .metrics a,
+[data-admin="true"][data-organization="incubadora"] .metrics a,
+[data-admin="true"][data-organization="impulso"] .section,
+[data-admin="true"][data-organization="impulso-cero"] .section,
+[data-admin="true"][data-organization="incubadora"] .section {
+  border-color: #b9c1cc;
+  box-shadow: 0 8px 24px #2c31590d;
+}
+[data-admin="true"][data-organization="impulso"] .metrics a,
+[data-admin="true"][data-organization="impulso-cero"] .metrics a {
+  background: #fff;
+  color: #2c3159;
+}
+[data-admin="true"][data-organization="incubadora"] .metrics a {
+  background: #e9ebef;
+  color: #2c3159;
+}
+[data-admin="true"][data-organization="impulso"] .steps a,
+[data-admin="true"][data-organization="impulso-cero"] .steps a {
+  color: #2c3159;
+}
+[data-admin="true"][data-organization="incubadora"] .steps a {
+  color: #2c3159;
+}
+
+/* Paleta compartida por todas las secciones reales de administración y alumno. */
+.workspaceShell .desktopSidebar {
+  color: var(--nav-text);
+  background: var(--nav-surface);
+}
+.workspaceShell .desktopBrand,
+.workspaceShell .desktopIdentity,
+.workspaceShell .desktopLogout {
+  border-color: var(--nav-divider);
+}
+.workspaceShell .desktopBrand {
+  color: var(--nav-text);
+}
+.workspaceShell .desktopBrandMark {
+  color: #fff;
+  background: var(--accent);
+}
+.workspaceShell .desktopAvatar {
+  color: var(--text);
+  background: #f6c29f;
+}
+.workspaceShell .desktopIdentity small {
+  color: #e9ebef;
+}
+.workspaceShell .desktopLinks a {
+  color: var(--nav-text);
+}
+.workspaceShell .desktopLinks a.desktopLinkActive {
+  color: var(--nav-active-text);
+  background: var(--nav-active);
+  border-left-color: #f6c29f;
+}
+.workspaceShell .desktopLogout button {
+  color: var(--nav-text);
+}
+.workspaceShell .desktopLinks a:hover,
+.workspaceShell .desktopLogout button:hover {
+  background: #ffffff16;
+}
+.workspaceShell .organizationBar {
+  border-bottom: 1px solid var(--border);
+}
+.workspaceShell .section,
+.workspaceShell .card,
+.workspaceShell .metrics a,
+.workspaceShell .tableWrap,
+.workspaceShell .tile,
+.workspaceShell .resource,
+.workspaceShell .mediaPicker {
+  border-color: var(--border);
+  background-color: var(--surface);
+  box-shadow: 0 8px 24px #2c31590d;
+}
+.workspaceShell .section,
+.workspaceShell .card,
+.workspaceShell .tile,
+.workspaceShell .resource,
+.workspaceShell .mediaPicker {
+  border-radius: 14px;
+}
+.workspaceShell .section {
+  border-top: 3px solid #d78133;
+}
+.workspaceShell .card {
+  border-left-color: #d78133;
+}
+.workspaceShell .field {
+  color: var(--text);
+}
+.workspaceShell .field input,
+.workspaceShell .field select,
+.workspaceShell .field textarea {
+  border-color: var(--border);
+  border-radius: 9px;
+  background: #fff;
+}
+.workspaceShell .table th {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+.workspaceShell .table tbody tr:hover {
+  background: #f7f4ee;
+}
+.workspaceShell .table td,
+.workspaceShell .attendanceStudent {
+  border-color: #b9c1cc80;
+}
+.workspaceShell .empty {
+  border-color: var(--border);
+  background: #fff;
+}
+.workspaceShell .metrics a {
+  border-radius: 14px;
+  color: var(--text);
+}
+.workspaceShell .metrics a:hover,
+.workspaceShell .tile:hover,
+.workspaceShell .resource:hover {
+  border-color: var(--accent);
+}
+.workspaceShell .metrics strong,
+.workspaceShell .row a,
+.workspaceShell .blockHeading a,
+.workspaceShell .tileTag {
+  color: var(--accent);
+}
+.workspaceShell .hero,
+.workspaceShell .adminHero {
+  border: 1px solid #d7813380;
+  border-radius: 18px;
+  background: linear-gradient(112deg, #2c3159 0%, #343a67 72%, #d78133 150%);
+  color: #fff;
+}
+.workspaceShell .hero h2,
+.workspaceShell .adminHero h2 {
+  color: #fff;
+}
+.workspaceShell .hero p,
+.workspaceShell .adminHero p {
+  color: #f7f4ee;
+}
+.workspaceShell .hero::after {
+  border-color: #f6c29f40;
+}
+.workspaceShell .courseBanner {
+  background-color: #2c3159;
+  background-image:
+    repeating-linear-gradient(35deg, transparent 0 36px, #ffffff12 36px 38px),
+    linear-gradient(125deg, #2c3159 0%, #39416f 70%, #d78133 140%);
+}
+.workspaceShell .sage,
+.workspaceShell .gold {
+  background-image:
+    repeating-linear-gradient(35deg, transparent 0 36px, #ffffff12 36px 38px),
+    linear-gradient(125deg, #2c3159 0%, #39416f 70%, #d78133 140%);
+}
+.workspaceShell .openCourse:hover,
+.workspaceShell .materialLinks a {
+  background: #f7f4ee;
+}
+.workspaceShell .materialLinks a {
+  border-color: var(--border);
+  color: var(--text);
+}
+.workspaceShell .materialLinks a:hover,
+.workspaceShell .mediaDropzone:hover {
+  border-color: var(--accent);
+  background: #fff8f0;
+}
+.workspaceShell .mediaPicker {
+  background: linear-gradient(145deg, #fff8f0, #fff 72%);
+}
+.workspaceShell .mediaPickerReady {
+  border-color: #b9c1cc;
+  background: linear-gradient(145deg, #e9ebef, #fff 72%);
+}
+.workspaceShell .mediaDropzone {
+  border-color: #d7813380;
+}
+.workspaceShell .mediaUploadIcon,
+.workspaceShell .resource > svg {
+  color: var(--accent);
+  background: #f6c29f55;
+}
+.workspaceShell .mediaPickerTitle strong,
+.workspaceShell .mediaDropzone strong,
+.workspaceShell .materialLinks span {
+  color: var(--text);
+}
+.workspaceShell .mediaPickerTitle small,
+.workspaceShell .mediaDropzone small {
+  color: var(--muted);
+}
+.workspaceShell .mediaFileInput:focus-visible {
+  outline-color: var(--accent);
+}
+.workspaceShell .attendanceOption:has(input:checked) {
+  border-color: var(--accent);
+  background: #fff4e9;
+  color: #8d4d16;
+}
+.workspaceShell .tileFooter progress::-webkit-progress-value,
+.workspaceShell .tileFooter progress::-moz-progress-bar {
+  background: var(--accent);
+}
+.workspaceShell .tileFooter progress {
+  background: var(--surface-raised);
+}
+.workspaceShell .tileFooter progress::-webkit-progress-bar {
+  background: var(--surface-raised);
+}
+@media (max-width: 760px) {
+  .adminHero {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 25px 22px;
+  }
+  .adminHeroLogos {
+    align-self: flex-end;
+  }
+  .adminLogoCard {
+    width: 156px;
+    height: 76px;
+  }
+  .adminMarkCard {
+    width: 72px;
+    height: 72px;
+  }
+}
+@media (max-width: 480px) {
+  .adminHeroLogos {
+    gap: 8px;
+  }
+  .adminLogoCard {
+    width: 132px;
+    height: 68px;
+    padding: 8px;
+  }
+  .adminMarkCard {
+    width: 64px;
+    height: 64px;
+    padding: 8px;
+  }
+}

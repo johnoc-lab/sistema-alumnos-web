@@ -65,7 +65,11 @@ export function PreviewShell({
   const isAdmin = section.startsWith("admin");
   const items = isAdmin ? adminNav : studentNav;
   return (
-    <div data-preview="synthetic">
+    <div
+      data-preview="synthetic"
+      data-admin={isAdmin ? "true" : "false"}
+      data-organization={organization.slug}
+    >
       <DemoBanner />
       <aside className={styles.sidebar}>
         <Link className={styles.brand} href="/demo">

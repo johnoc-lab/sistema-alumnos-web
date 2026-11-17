@@ -1,10 +1,10 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
   BookOpen,
   CalendarDays,
   FolderOpen,
-  Orbit,
   MessageSquare,
 } from "lucide-react";
 import type { OrganizationSlug } from "@/features/preview/routes";
@@ -24,7 +24,7 @@ export function StudentDashboard({
   );
   return (
     <>
-      <div className={styles.hero}>
+      <div className={styles.hero} data-organization={organizationSlug}>
         <div>
           <span className={ui.eyebrow}>TU ESPACIO DE APRENDIZAJE</span>
           <h1>
@@ -32,11 +32,31 @@ export function StudentDashboard({
           </h1>
           <p>Un paso más cerca de lo que quieres construir.</p>
         </div>
-        <div className={styles.heroIcon} aria-hidden="true">
-          <Orbit size={32} strokeWidth={1.1} />
-        </div>
+        {organizationSlug === "impulso" && (
+          <div className={styles.heroLogos} aria-label="Logos de Impulso Cero Academy">
+            <span className={styles.studentLogoCard}>
+              <Image
+                src="/brands/impulso-cero-lockup.png"
+                width={2388}
+                height={926}
+                alt="Impulso Cero Academy"
+                priority
+              />
+            </span>
+            <span className={styles.studentMarkCard}>
+              <Image
+                src="/brands/impulso-cero-marca.png"
+                width={2305}
+                height={2257}
+                alt=""
+                aria-hidden="true"
+                priority
+              />
+            </span>
+          </div>
+        )}
       </div>
-      <section className={styles.stats} aria-label="Resumen de ejemplo">
+      <section className={styles.stats} data-organization={organizationSlug} aria-label="Resumen de ejemplo">
         <div className={styles.stat}>
           <div className={styles.statIcon}>
             <BookOpen size={19} />
@@ -79,7 +99,7 @@ export function StudentDashboard({
           ))}
         </div>
       </section>
-      <div className={styles.lower}>
+      <div className={styles.lower} data-organization={organizationSlug}>
         <section className={styles.panel}>
           <h2 className={styles.panelTitle}>
             <MessageSquare size={16} />

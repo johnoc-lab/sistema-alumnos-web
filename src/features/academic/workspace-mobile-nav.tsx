@@ -91,7 +91,7 @@ export function WorkspaceMobileNav({
   }, [open, admin]);
 
   return (
-    <div className={css.mobileNav}>
+    <div className={css.mobileNav} data-organization={slug}>
       <button
         className={css.menuButton}
         ref={menuButton}
@@ -175,4 +175,3 @@ export function WorkspaceMobileNav({
     </div>
   );
 }
-

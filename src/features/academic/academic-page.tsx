@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { mfaUrl } from "@/lib/auth/security";
 import {
@@ -1098,6 +1099,7 @@ export function AcademicView({
   totpEnabled?: boolean;
 }) {
   const admin = section.startsWith("admin"),
+    isImpulso = slug === "impulso" || slug === "impulso-cero",
     own = data.memberships.find((m) => m.profile_id === profileId);
   if (section === "admin/cursos")
     return (
@@ -1233,17 +1235,49 @@ export function AcademicView({
   }
   return (
     <>
-      <section className={css.hero}>
-        <h2>
-          {admin
-            ? "Tu comunidad, en un solo espacio."
-            : "Hola, " + (own ? name(own) : "estudiante") + "."}
-        </h2>
-        <p>
-          {admin
-            ? "Organiza los talleres, acompaña a tus alumnos y comparte los recursos que necesitan para avanzar."
-            : "Continúa tus talleres, descubre tus materiales y mantente al día con las actividades de tu organización."}
-        </p>
+      <section
+        className={admin || section === "dashboard" ? css.adminHero : css.hero}
+        data-organization={slug}
+      >
+        <div className={admin || section === "dashboard" ? css.adminHeroCopy : undefined}>
+          <h2>
+            {admin
+              ? isImpulso
+                ? "Ideas que se convierten en acción."
+                : "Un espacio para crear y crecer."
+              : "Hola, " + (own ? name(own) : "estudiante") + "."}
+          </h2>
+          <p>
+            {admin
+              ? isImpulso
+                ? "Organiza talleres, acompaña a tus alumnos y transforma sus ideas en nuevos proyectos."
+                : "Organiza el aprendizaje y acompaña cada nueva idea de tu comunidad."
+              : "Continúa tus talleres, descubre tus materiales y mantente al día con las actividades de tu organización."}
+          </p>
+        </div>
+        {isImpulso && (admin || section === "dashboard") && (
+          <div className={css.adminHeroLogos} aria-label="Logos de Impulso Cero Academy">
+            <span className={css.adminLogoCard}>
+              <Image
+                src="/brands/impulso-cero-lockup.png"
+                width={2388}
+                height={926}
+                alt="Impulso Cero Academy"
+                priority
+              />
+            </span>
+            <span className={css.adminMarkCard}>
+              <Image
+                src="/brands/impulso-cero-marca.png"
+                width={2305}
+                height={2257}
+                alt=""
+                aria-hidden="true"
+                priority
+              />
+            </span>
+          </div>
+        )}
       </section>
       {admin && (
         <div className={css.metrics}>
