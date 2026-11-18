@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { ImpulsoBrand } from "@/components/institutional/identity";
 import Link from "next/link";
 import { mfaUrl } from "@/lib/auth/security";
 import {
@@ -1256,27 +1256,7 @@ export function AcademicView({
           </p>
         </div>
         {isImpulso && (admin || section === "dashboard") && (
-          <div className={css.adminHeroLogos} aria-label="Logos de Impulso Cero Academy">
-            <span className={css.adminLogoCard}>
-              <Image
-                src="/brands/impulso-cero-lockup.png"
-                width={2388}
-                height={926}
-                alt="Impulso Cero Academy"
-                priority
-              />
-            </span>
-            <span className={css.adminMarkCard}>
-              <Image
-                src="/brands/impulso-cero-marca.png"
-                width={2305}
-                height={2257}
-                alt=""
-                aria-hidden="true"
-                priority
-              />
-            </span>
-          </div>
+          <ImpulsoBrand prominent />
         )}
       </section>
       {admin && (

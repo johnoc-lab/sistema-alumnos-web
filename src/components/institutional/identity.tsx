@@ -5,10 +5,44 @@ import type { ReactNode } from "react";
 import styles from "./campus.module.css";
 
 // Catálogo exclusivamente visual. Nunca resuelve roles, membresías o autorizaciones.
-const logos: Readonly<Record<string, string>> = {
-  impulso: "/brands/impulso-cero.png",
-  "impulso-cero": "/brands/impulso-cero.png",
-};
+export function usesImpulsoBrand(slug: string) {
+  return slug === "impulso" || slug === "impulso-cero";
+}
+
+export function ImpulsoBrand({
+  prominent = false,
+  decorative = false,
+}: {
+  prominent?: boolean;
+  decorative?: boolean;
+}) {
+  const alt = decorative ? "" : "Impulso Cero Academy";
+  return (
+    <span className={prominent ? styles.prominentLogo : undefined}>
+      {prominent && (
+        <span className={styles.fullLogo}>
+          <Image
+            src="/brands/impulso-cero-lockup.png"
+            width={2388}
+            height={927}
+            alt={alt}
+            unoptimized
+          />
+        </span>
+      )}
+      <span className={styles.compactLogo}>
+        <Image
+          src="/brands/impulso-cero-marca.png"
+          width={2305}
+          height={2258}
+          alt={alt}
+          unoptimized
+        />
+      </span>
+    </span>
+  );
+}
+
 export function CampusBrand() {
   return (
     <span className={styles.brand}>
@@ -39,24 +73,17 @@ export function OrganizationIdentity({
   slug,
   name,
   detail,
+  prominent = false,
 }: {
   slug: string;
   name: string;
   detail?: string;
+  prominent?: boolean;
 }) {
-  const logo = Object.hasOwn(logos, slug) ? logos[slug] : undefined;
   return (
     <span className={styles.organization}>
-      {logo ? (
-        <span className={styles.logo}>
-          <Image
-            src={logo}
-            width={785}
-            height={318}
-            alt={"Logotipo de " + name}
-            unoptimized
-          />
-        </span>
+      {usesImpulsoBrand(slug) ? (
+        <ImpulsoBrand prominent={prominent} decorative />
       ) : (
         <span className={styles.fallback} aria-hidden="true">
           <Building2 size={23} />

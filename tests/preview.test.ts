@@ -9,6 +9,8 @@ import {
 import { getPreviewData } from "@/features/preview/fixtures";
 import { normalizeSearch } from "@/features/preview/presentation";
 import { Badge } from "@/components/ui/primitives";
+import { PreviewShell } from "@/components/layouts/preview-shell";
+import { AdminOverview } from "@/features/admin/components/admin-overview";
 describe("navegación de demostración", () => {
   it.each(organizationSlugs)("reconoce todas las secciones de %s", (slug) => {
     for (const section of sections)
@@ -55,6 +57,18 @@ describe("navegación de demostración", () => {
       ).toBe(true);
     },
   );
+  it("omite la pantalla provisional de Clases de la navegación visible", () => {
+    const data = getPreviewData("impulso");
+    const html = renderToStaticMarkup(
+      createElement(PreviewShell, {
+        organization: data.organization,
+        section: "admin",
+        children: createElement(AdminOverview, { organizationSlug: "impulso" }),
+      }),
+    );
+    expect(html).not.toContain('href="/demo/o/impulso/admin/clases"');
+    expect(html).toContain('href="/demo/o/impulso/admin/cursos"');
+  });
   it("encuentra textos con acentos y mayúsculas", () =>
     expect(normalizeSearch("  COMUNICACIÓN ")).toBe("comunicacion"));
   it("renderiza entrada no confiable como texto en React", () => {

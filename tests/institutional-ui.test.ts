@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 vi.mock("server-only", () => ({}));
 import { OrganizationIdentity } from "@/components/institutional/identity";
 import { CourseTile } from "@/features/academic/course-tile";
@@ -10,19 +10,21 @@ import { AcademicShell } from "@/features/academic/shell";
 const render = (component: Parameters<typeof renderToStaticMarkup>[0]) =>
   renderToStaticMarkup(component);
 describe("identidad institucional y presentación segura", () => {
-  it("reutiliza una imagen PNG local existente para Impulso Cero", () => {
-    expect(existsSync("public/brands/impulso-cero.png")).toBe(true);
-    expect(
-      readFileSync("public/brands/impulso-cero.png").subarray(1, 4).toString(),
-    ).toBe("PNG");
-    const html = render(
-      createElement(OrganizationIdentity, {
-        slug: "impulso-cero",
-        name: "Impulso Cero",
-      }),
+  it("reutiliza el logotipo y el isotipo de Impulso Cero según el espacio", () => {
+    const lockup = "/brands/impulso-cero-lockup.png";
+    const mark = "/brands/impulso-cero-marca.png";
+    const identity = { slug: "impulso-cero", name: "Impulso Cero" };
+    for (const asset of [lockup, mark]) {
+      expect(readFileSync("public" + asset).subarray(1, 4).toString()).toBe("PNG");
+    }
+    const compact = render(createElement(OrganizationIdentity, identity));
+    const prominent = render(
+      createElement(OrganizationIdentity, { ...identity, prominent: true }),
     );
-    expect(html).toContain('src="/brands/impulso-cero.png"');
-    expect(html).not.toContain("googleusercontent");
+    expect(compact).toContain('src="' + mark + '"');
+    expect(compact).not.toContain(lockup);
+    expect(prominent).toContain('src="' + lockup + '"');
+    expect(prominent).toContain('src="' + mark + '"');
   });
   it.each(["incubadora", "qa", "toString", "__proto__"])(
     "sin logo %s conserva nombre y representación neutra",

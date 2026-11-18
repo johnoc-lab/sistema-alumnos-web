@@ -81,6 +81,7 @@
   margin: 0 0 18px;
 }
 .sectionHeading h2 {
+  color: #2c3159;
   font-size: 16px;
   font-weight: 500;
   letter-spacing: -0.2px;
@@ -89,7 +90,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  color: var(--accent);
+  color: #2c3159;
   font-size: 11px;
 }
 .grid {
@@ -459,41 +460,6 @@
   font-size: 13px;
   line-height: 1.7;
 }
-.adminHeroLogos {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-.adminLogoCard,
-.adminMarkCard {
-  display: grid;
-  place-items: center;
-  background: #fff;
-  border: 1px solid #ffffffa8;
-  border-radius: 14px;
-  box-shadow: 0 10px 26px #14183124;
-}
-.adminLogoCard {
-  width: 190px;
-  height: 94px;
-  padding: 12px;
-}
-.adminLogoCard img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-.adminMarkCard {
-  width: 88px;
-  height: 88px;
-  padding: 10px;
-}
-.adminMarkCard img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
 .adminOverviewHeading {
   display: flex;
   align-items: center;
@@ -600,32 +566,6 @@
     flex-direction: column;
     padding: 25px 22px;
   }
-  .adminHeroLogos {
-    align-self: flex-end;
-  }
-  .adminLogoCard {
-    width: 156px;
-    height: 76px;
-  }
-  .adminMarkCard {
-    width: 72px;
-    height: 72px;
-  }
-}
-@media (max-width: 480px) {
-  .adminHeroLogos {
-    gap: 8px;
-  }
-  .adminLogoCard {
-    width: 132px;
-    height: 68px;
-    padding: 8px;
-  }
-  .adminMarkCard {
-    width: 64px;
-    height: 64px;
-    padding: 8px;
-  }
   .adminOverviewHeading {
     align-items: flex-start;
     flex-direction: column;
@@ -663,41 +603,6 @@
 .hero[data-organization="incubadora"] p {
   color: #41496b;
 }
-.heroLogos {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-.studentLogoCard,
-.studentMarkCard {
-  display: grid;
-  place-items: center;
-  border: 1px solid #ffffffa8;
-  border-radius: 14px;
-  background: #fff;
-  box-shadow: 0 10px 26px #14183124;
-}
-.studentLogoCard {
-  width: 190px;
-  height: 94px;
-  padding: 12px;
-}
-.studentLogoCard img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-.studentMarkCard {
-  width: 88px;
-  height: 88px;
-  padding: 10px;
-}
-.studentMarkCard img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
 .stats[data-organization="impulso"] .stat,
 .stats[data-organization="incubadora"] .stat {
   border-color: #b9c1cc;
@@ -729,6 +634,8 @@
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 9px 28px #2c31590a;
+  color: #2c3159;
+  --muted: #545b78;
 }
 .lower[data-organization="impulso"] .panelTitle,
 .lower[data-organization="incubadora"] .panelTitle {
@@ -763,31 +670,5 @@
     align-items: flex-start;
     flex-direction: column;
     padding: 25px 22px;
-  }
-  .heroLogos {
-    align-self: flex-end;
-  }
-  .studentLogoCard {
-    width: 156px;
-    height: 76px;
-  }
-  .studentMarkCard {
-    width: 72px;
-    height: 72px;
-  }
-}
-@media (max-width: 480px) {
-  .heroLogos {
-    gap: 8px;
-  }
-  .studentLogoCard {
-    width: 132px;
-    height: 68px;
-    padding: 8px;
-  }
-  .studentMarkCard {
-    width: 64px;
-    height: 64px;
-    padding: 8px;
   }
 }

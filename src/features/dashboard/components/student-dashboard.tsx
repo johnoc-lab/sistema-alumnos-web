@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { ImpulsoBrand } from "@/components/institutional/identity";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -32,29 +32,7 @@ export function StudentDashboard({
           </h1>
           <p>Un paso más cerca de lo que quieres construir.</p>
         </div>
-        {organizationSlug === "impulso" && (
-          <div className={styles.heroLogos} aria-label="Logos de Impulso Cero Academy">
-            <span className={styles.studentLogoCard}>
-              <Image
-                src="/brands/impulso-cero-lockup.png"
-                width={2388}
-                height={926}
-                alt="Impulso Cero Academy"
-                priority
-              />
-            </span>
-            <span className={styles.studentMarkCard}>
-              <Image
-                src="/brands/impulso-cero-marca.png"
-                width={2305}
-                height={2257}
-                alt=""
-                aria-hidden="true"
-                priority
-              />
-            </span>
-          </div>
-        )}
+        {organizationSlug === "impulso" && <ImpulsoBrand prominent />}
       </div>
       <section className={styles.stats} data-organization={organizationSlug} aria-label="Resumen de ejemplo">
         <div className={styles.stat}>
@@ -117,8 +95,7 @@ export function StudentDashboard({
             <time>26 OCT · EJEMPLO</time>
             <h3>Bienvenida a tu nuevo espacio</h3>
             <p>
-              Explora las interfaces. El contenido real se incorporará después
-              de integrar el acceso.
+              En el campus encontrarás los avisos de tu organización y tus talleres.
             </p>
           </article>
         </section>

@@ -62,8 +62,8 @@
 }
 
 .registration > .addStaffSummary {
-  background: var(--accent);
-  color: var(--on-accent, #fff);
+  background: var(--action);
+  color: var(--on-action);
   min-block-size: 44px;
   max-inline-size: 100%;
   padding: 0.65rem 1rem;
@@ -90,11 +90,11 @@
 }
 
 .registration > .addStaffSummary:hover {
-  background: var(--accent-hover);
-  color: var(--on-accent, #fff);
+  background: var(--action-hover);
+  color: var(--on-action);
 }
 
 .registration > .addStaffSummary:focus-visible {
-  outline: 3px solid var(--accent-hover);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
