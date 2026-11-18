@@ -184,10 +184,10 @@
 }
 .nav a:hover {
   background: #f1f6f5;
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
 }
 .nav .navActive {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   border-bottom-color: var(--accent);
   background: #edf5f2;
 }
@@ -204,7 +204,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   font-size: 12px;
   font-weight: 600;
   flex-shrink: 0;
@@ -240,7 +240,7 @@
 .section summary,
 .card summary {
   cursor: pointer;
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   padding: 12px 0;
   font-size: 13px;
   font-weight: 600;
@@ -283,7 +283,7 @@
 .field input:focus,
 .field select:focus,
 .field textarea:focus {
-  border-color: var(--accent);
+  border-color: var(--focus-ring);
 }
 .field textarea {
   min-height: 96px;
@@ -348,7 +348,7 @@
 .attendanceOption:has(input:checked) {
   border-color: var(--accent);
   background: #eaf4f0;
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
 }
 .attendanceOption[data-status="present"]:has(input:checked) {
   border-color: #3b8c66;
@@ -416,7 +416,7 @@
   margin: 0;
 }
 .announcementImageError a {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   font-weight: 650;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -516,7 +516,7 @@
   place-items: center;
   border-radius: 50%;
   background: #edf4f1;
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   font-size: 24px;
   font-weight: 500;
 }
@@ -564,7 +564,7 @@
   border: 1px solid var(--border);
   border-radius: 11px;
   background: #f8fbfa;
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   text-decoration: none;
   transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
 }
@@ -582,7 +582,7 @@
   margin: 12px 0;
 }
 .row a {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   font-size: 13px;
   font-weight: 600;
   text-decoration: underline;
@@ -641,7 +641,7 @@
   border-color: #7bada2;
 }
 .metrics strong {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   font-size: 30px;
   font-weight: 600;
 }
@@ -694,7 +694,7 @@
   color: var(--muted);
 }
 .table summary {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   cursor: pointer;
   font-size: 13px;
 }
@@ -729,7 +729,7 @@
   margin-bottom: 4px;
 }
 .steps a {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   font-weight: 500;
 }
 .hero {
@@ -773,7 +773,7 @@
   letter-spacing: -0.5px;
 }
 .blockHeading a {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   font-size: 12px;
   font-weight: 600;
 }
@@ -847,7 +847,7 @@
   color: var(--muted);
 }
 .tileTag {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   font-weight: 600;
   font-size: 10px;
   text-transform: uppercase;
@@ -869,7 +869,7 @@
   padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   font-weight: 600;
 }
 .openCourse:hover {
@@ -911,7 +911,7 @@
   min-width: 0;
 }
 .resource > svg {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   background: #e5f0eb;
   padding: 9px;
   width: 40px;
@@ -1130,41 +1130,6 @@
   opacity: 0.82;
   line-height: 1.7;
 }
-.adminHeroLogos {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-.adminLogoCard,
-.adminMarkCard {
-  display: grid;
-  place-items: center;
-  border: 1px solid #ffffffa8;
-  border-radius: 14px;
-  background: #fff;
-  box-shadow: 0 10px 26px #14183124;
-}
-.adminLogoCard {
-  width: 190px;
-  height: 94px;
-  padding: 12px;
-}
-.adminLogoCard img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-.adminMarkCard {
-  width: 88px;
-  height: 88px;
-  padding: 10px;
-}
-.adminMarkCard img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
 [data-admin="true"][data-organization="impulso"] .metrics a,
 [data-admin="true"][data-organization="impulso-cero"] .metrics a,
 [data-admin="true"][data-organization="incubadora"] .metrics a,
@@ -1193,6 +1158,7 @@
 
 /* Paleta compartida por todas las secciones reales de administración y alumno. */
 .workspaceShell .desktopSidebar {
+  --focus-ring: #f6c29f;
   color: var(--nav-text);
   background: var(--nav-surface);
 }
@@ -1205,8 +1171,8 @@
   color: var(--nav-text);
 }
 .workspaceShell .desktopBrandMark {
-  color: #fff;
-  background: var(--accent);
+  color: var(--nav-active-text);
+  background: var(--nav-active);
 }
 .workspaceShell .desktopAvatar {
   color: var(--text);
@@ -1221,12 +1187,12 @@
 .workspaceShell .desktopLinks a.desktopLinkActive {
   color: var(--nav-active-text);
   background: var(--nav-active);
-  border-left-color: #f6c29f;
+  border-left-color: var(--accent);
 }
 .workspaceShell .desktopLogout button {
   color: var(--nav-text);
 }
-.workspaceShell .desktopLinks a:hover,
+.workspaceShell .desktopLinks a:not(.desktopLinkActive):hover,
 .workspaceShell .desktopLogout button:hover {
   background: #ffffff16;
 }
@@ -1295,7 +1261,7 @@
 .workspaceShell .row a,
 .workspaceShell .blockHeading a,
 .workspaceShell .tileTag {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
 }
 .workspaceShell .hero,
 .workspaceShell .adminHero {
@@ -1352,7 +1318,7 @@
 }
 .workspaceShell .mediaUploadIcon,
 .workspaceShell .resource > svg {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   background: #f6c29f55;
 }
 .workspaceShell .mediaPickerTitle strong,
@@ -1365,7 +1331,7 @@
   color: var(--muted);
 }
 .workspaceShell .mediaFileInput:focus-visible {
-  outline-color: var(--accent);
+  outline-color: var(--focus-ring);
 }
 .workspaceShell .attendanceOption:has(input:checked) {
   border-color: var(--accent);
@@ -1387,31 +1353,5 @@
     align-items: flex-start;
     flex-direction: column;
     padding: 25px 22px;
-  }
-  .adminHeroLogos {
-    align-self: flex-end;
-  }
-  .adminLogoCard {
-    width: 156px;
-    height: 76px;
-  }
-  .adminMarkCard {
-    width: 72px;
-    height: 72px;
-  }
-}
-@media (max-width: 480px) {
-  .adminHeroLogos {
-    gap: 8px;
-  }
-  .adminLogoCard {
-    width: 132px;
-    height: 68px;
-    padding: 8px;
-  }
-  .adminMarkCard {
-    width: 64px;
-    height: 64px;
-    padding: 8px;
   }
 }

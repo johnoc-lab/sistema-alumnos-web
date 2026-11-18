@@ -41,12 +41,12 @@
     transform 0.15s;
 }
 .primaryLink {
-  background: var(--accent);
-  color: var(--on-accent, #071522);
-  border: 1px solid var(--accent);
+  background: var(--action, var(--accent));
+  color: var(--on-action, #071522);
+  border: 1px solid var(--action, var(--accent));
 }
 .primaryLink:hover {
-  background: var(--accent-hover, #87e0f2);
+  background: var(--action-hover, #87e0f2);
   transform: translateY(-1px);
 }
 .secondaryLink {
@@ -117,7 +117,7 @@
 }
 .cyan {
   background: color-mix(in srgb, var(--accent) 9%, var(--surface));
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
 }
 .neutral {
@@ -131,7 +131,7 @@
   align-items: center;
   justify-content: center;
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
   border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
 }
 .empty {

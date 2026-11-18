@@ -1,7 +1,7 @@
 .mobileNav {
   display: none;
   --nav-surface: #2c3159;
-  --nav-active: #d78133;
+  --nav-active: #f6c29f;
   --nav-divider: #ffffff24;
 }
 
@@ -34,7 +34,7 @@
   background: rgb(8 16 20 / 58%);
 }
 
-.studentDialog {
+.menuDialog {
   width: 100%;
   height: 100%;
   max-width: none;
@@ -43,8 +43,13 @@
   padding: 0;
   border: 0;
 }
-.studentDialog::backdrop {
+.menuDialog::backdrop {
   background: transparent;
+}
+
+.menuButton,
+.drawer {
+  --focus-ring: #f6c29f;
 }
 
 .drawer {
@@ -82,6 +87,7 @@
   display: grid;
   place-items: center;
   border-radius: 7px;
+  color: #2c3159;
   background: var(--nav-active);
   font-weight: 800;
 }
@@ -161,8 +167,8 @@
 }
 
 .links a.active {
-  border-left-color: #f6c29f;
-  color: #fff;
+  border-left-color: #d78133;
+  color: #2c3159;
   background: var(--nav-active);
   font-weight: 700;
 }

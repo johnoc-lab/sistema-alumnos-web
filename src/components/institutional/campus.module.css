@@ -6,8 +6,11 @@
   --muted: #545b78;
   --border: #b9c1cc;
   --accent: #d78133;
-  --on-accent: #fff;
-  --accent-hover: #b96b28;
+  --accent-text: #2c3159;
+  --action: #2c3159;
+  --action-hover: #232747;
+  --on-action: #fff;
+  --focus-ring: #2c3159;
   --purple: #2c3159;
   --green: #256344;
   --amber: #80501d;
@@ -15,8 +18,8 @@
   --page-background: #f7f4ee;
   --nav-surface: #2c3159;
   --nav-text: #f7f4ee;
-  --nav-active: #d78133;
-  --nav-active-text: #fff;
+  --nav-active: #f6c29f;
+  --nav-active-text: #2c3159;
   --nav-divider: #ffffff24;
   --radius: 14px;
   color-scheme: light;
@@ -26,7 +29,7 @@
   font-family: Arial, Helvetica, sans-serif;
 }
 .page :focus-visible {
-  outline: 3px solid #d78133;
+  outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
 .page button,
@@ -35,6 +38,7 @@
   min-height: 42px;
 }
 .header {
+  --focus-ring: #f6c29f;
   min-height: 76px;
   background: #2c3159;
   border-bottom: 3px solid #d78133;
@@ -97,21 +101,41 @@
   color: var(--muted);
   margin-top: 3px;
 }
-.logo {
+.fullLogo,
+.compactLogo {
   display: grid;
   place-items: center;
-  background: #2c3159;
-  border-radius: 8px;
-  width: 104px;
-  min-height: 46px;
-  padding: 8px;
-  flex-shrink: 0;
+  background: #fff;
+  border: 1px solid #b9c1cc;
+  border-radius: 10px;
 }
-.logo img {
+.fullLogo {
+  width: max-content;
+  padding: 8px 12px;
+}
+.fullLogo img {
+  width: 184px;
+  height: auto;
+}
+.compactLogo {
+  width: 44px;
+  height: 44px;
+  padding: 5px;
+}
+.compactLogo img {
   width: 100%;
   height: auto;
-  max-height: 42px;
-  object-fit: contain;
+}
+.prominentLogo .compactLogo {
+  display: none;
+}
+@media (max-width: 800px) {
+  .prominentLogo .fullLogo {
+    display: none;
+  }
+  .prominentLogo .compactLogo {
+    display: grid;
+  }
 }
 .fallback {
   display: grid;

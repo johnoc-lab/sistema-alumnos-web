@@ -60,7 +60,11 @@ export function LoginScreen({
             </span>
           </div>
           <div className={styles.initiatives}>
-            <OrganizationIdentity slug="impulso-cero" name="Impulso Cero" />
+            <OrganizationIdentity
+              slug="impulso-cero"
+              name="Impulso Cero"
+              prominent
+            />
             <OrganizationIdentity slug="incubadora" name="Incubadora" />
           </div>
         </section>

@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { ImpulsoBrand } from "@/components/institutional/identity";
 import Link from "next/link";
 import {
   Users,
@@ -8,7 +8,6 @@ import {
   FolderOpen,
   MessageSquare,
   Award,
-  Video,
 } from "lucide-react";
 import { getPreviewData } from "@/features/preview/fixtures";
 import { previewHref, type OrganizationSlug } from "@/features/preview/routes";
@@ -38,32 +37,7 @@ export function AdminOverview({
               : "Organiza el aprendizaje y acompaña cada nueva idea de tu comunidad."}
           </p>
         </div>
-        {isImpulso && (
-          <div
-            className={styles.adminHeroLogos}
-            aria-label="Identidad de Impulso Cero Academy"
-          >
-            <span className={styles.adminLogoCard}>
-              <Image
-                src="/brands/impulso-cero-lockup.png"
-                width={2388}
-                height={926}
-                alt="Impulso Cero Academy"
-                priority
-              />
-            </span>
-            <span className={styles.adminMarkCard}>
-              <Image
-                src="/brands/impulso-cero-marca.png"
-                width={2305}
-                height={2257}
-                alt=""
-                aria-hidden="true"
-                priority
-              />
-            </span>
-          </div>
-        )}
+        {isImpulso && <ImpulsoBrand prominent />}
       </section>
 
       <div className={styles.adminOverviewHeading}>
@@ -156,10 +130,6 @@ export function AdminOverview({
             <Link href={previewHref(organizationSlug, "admin/cursos")}>
               <BookOpen size={18} />
               Talleres
-            </Link>
-            <Link href={previewHref(organizationSlug, "admin/clases")}>
-              <Video size={18} />
-              Clases
             </Link>
             <Link href={previewHref(organizationSlug, "admin/avisos")}>
               <MessageSquare size={18} />

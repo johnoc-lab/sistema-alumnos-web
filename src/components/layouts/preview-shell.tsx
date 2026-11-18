@@ -11,7 +11,6 @@ import {
   UserRound,
   Users,
   Layers3,
-  Video,
   MessageSquare,
   FolderOpen,
   Award,
@@ -20,6 +19,7 @@ import {
   Eye,
 } from "lucide-react";
 import { Badge } from "@/components/ui/primitives";
+import { ImpulsoBrand, usesImpulsoBrand } from "@/components/institutional/identity";
 import { previewHref, type Section } from "@/features/preview/routes";
 import type { PreviewOrganization } from "@/features/preview/fixtures";
 import styles from "./preview-shell.module.css";
@@ -37,7 +37,6 @@ const adminNav = [
   { section: "admin", label: "Resumen", icon: LayoutDashboard },
   { section: "admin/alumnos", label: "Alumnos", icon: Users },
   { section: "admin/cursos", label: "Talleres", icon: Layers3 },
-  { section: "admin/clases", label: "Clases", icon: Video },
   { section: "admin/avisos", label: "Tablón de avisos", icon: MessageSquare },
   { section: "admin/materiales", label: "Materiales", icon: FolderOpen },
   { section: "admin/calendario", label: "Calendario", icon: CalendarDays },
@@ -73,9 +72,13 @@ export function PreviewShell({
       <DemoBanner />
       <aside className={styles.sidebar}>
         <Link className={styles.brand} href="/demo">
-          <div className={styles.brandIcon}>
-            <Orbit size={23} strokeWidth={1.3} />
-          </div>
+          {usesImpulsoBrand(organization.slug) ? (
+            <ImpulsoBrand decorative />
+          ) : (
+            <div className={styles.brandIcon}>
+              <Orbit size={23} strokeWidth={1.3} aria-hidden="true" />
+            </div>
+          )}
           <div>
             <strong>{organization.name}</strong>
             <small>ACADEMY · DEMO</small>

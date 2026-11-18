@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Orbit, ArrowUpRight, ArrowLeft, Building2 } from "lucide-react";
+import { ArrowUpRight, ArrowLeft, Building2 } from "lucide-react";
+import { ImpulsoBrand } from "@/components/institutional/identity";
 import { DemoBanner } from "@/components/layouts/preview-shell";
 import { Badge } from "@/components/ui/primitives";
 import { previewOrganizations } from "@/features/preview/fixtures";
@@ -11,7 +12,7 @@ export function OrganizationSelector() {
       <DemoBanner />
       <header className={styles.header}>
         <Link href="/login" className={styles.brand}>
-          <Orbit color="var(--accent)" strokeWidth={1.3} />
+          <ImpulsoBrand decorative />
           Impulso Cero
         </Link>
         <Link href="/login" aria-label="Volver al login">

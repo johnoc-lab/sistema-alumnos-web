@@ -351,7 +351,7 @@ export const noticeText: Record<string, string> = {
   "media-migration": "Para guardar imágenes o videos, primero aplica la migración de medios de avisos en Supabase.",
   attendees:
     "El taller necesita alumnos activos matriculados para programar el evento.",
-  pdf: "Selecciona un PDF privado listo del mismo taller. La subida de archivos todavía no está habilitada.",
+  pdf: "Selecciona o sube un PDF para este taller antes de guardar el material.",
 };
 export function errorNotice(error: unknown): string {
   if (error instanceof AcademicError)

@@ -120,6 +120,10 @@
   background: linear-gradient(90deg, #60d4ec13, #ac9af807);
   border-color: #60d4ec22;
 }
+.nav a:focus-visible {
+  outline: 2px solid #d78133;
+  outline-offset: -2px;
+}
 .nav a svg {
   opacity: 0.9;
 }
@@ -353,11 +357,11 @@
   background: #d7813320;
 }
 [data-admin="true"][data-organization="impulso"] .nav .active {
-  color: #fff;
-  background: #d78133;
+  color: #2c3159;
+  background: #f6c29f;
   border-color: #d78133;
 }
-[data-admin="true"][data-organization="impulso"] .nav a:hover {
+[data-admin="true"][data-organization="impulso"] .nav a:not(.active):hover {
   color: #fff;
   background: #ffffff12;
 }
@@ -406,16 +410,25 @@
   );
 }
 
+:is([data-admin="false"], [data-admin="true"][data-organization="impulso"]) .workspace .breadcrumb,
+:is([data-admin="false"], [data-admin="true"][data-organization="impulso"]) .workspace .headerNote,
+:is([data-admin="false"], [data-admin="true"][data-organization="impulso"]) .workspace .footer {
+  color: #545b78;
+}
+:is([data-admin="false"], [data-admin="true"][data-organization="impulso"]) .workspace .breadcrumb strong {
+  color: #2c3159;
+}
+
 /* Las vistas de estudiante comparten la identidad cromática institucional. */
 [data-admin="false"][data-organization="impulso"] .sidebar {
   background: linear-gradient(165deg, #2c3159, #232747);
 }
 [data-admin="false"][data-organization="impulso"] .nav .active {
-  color: #fff;
-  background: #d78133;
+  color: #2c3159;
+  background: #f6c29f;
   border-color: #d78133;
 }
-[data-admin="false"][data-organization="impulso"] .nav a:hover {
+[data-admin="false"][data-organization="impulso"] .nav a:not(.active):hover {
   color: #fff;
   background: #ffffff12;
 }
