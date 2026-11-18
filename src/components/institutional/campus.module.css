@@ -21,12 +21,25 @@
   --nav-active: #f6c29f;
   --nav-active-text: #2c3159;
   --nav-divider: #ffffff24;
+  --nav-muted: #e9ebef;
+  --nav-hover: #ffffff16;
+  --nav-focus: #f6c29f;
+  --resource-icon-bg: #f6c29f55;
   --radius: 14px;
   color-scheme: light;
   color: var(--text);
   background: var(--bg);
   min-height: 100svh;
   font-family: Arial, Helvetica, sans-serif;
+}
+.page[data-organization="incubadora"] {
+  --nav-surface: #b9c1cc;
+  --nav-text: #2c3159;
+  --nav-divider: #2c315922;
+  --nav-muted: #41496b;
+  --nav-hover: #2c315916;
+  --nav-focus: #2c3159;
+  --resource-icon-bg: var(--surface-raised);
 }
 .page :focus-visible {
   outline: 3px solid var(--focus-ring);

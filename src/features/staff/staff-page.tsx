@@ -182,6 +182,13 @@ function StaffDirectory({
         <summary className={ui.primaryLink + " " + css.addStaffSummary}>
           Agregar personal
         </summary>
+        <div className={css.assignment}>
+          <strong>Institución asignada: {organization}</strong>
+          <p>
+            El personal registrado tendrá acceso únicamente a esta organización
+            y a los módulos autorizados.
+          </p>
+        </div>
         {registrationEnabled && (
           <form className={css.form} method="post" action={post}>
             <input type="hidden" name="action" value="register" />
@@ -243,9 +250,6 @@ function StaffDirectory({
         {data.pending.length ? (
           <form className={css.form} method="post" action={post}>
             <input type="hidden" name="action" value="link" />
-            <p>
-              <strong>{organization}</strong>
-            </p>
             <label className={academic.field}>
               Cuenta con asignación institucional verificada
               <select name="id" required defaultValue="">

@@ -1,0 +1,26 @@
+.recommendation {
+  padding: clamp(18px, 3vw, 28px);
+}
+
+.recommendationForm {
+  display: grid;
+  gap: 14px;
+  max-width: 32rem;
+  margin-top: 16px;
+}
+
+.recommendationForm button {
+  justify-self: start;
+  max-width: 100%;
+}
+
+.recommendationForm :is(select, button):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+@media (max-width: 480px) {
+  .recommendationForm button {
+    justify-self: stretch;
+  }
+}

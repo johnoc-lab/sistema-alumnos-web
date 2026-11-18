@@ -26,11 +26,13 @@ import { LogoutForm } from "@/features/auth/components/auth-form";
 import { WorkspaceMobileNav } from "./workspace-mobile-nav";
 import {
   CampusHeader,
+  ImpulsoBrand,
   OrganizationIdentity,
+  usesImpulsoBrand,
 } from "@/components/institutional/identity";
 import campus from "@/components/institutional/campus.module.css";
 import css from "./academic.module.css";
-const icons: Record<string, LucideIcon> = {
+export const academicNavIcons: Readonly<Record<string, LucideIcon>> = {
   admin: LayoutDashboard,
   "admin/alumnos": Users,
   "admin/cursos": BookOpen,
@@ -40,6 +42,7 @@ const icons: Record<string, LucideIcon> = {
   "admin/horario": CalendarDays,
   "admin/asistencia": ClipboardCheck,
   "admin/administradores": ShieldCheck,
+  "admin/certificados": Award,
   dashboard: LayoutDashboard,
   "dashboard/cursos": BookOpen,
   "dashboard/materiales": FolderOpen,
@@ -94,7 +97,11 @@ export function AcademicShell({
       <div className={css.workspaceShell}>
         <aside className={css.desktopSidebar}>
           <Link className={css.desktopBrand} href={"/o/" + encodeURIComponent(slug) + (admin ? "/admin" : "/dashboard")}>
-            <span className={css.desktopBrandMark} aria-hidden="true">S</span>
+            {usesImpulsoBrand(slug) ? (
+              <ImpulsoBrand decorative />
+            ) : (
+              <span className={css.desktopBrandMark} aria-hidden="true">S</span>
+            )}
             <strong>Sistema Alumnos</strong>
           </Link>
           <div className={css.desktopIdentity}>
@@ -114,7 +121,7 @@ export function AcademicShell({
           </div>
           <nav className={css.desktopLinks} aria-label={admin ? "Administración" : "Alumno"}>
             {links.map(([path, label]) => {
-              const Icon = icons[path] ?? BookOpen;
+              const Icon = academicNavIcons[path] ?? BookOpen;
               const active = section === path;
               return (
                 <Link

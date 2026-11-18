@@ -900,6 +900,18 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
+.resourceGrid.staffModuleGrid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.staffModuleGrid .resource {
+  height: 100%;
+}
+.staffModuleGrid .resource svg {
+  flex-shrink: 0;
+}
 .resource {
   display: flex;
   align-items: center;
@@ -1029,71 +1041,6 @@
   }
 }
 
-/* Navegación y superficies para los paneles de cada organización. */
-[data-admin="true"][data-organization="impulso"] .desktopSidebar,
-[data-admin="true"][data-organization="impulso-cero"] .desktopSidebar {
-  color: #f7f4ee;
-  background: #2c3159;
-}
-[data-admin="true"][data-organization="impulso"] .desktopBrand,
-[data-admin="true"][data-organization="impulso-cero"] .desktopBrand,
-[data-admin="true"][data-organization="incubadora"] .desktopBrand {
-  border-bottom-color: #ffffff24;
-}
-[data-admin="true"][data-organization="impulso"] .desktopBrandMark,
-[data-admin="true"][data-organization="impulso-cero"] .desktopBrandMark {
-  color: #fff;
-  background: #d78133;
-}
-[data-admin="true"][data-organization="impulso"] .desktopAvatar,
-[data-admin="true"][data-organization="impulso-cero"] .desktopAvatar {
-  color: #2c3159;
-  background: #f6c29f;
-}
-[data-admin="true"][data-organization="impulso"]
-  .desktopLinks
-  a.desktopLinkActive,
-[data-admin="true"][data-organization="impulso-cero"]
-  .desktopLinks
-  a.desktopLinkActive {
-  color: #fff;
-  background: #d78133;
-  border-left-color: #f6c29f;
-}
-[data-admin="true"][data-organization="incubadora"] .desktopSidebar {
-  color: #2c3159;
-  background: #b9c1cc;
-}
-[data-admin="true"][data-organization="incubadora"] .desktopBrand,
-[data-admin="true"][data-organization="incubadora"] .desktopLinks a,
-[data-admin="true"][data-organization="incubadora"] .desktopLogout button {
-  color: #2c3159;
-}
-[data-admin="true"][data-organization="incubadora"] .desktopIdentity small {
-  color: #41496b;
-}
-[data-admin="true"][data-organization="incubadora"] .desktopAvatar {
-  color: #2c3159;
-  background: #f6c29f;
-}
-[data-admin="true"][data-organization="incubadora"] .desktopLinks a:hover,
-[data-admin="true"][data-organization="incubadora"]
-  .desktopLinks
-  a.desktopLinkActive {
-  color: #2c3159;
-  background: #f6c29f;
-  border-left-color: #2c3159;
-}
-[data-admin="true"][data-organization="incubadora"] .desktopIdentity,
-[data-admin="true"][data-organization="incubadora"] .desktopBrand,
-[data-admin="true"][data-organization="incubadora"] .desktopLogout {
-  border-color: #2c315922;
-}
-[data-admin="true"][data-organization="impulso"] .organizationBar,
-[data-admin="true"][data-organization="impulso-cero"] .organizationBar,
-[data-admin="true"][data-organization="incubadora"] .organizationBar {
-  border-bottom-color: #b9c1cc;
-}
 .adminHero {
   display: flex;
   align-items: center;
@@ -1117,7 +1064,7 @@
 .adminHeroCopy {
   max-width: 680px;
 }
-.adminHero h2 {
+.adminHero :is(h1, h2) {
   max-width: 650px;
   margin: 0 0 10px;
   font-size: clamp(26px, 3vw, 36px);
@@ -1158,7 +1105,7 @@
 
 /* Paleta compartida por todas las secciones reales de administración y alumno. */
 .workspaceShell .desktopSidebar {
-  --focus-ring: #f6c29f;
+  --focus-ring: var(--nav-focus);
   color: var(--nav-text);
   background: var(--nav-surface);
 }
@@ -1179,7 +1126,7 @@
   background: #f6c29f;
 }
 .workspaceShell .desktopIdentity small {
-  color: #e9ebef;
+  color: var(--nav-muted);
 }
 .workspaceShell .desktopLinks a {
   color: var(--nav-text);
@@ -1194,7 +1141,7 @@
 }
 .workspaceShell .desktopLinks a:not(.desktopLinkActive):hover,
 .workspaceShell .desktopLogout button:hover {
-  background: #ffffff16;
+  background: var(--nav-hover);
 }
 .workspaceShell .organizationBar {
   border-bottom: 1px solid var(--border);
@@ -1264,18 +1211,18 @@
   color: var(--accent-text, var(--accent));
 }
 .workspaceShell .hero,
-.workspaceShell .adminHero {
+.workspaceShell .adminHero:not([data-organization="incubadora"]) {
   border: 1px solid #d7813380;
   border-radius: 18px;
   background: linear-gradient(112deg, #2c3159 0%, #343a67 72%, #d78133 150%);
   color: #fff;
 }
 .workspaceShell .hero h2,
-.workspaceShell .adminHero h2 {
+.workspaceShell .adminHero:not([data-organization="incubadora"]) :is(h1, h2) {
   color: #fff;
 }
 .workspaceShell .hero p,
-.workspaceShell .adminHero p {
+.workspaceShell .adminHero:not([data-organization="incubadora"]) p {
   color: #f7f4ee;
 }
 .workspaceShell .hero::after {
@@ -1319,7 +1266,7 @@
 .workspaceShell .mediaUploadIcon,
 .workspaceShell .resource > svg {
   color: var(--accent-text, var(--accent));
-  background: #f6c29f55;
+  background: var(--resource-icon-bg);
 }
 .workspaceShell .mediaPickerTitle strong,
 .workspaceShell .mediaDropzone strong,

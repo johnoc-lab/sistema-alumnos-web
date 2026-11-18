@@ -8,6 +8,7 @@ import { hasStaffPermission } from "@/lib/authorization/staff";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import css from "@/features/academic/academic.module.css";
 import ui from "@/components/ui/ui.module.css";
+import styles from "./certificates.module.css";
 import { detailsFromSnapshot } from "./certificates.server";
 
 type StaffContext = {
@@ -106,12 +107,19 @@ export async function StaffCertificates({
       ) : (
         <>
           {recommend && (
-            <section className={css.section}>
-              <h2>Recomendar certificado</h2>
+            <section
+              aria-labelledby="recommend-certificate-title"
+              className={css.section + " " + styles.recommendation}
+            >
+              <h2 id="recommend-certificate-title">Recomendar certificado</h2>
               {data.courses.length === 0 ? (
                 <p>No hay talleres disponibles.</p>
               ) : (
-                <form method="get" action={base}>
+                <form
+                  className={styles.recommendationForm}
+                  method="get"
+                  action={base}
+                >
                   <label className={css.field}>
                     Taller
                     <select name="course" defaultValue={selected} required>
@@ -135,7 +143,11 @@ export async function StaffCertificates({
                     taller.
                   </p>
                 ) : (
-                  <form method="post" action={base + "/acciones"}>
+                  <form
+                    className={styles.recommendationForm}
+                    method="post"
+                    action={base + "/acciones"}
+                  >
                     <input type="hidden" name="action" value="recommend" />
                     <label className={css.field}>
                       Alumno

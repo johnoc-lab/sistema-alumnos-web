@@ -28,6 +28,7 @@ import { staffIdentifierPattern } from "@/features/staff/identifier";
 import { AcademicView, AcademicPage } from "@/features/academic/academic-page";
 import { ProtectedModule } from "@/features/auth/components/protected-module";
 import type { AcademicData } from "@/features/academic/data.server";
+import type { StaffPermission } from "@/lib/authorization/staff";
 const empty = (): AcademicData => ({
   courses: [],
   memberships: [],
@@ -398,7 +399,7 @@ describe("vista de Administradores y navegación delegada", () => {
     organizationId: "org-a",
     name: "QA",
     staffRank: "principal",
-    allowedModules: [],
+    allowedModules: [] as StaffPermission[],
   };
   const grant = (membership = member) =>
     mocks.access.mockResolvedValue({
@@ -467,8 +468,8 @@ describe("vista de Administradores y navegación delegada", () => {
     expect(page).toContain("Activar");
     expect(page).toContain('role="alert"');
   });
-  it("mantiene el control nativo de alta y presenta las cuentas pendientes", async () => {
-    grant();
+  it("muestra la institución de alta y conserva el formulario y sus estados", async () => {
+    grant({ ...member, name: "Impulso Cero" });
     mocks.registrationEnabled.mockReturnValue(true);
     mocks.create.mockResolvedValue({
       rpc: vi.fn().mockResolvedValue({
@@ -491,7 +492,7 @@ describe("vista de Administradores y navegación delegada", () => {
       }),
     });
     const html = renderToStaticMarkup(
-      await StaffPage({ slug: "qa", search: {} }),
+      await StaffPage({ slug: "impulso-cero", search: {} }),
     );
     expect(html).toMatch(
       /<details[^>]+><summary[^>]+>Agregar personal<\/summary>/,
@@ -501,6 +502,9 @@ describe("vista de Administradores y navegación delegada", () => {
     const form = html.match(
       /<form[^>]*>[^]*?value="register"[^]*?<\/form>/,
     )?.[0];
+    expect(html).toContain("Institución asignada: Impulso Cero");
+    expect(form).toContain('action="/o/impulso-cero/admin/administradores/acciones"');
+    expect(form).not.toMatch(/name="(?:organization|organization_id|slug)"/);
     expect(form).toContain('pattern="' + staffIdentifierPattern + '"');
     expect(form).toContain('aria-describedby="staff-identifier-help"');
     expect(form).not.toContain('value="principal"');
@@ -534,6 +538,40 @@ describe("vista de Administradores y navegación delegada", () => {
     );
     expect(mocks.create).not.toHaveBeenCalled();
   });
+  it.each([
+    ["impulso-cero", "Impulso Cero", true],
+    ["incubadora", "Incubadora", false],
+    ["qa-sistema-alumnos-01", "QA Sistema Alumnos", false],
+  ])("muestra tarjetas del profesor en %s con la identidad de su institución", async (slug, name, branded) => {
+    grant({
+      ...member,
+      name,
+      staffRank: "teacher",
+      allowedModules: ["attendance", "certificates", "certificates.recommend"],
+    });
+    const html = renderToStaticMarkup(await AcademicPage({ slug, section: "admin" }));
+    const cards = html.match(/<ul aria-label="Módulos autorizados"[^>]*>[^]*?<\/ul>/)?.[0];
+    expect(cards?.match(/<li>/g)).toHaveLength(2);
+    expect(cards).toContain('href="/o/' + slug + '/admin/asistencia"');
+    expect(cards).toContain('href="/o/' + slug + '/admin/certificados"');
+    expect(cards).toContain("<svg");
+    expect(html).not.toContain("/admin/alumnos");
+    expect(html).not.toContain("/admin/administradores");
+    expect(html).toContain("<p>" + name + "</p>");
+    expect(html.includes("/brands/impulso-cero-lockup.png")).toBe(branded);
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it("un profesor sin módulos ve un estado vacío sin tarjetas", async () => {
+    grant({ ...member, staffRank: "teacher" });
+    const html = renderToStaticMarkup(
+      await AcademicPage({ slug: "qa", section: "admin" }),
+    );
+    expect(html).toContain("No tienes secciones asignadas.");
+    expect(html).not.toContain('aria-label="Módulos autorizados"');
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
   it("la navegación delegada solo enlaza los módulos asignados", async () => {
     grant({
       ...member,

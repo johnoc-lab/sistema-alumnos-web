@@ -1,8 +1,5 @@
 .mobileNav {
   display: none;
-  --nav-surface: #2c3159;
-  --nav-active: #f6c29f;
-  --nav-divider: #ffffff24;
 }
 
 .menuButton,
@@ -20,7 +17,7 @@
   align-items: center;
   gap: 13px;
   padding: 0 18px;
-  color: #fff;
+  color: var(--nav-text);
   background: var(--nav-surface);
   border-bottom: 2px solid #d78133;
   text-align: left;
@@ -49,7 +46,7 @@
 
 .menuButton,
 .drawer {
-  --focus-ring: #f6c29f;
+  --focus-ring: var(--nav-focus);
 }
 
 .drawer {
@@ -59,7 +56,7 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  color: #f5f5f5;
+  color: var(--nav-text);
   background: var(--nav-surface);
   box-shadow: 8px 0 28px rgb(0 0 0 / 24%);
   animation: slideIn 180ms ease-out;
@@ -97,13 +94,13 @@
   height: 38px;
   display: grid;
   place-items: center;
-  color: #e6e6e6;
+  color: var(--nav-text);
   background: transparent;
   border-radius: 6px;
 }
 
 .closeButton:hover {
-  background: rgb(255 255 255 / 10%);
+  background: var(--nav-hover);
 }
 
 .identity {
@@ -138,7 +135,7 @@
 
 .identity small {
   margin-top: 3px;
-  color: #e9ebef;
+  color: var(--nav-muted);
   font-size: 11px;
 }
 
@@ -156,19 +153,19 @@
   padding: 0 15px;
   border-left: 4px solid transparent;
   border-radius: 3px;
-  color: #e4e4e4;
+  color: var(--nav-text);
   font-size: 14px;
   font-weight: 550;
   text-decoration: none;
 }
 
 .links a:hover {
-  background: rgb(255 255 255 / 8%);
+  background: var(--nav-hover);
 }
 
 .links a.active {
-  border-left-color: #d78133;
-  color: #2c3159;
+  border-left-color: var(--accent);
+  color: var(--nav-active-text);
   background: var(--nav-active);
   font-weight: 700;
 }
@@ -189,7 +186,7 @@
   padding: 10px 8px;
   border: 0;
   border-radius: 4px;
-  color: #dedede;
+  color: var(--nav-text);
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -200,7 +197,7 @@
   line-height: 1;
 }
 .logout button:hover {
-  background: rgb(255 255 255 / 10%);
+  background: var(--nav-hover);
 }
 
 @keyframes slideIn {
