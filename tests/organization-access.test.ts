@@ -53,6 +53,25 @@ describe("selección de organización real", () => {
       );
     },
   );
+  it("enlaza únicamente las instituciones presentes en la sesión verificada", () => {
+    const s = session(true, "aal2");
+    const [principal] = s.memberships;
+    s.memberships = [
+      { ...principal!, slug: "impulso-cero", name: "Impulso Cero", organizationId: "impulso" },
+      { ...principal!, slug: "incubadora", name: "Incubadora", organizationId: "incubadora" },
+    ];
+    let html = render(s);
+    expect(html).toContain("/o/impulso-cero/admin");
+    expect(html).toContain("/o/incubadora/admin");
+    expect(html).toContain("/brands/impulso-cero-marca.png");
+    expect(html).not.toContain("/o/qa/admin");
+
+    s.memberships = s.memberships.slice(1);
+    html = render(s);
+    expect(html).toContain("/o/incubadora/admin");
+    expect(html).not.toContain("/o/impulso-cero/admin");
+    expect(html).not.toContain("/brands/impulso-cero-marca.png");
+  });
   it("sin membresías ofrece estado vacío sin vínculos académicos", () => {
     const s = session();
     s.identity = null;

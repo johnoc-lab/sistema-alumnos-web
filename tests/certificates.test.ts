@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
 vi.mock("server-only", () => ({}));
 const { access, rpc, createClient, from, select, eq, maybeSingle } = vi.hoisted(
   () => ({
@@ -26,6 +27,7 @@ import {
   certificatePost,
 } from "@/features/certificates/certificates.server";
 import { certificatePdf } from "@/features/certificates/pdf";
+import { StaffCertificates } from "@/features/certificates/pages";
 const id = "11111111-1111-4111-8111-111111111111";
 const org = "22222222-2222-4222-8222-222222222222";
 const profile = "33333333-3333-4333-8333-333333333333";
@@ -62,6 +64,47 @@ beforeEach(() => {
   select.mockReturnValue({ eq });
   eq.mockReturnValue({ eq, maybeSingle });
   maybeSingle.mockResolvedValue({ data: issue, error: null });
+});
+
+describe("formulario de recomendación", () => {
+  it("mantiene la elección de taller y la recomendación como formularios separados", async () => {
+    access.mockResolvedValue({
+      allowed: true,
+      membership: {
+        organizationId: org,
+        name: "Impulso Cero",
+        staffRank: "teacher",
+        allowedModules: ["certificates", "certificates.recommend"],
+      },
+    });
+    rpc.mockResolvedValue({
+      data: {
+        courses: [{ id, title: "Taller de prueba" }],
+        students: [{ id: profile, name: "Alumno de prueba" }],
+        pending: [],
+      },
+      error: null,
+    });
+    const html = renderToStaticMarkup(
+      await StaffCertificates({ slug: "impulso-cero", course: id }),
+    );
+    expect(rpc).toHaveBeenCalledWith("certificate_staff_context", {
+      p_org: org,
+      p_course: id,
+    });
+    expect(html).toContain('aria-labelledby="recommend-certificate-title"');
+    const forms = html.match(/<form[^>]*action="\/o\/impulso-cero\/admin\/certificados(?:\/acciones)?"[^>]*>[^]*?<\/form>/g);
+    expect(forms).toHaveLength(2);
+    const [picker, recommendation] = forms!;
+    expect(picker).toContain('method="get"');
+    expect(picker).toContain('name="course"');
+    expect(picker).toContain("Ver alumnos matriculados");
+    expect(recommendation).toContain('method="post"');
+    expect(recommendation).toContain('action="/o/impulso-cero/admin/certificados/acciones"');
+    expect(recommendation).toContain('value="recommend"');
+    expect(recommendation).toContain('name="id"');
+    expect(html).not.toContain("Recomendaciones pendientes");
+  });
 });
 
 describe("operaciones de certificados", () => {

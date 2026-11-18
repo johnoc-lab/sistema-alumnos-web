@@ -1,4 +1,7 @@
-import { ImpulsoBrand } from "@/components/institutional/identity";
+import {
+  ImpulsoBrand,
+  usesImpulsoBrand,
+} from "@/components/institutional/identity";
 import Link from "next/link";
 import { mfaUrl } from "@/lib/auth/security";
 import {
@@ -23,7 +26,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { ProtectedModule } from "@/features/auth/components/protected-module";
 import { PageHeading, Badge } from "@/components/ui/primitives";
 import { normalizeSearch } from "@/features/preview/presentation";
-import { AcademicShell } from "./shell";
+import { AcademicShell, academicNavIcons } from "./shell";
 import { AnnouncementImage } from "./announcement-image";
 import { AnnouncementMediaPicker } from "./announcement-media-picker";
 import { MaterialSourceFields } from "./material-source-fields";
@@ -1099,7 +1102,7 @@ export function AcademicView({
   totpEnabled?: boolean;
 }) {
   const admin = section.startsWith("admin"),
-    isImpulso = slug === "impulso" || slug === "impulso-cero",
+    isImpulso = usesImpulsoBrand(slug),
     own = data.memberships.find((m) => m.profile_id === profileId);
   if (section === "admin/cursos")
     return (
@@ -1437,20 +1440,33 @@ export async function AcademicPage({
         section={section}
         membership={membership}
       >
-        <PageHeading
-          eyebrow="ADMINISTRACIÓN"
-          title={title}
-          description="Accede a las secciones habilitadas para tu cuenta."
-        />
+        <section className={css.adminHero} data-organization={slug}>
+          <div className={css.adminHeroCopy}>
+            <h1>{title}</h1>
+            <p>{membership.name}</p>
+          </div>
+          {usesImpulsoBrand(slug) && <ImpulsoBrand prominent decorative />}
+        </section>
         {modules.length ? (
-          <ul>
-            {modules.map((key) => (
-              <li key={key}>
-                <Link href={"/o/" + slug + "/" + staffModules[key].path}>
-                  {staffModules[key].label}
-                </Link>
-              </li>
-            ))}
+          <ul
+            aria-label="Módulos autorizados"
+            className={css.resourceGrid + " " + css.staffModuleGrid}
+          >
+            {modules.map((key) => {
+              const { path, label } = staffModules[key];
+              const Icon = academicNavIcons[path] ?? FolderOpen;
+              return (
+                <li key={key}>
+                  <Link
+                    className={css.resource}
+                    href={"/o/" + encodeURIComponent(slug) + "/" + path}
+                  >
+                    <Icon aria-hidden="true" />
+                    <strong>{label}</strong>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <Empty>No tienes secciones asignadas.</Empty>
