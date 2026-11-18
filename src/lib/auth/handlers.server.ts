@@ -11,6 +11,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { authConfig, authOrigin, noStoreHeaders } from "@/lib/supabase/config";
 import { mfaUrl, readFields, safeNext, sameOriginPost } from "./security";
 import { readSessionForClient } from "./session.server";
+import { resolveStaffIdentifier } from "@/features/staff/identifier";
 import { clearSupabaseSessionCookies } from "./session-cookies.server";
 import {
   readRecoveryProof,
@@ -103,8 +104,11 @@ export async function authPost(request: Request, action: Action) {
     }
     if (action === "login" || action === "recover") {
       if (action === "login") clearMfa();
-      const email = (fields.get("email") ?? "").trim(),
-        password = fields.get("password") ?? "";
+      const identifier = (fields.get("email") ?? "").trim();
+      const email =
+        (action === "login" ? resolveStaffIdentifier(identifier) : null) ??
+        identifier;
+      const password = fields.get("password") ?? "";
       if (email.length > 254 || !/^\S+@\S+\.\S+$/.test(email))
         return go("/login?notice=invalid");
       clearProof();

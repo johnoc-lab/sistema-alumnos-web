@@ -10,10 +10,11 @@ import type {
 export type OrganizationMembership = VerifiedMembership & {
   slug: string;
   name: string;
+  displayName?: string;
 };
 export type AuthenticatedSession = {
   status: "authenticated";
-  user: { id: string };
+  user: { id: string; email?: string; displayName?: string };
   identity: VerifiedIdentity | null;
   memberships: OrganizationMembership[];
 };
@@ -25,6 +26,7 @@ export interface IdentityReader {
   user(): Promise<
     Result<{
       id: string;
+      email?: string;
       is_anonymous?: boolean;
       email_confirmed_at?: string;
       factors?: { factor_type: string; status: string }[];
@@ -38,7 +40,9 @@ export interface IdentityReader {
       is_anonymous?: boolean;
     }>
   >;
-  profile(): Promise<Result<{ id: string; status: string }>>;
+  profile(): Promise<
+    Result<{ id: string; status: string; display_name?: string | null }>
+  >;
   memberships(profileId: string): Promise<
     Result<
       {
@@ -48,6 +52,8 @@ export interface IdentityReader {
         status: string;
         staff_rank?: string | null;
         allowed_modules?: string[];
+        first_name?: string;
+        last_name?: string;
       }[]
     >
   >;
@@ -84,7 +90,8 @@ export async function resolveSession(
     // getUser consulta el estado actual del factor, incluso para sesiones abiertas antes del alta.
     const totpEnabled =
       user.data.factors?.some(
-        (factor) => factor.factor_type === "totp" && factor.status === "verified",
+        (factor) =>
+          factor.factor_type === "totp" && factor.status === "verified",
       ) ?? false;
     const membership = await reader.memberships(profile.data.id);
     if (membership.error) return { status: "unavailable", user: null };
@@ -100,9 +107,10 @@ export async function resolveSession(
       ...(ownMemberships.some(
         (m) => m.role === "admin" && m.status !== "archived",
       ) && { hasStaffMembership: true as const }),
-      ...(totpEnabled && claims.data.aal !== "aal2" && {
-        mfaPending: true as const,
-      }),
+      ...(totpEnabled &&
+        claims.data.aal !== "aal2" && {
+          mfaPending: true as const,
+        }),
     };
     const valid = ownMemberships.filter(
       (m) => m.status === "active" && ["student", "admin"].includes(m.role),
@@ -127,6 +135,10 @@ export async function resolveSession(
           !validStaffPermissions(staffRank, allowedModules))
       )
         return [];
+      const displayName = [m.first_name, m.last_name]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
       return org
         ? [
             {
@@ -141,13 +153,20 @@ export async function resolveSession(
                 : [],
               slug: org.slug,
               name: org.name,
+              ...(displayName && { displayName }),
             },
           ]
         : [];
     });
     return {
       status: "authenticated",
-      user: { id: user.data.id },
+      user: {
+        id: user.data.id,
+        ...(user.data.email && { email: user.data.email }),
+        ...(profile.data.display_name && {
+          displayName: profile.data.display_name,
+        }),
+      },
       identity,
       memberships,
     };

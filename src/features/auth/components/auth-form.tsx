@@ -56,10 +56,12 @@ export function AuthForm({
       <fieldset className={styles.fields} disabled={!enabled}>
         {mode !== "password" && (
           <label>
-            Identificador institucional
+            {mode === "login" ? "Usuario o correo de acceso" : "Correo de acceso"}
             <input
               name="email"
-              type="email"
+              type={mode === "login" ? "text" : "email"}
+              autoCapitalize="none"
+              spellCheck={false}
               required
               maxLength={254}
               autoComplete="username"

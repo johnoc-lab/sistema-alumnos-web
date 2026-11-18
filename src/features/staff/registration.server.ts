@@ -13,12 +13,12 @@ import type { VerifiedIdentity } from "@/lib/authorization/access";
 import { authConfig, noStoreHeaders } from "@/lib/supabase/config";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createStaffAdminClient } from "@/lib/supabase/staff-admin.server";
-import { staffIdentifierPattern } from "./identifier";
+import {
+  resolveStaffIdentifier,
+  staffUsernameFromIdentifier,
+} from "./identifier";
 
 const activationPage = "/auth/activar-personal";
-const institutionalIdentifier = new RegExp("^" + staffIdentifierPattern + "$");
-const validIdentifier = (value: string) =>
-  value.length <= 254 && institutionalIdentifier.test(value);
 const digest = (code: string) =>
   createHash("sha256").update(code).digest("hex");
 
@@ -76,7 +76,7 @@ function deliveryPage(code: string, back: string) {
       "</code>" +
       '<p>Indícale que abra <a href="' +
       activationPage +
-      '">Activar cuenta de personal</a> e introduzca su identificador y el código.</p>' +
+      '">Activar cuenta de personal</a> e introduzca su usuario o identificador institucional y el código.</p>' +
       '<a href="' +
       back +
       '">Volver a Administradores</a></main></body></html>',
@@ -109,13 +109,12 @@ export async function registerStaff(
   try {
     const client = await createServerSupabaseClient(true);
     if (action === "register") {
-      const identifier = field(form, "identifier").trim().toLowerCase();
+      const identifier = resolveStaffIdentifier(field(form, "identifier"));
       const firstName = field(form, "first_name").trim();
       const lastName = field(form, "last_name").trim();
       const rank = field(form, "rank");
       const modules = form.getAll("module");
-      if (!validIdentifier(identifier))
-        return redirect(back, origin, "invalid_identifier");
+      if (!identifier) return redirect(back, origin, "invalid_identifier");
       if (
         !firstName ||
         firstName.length > 100 ||
@@ -176,7 +175,7 @@ export async function registerStaff(
       typeof data !== "object" ||
       Array.isArray(data) ||
       typeof data.identifier !== "string" ||
-      !validIdentifier(data.identifier) ||
+      staffUsernameFromIdentifier(data.identifier) === null ||
       typeof data.actor !== "string" ||
       !uuid(data.actor)
     ) {
@@ -232,10 +231,10 @@ export async function activateStaff(request: Request) {
   if (!admin) return denied(503);
   try {
     const form = await readFields(request);
-    const identifier = field(form, "identifier").trim().toLowerCase();
+    const identifier = resolveStaffIdentifier(field(form, "identifier"));
     const code = field(form, "code").trim();
     const password = field(form, "password");
-    if (!validIdentifier(identifier))
+    if (!identifier)
       return redirect(activationPage, config.origin, "invalid_identifier");
     if (
       !/^[A-Za-z0-9_-]{43}$/.test(code) ||

@@ -79,7 +79,7 @@ export function hasStaffPermission(
 export function staffSectionPermission(
   section: string,
 ): StaffModule | "staff.manage" | "overview" {
-  if (section === "admin") return "overview";
+  if (section === "admin" || section === "admin/perfil") return "overview";
   if (section === "admin/clases") return "courses";
   if (section === "admin/calendario") return "schedule";
   return (

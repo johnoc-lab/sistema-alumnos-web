@@ -43,6 +43,7 @@ export const academicNavIcons: Readonly<Record<string, LucideIcon>> = {
   "admin/asistencia": ClipboardCheck,
   "admin/administradores": ShieldCheck,
   "admin/certificados": Award,
+  "admin/perfil": UserRound,
   dashboard: LayoutDashboard,
   "dashboard/cursos": BookOpen,
   "dashboard/materiales": FolderOpen,
@@ -81,6 +82,7 @@ export function AcademicShell({
         ...(membership && hasStaffPermission(membership, "staff.manage")
           ? [["admin/administradores", "Administradores"] as [string, string]]
           : []),
+        ["admin/perfil", "Mi perfil"],
       ]
     : [
         ["dashboard", "Mi espacio"],
