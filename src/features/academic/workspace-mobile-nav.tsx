@@ -36,6 +36,7 @@ const icons: Record<string, LucideIcon> = {
   "admin/asistencia": ClipboardCheck,
   "admin/administradores": ShieldCheck,
   "admin/certificados": Award,
+  "admin/perfil": UserRound,
   dashboard: LayoutDashboard,
   "dashboard/cursos": BookOpen,
   "dashboard/materiales": FolderOpen,

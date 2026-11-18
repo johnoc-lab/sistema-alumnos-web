@@ -23,12 +23,12 @@ export async function readSessionForClient(
       return { data: data?.claims ?? null, error };
     },
     profile: async () =>
-      await client.from("profiles").select("id,status").maybeSingle(),
+      await client.from("profiles").select("id,status,display_name").maybeSingle(),
     memberships: async (profileId) =>
       await client
         .from("organization_memberships")
         .select(
-          "profile_id,organization_id,role,status,staff_rank,allowed_modules",
+          "profile_id,organization_id,role,status,staff_rank,allowed_modules,first_name,last_name",
         )
         .eq("profile_id", profileId),
     organizations: async (ids) =>

@@ -24,7 +24,8 @@ vi.mock("@/features/academic/data.server", () => ({
 }));
 import { StaffPage } from "@/features/staff/staff-page";
 import ActivationPage from "@/app/auth/activar-personal/page";
-import { staffIdentifierPattern } from "@/features/staff/identifier";
+import { staffAccessPattern, staffUsernamePattern, suggestStaffUsername, resolveStaffIdentifier } from "@/features/staff/identifier";
+import { StaffProfile } from "@/features/staff/staff-profile";
 import { AcademicView, AcademicPage } from "@/features/academic/academic-page";
 import { ProtectedModule } from "@/features/auth/components/protected-module";
 import type { AcademicData } from "@/features/academic/data.server";
@@ -56,6 +57,51 @@ beforeEach(() => {
   mocks.nextSession.mockResolvedValue(null);
   mocks.registrationEnabled.mockReturnValue(false);
 });
+describe("perfil e identificadores del personal", () => {
+  it("normaliza tildes, espacios y símbolos, y conserva el mismo identificador", () => {
+    expect(suggestStaffUsername("Jhóel  ", "Quíspe-Ñúñez")).toBe("jhoelquispenunez");
+    expect(suggestStaffUsername("⚡", " ")).toBe("");
+    expect(resolveStaffIdentifier("  JhoelQuispe  ")).toBe("u-jhoelquispe@cuentas.sistema-alumnos.invalid");
+    expect(resolveStaffIdentifier("u-JHOELQUISPE@CUENTAS.SISTEMA-ALUMNOS.INVALID")).toBe("u-jhoelquispe@cuentas.sistema-alumnos.invalid");
+    expect(resolveStaffIdentifier("jhoel.quíspe")).toBeNull();
+  });
+
+  it("muestra los datos de la sesión y roles por institución", async () => {
+    const membership = {
+      slug: "impulso-cero", name: "Impulso Cero", organizationId: "org-a",
+      role: "admin", staffRank: "teacher", allowedModules: [],
+    };
+    mocks.access.mockResolvedValue({
+      allowed: true, membership,
+      session: {
+        status: "authenticated",
+        user: { id: "user-qa", displayName: "Jhoel Quispe", email: "u-jhoelquispe@cuentas.sistema-alumnos.invalid" },
+        memberships: [membership, { ...membership, organizationId: "org-b", name: "Incubadora", staffRank: "secretary" }],
+      },
+    });
+    const html = renderToStaticMarkup(await StaffProfile({ slug: "impulso-cero" }));
+    expect(mocks.access).toHaveBeenCalledWith("impulso-cero", "admin", "overview");
+    expect(html).toContain("Jhoel Quispe");
+    expect(html).toContain("<code>jhoelquispe</code>");
+    expect(html).toContain("<code>u-jhoelquispe@cuentas.sistema-alumnos.invalid</code>");
+    expect(html).toContain("Copiar usuario de acceso");
+    expect(html).toContain("Copiar identificador institucional");
+    expect(html).toContain("Impulso Cero · Profesor");
+    expect(html).toContain("Incubadora · Secretaría");
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it("deriva al guard si MFA aún no autoriza el perfil", async () => {
+    mocks.access.mockResolvedValue({
+      allowed: false, reason: "mfa_required",
+      session: { status: "authenticated", user: { email: "dato-privado@example.test" } },
+    });
+    const result = await StaffProfile({ slug: "qa" });
+    expect(result.type).toBe(ProtectedModule);
+    expect(result.props.section).toBe("admin/perfil");
+  });
+});
+
 describe("vistas académicas", () => {
   it.each([
     ["dashboard/cursos", "No tienes talleres"],
@@ -505,7 +551,8 @@ describe("vista de Administradores y navegación delegada", () => {
     expect(html).toContain("Institución asignada: Impulso Cero");
     expect(form).toContain('action="/o/impulso-cero/admin/administradores/acciones"');
     expect(form).not.toMatch(/name="(?:organization|organization_id|slug)"/);
-    expect(form).toContain('pattern="' + staffIdentifierPattern + '"');
+    expect(form).toContain("Usuario de acceso");
+    expect(form).toContain('pattern="' + staffUsernamePattern + '"');
     expect(form).toContain('aria-describedby="staff-identifier-help"');
     expect(form).not.toContain('value="principal"');
     expect(form).not.toContain('value="certificates"');
@@ -521,7 +568,7 @@ describe("vista de Administradores y navegación delegada", () => {
         searchParams: Promise.resolve({ notice: "invalid_identifier" }),
       }),
     );
-    expect(page).toContain('pattern="' + staffIdentifierPattern + '"');
+    expect(page).toContain('pattern="' + staffAccessPattern + '"');
     expect(page).toContain('aria-describedby="activation-identifier-help"');
     expect(page).toContain('role="alert"');
     expect(page).toContain("u-profesor01@cuentas.sistema-alumnos.invalid");

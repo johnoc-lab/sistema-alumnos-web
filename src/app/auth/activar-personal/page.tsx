@@ -2,7 +2,7 @@ import Link from "next/link";
 import {
   staffIdentifierExample,
   staffIdentifierHelp,
-  staffIdentifierPattern,
+  staffAccessPattern,
 } from "@/features/staff/identifier";
 import { AuthFeatureUnavailable } from "@/features/auth/components/feature-unavailable";
 import { staffRegistrationEnabled } from "@/lib/supabase/staff-admin.server";
@@ -22,8 +22,8 @@ export default async function Page({
     <main id="main-content" className={ui.centered}>
       <h1>Activar cuenta de personal</h1>
       <p>
-        Usa tu identificador institucional y el código entregado por tu
-        organización.
+        Usa tu usuario o identificador institucional y el código entregado por
+        tu organización.
       </p>
       {notice === "invalid_identifier" && (
         <p role="alert" className={styles.feedback}>
@@ -46,11 +46,13 @@ export default async function Page({
         <fieldset className={styles.fields + " " + styles.activationFields}>
           <legend>Datos de activación</legend>
           <label>
-            Identificador institucional
+            Usuario o identificador institucional
             <input
               name="identifier"
-              type="email"
-              pattern={staffIdentifierPattern}
+              type="text"
+              autoCapitalize="none"
+              spellCheck={false}
+              pattern={staffAccessPattern}
               title={staffIdentifierHelp}
               aria-describedby="activation-identifier-help"
               placeholder={staffIdentifierExample}

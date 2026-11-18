@@ -115,6 +115,25 @@ describe("handlers Auth simulados; no contactan Cloud", () => {
     expect(r.status).toBe(403);
     expect(mocks.client.auth.signInWithPassword).not.toHaveBeenCalled();
   });
+  it.each([" Profesor01 ", "u-PROFESOR01@CUENTAS.SISTEMA-ALUMNOS.INVALID"])(
+    "envía ambos formatos a la misma operación de contraseña",
+    async (email) => {
+      await authPost(
+        request("login", {
+          email,
+          password: "not-a-real-password",
+        }),
+        "login",
+      );
+      expect(
+        mocks.client.auth.signInWithPassword,
+      ).toHaveBeenCalledExactlyOnceWith({
+        email: "u-profesor01@cuentas.sistema-alumnos.invalid",
+        password: "not-a-real-password",
+      });
+    },
+  );
+
   it("login usa destino cerrado y respuesta no cacheable", async () => {
     const r = await authPost(
       request("login", {

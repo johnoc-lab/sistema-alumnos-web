@@ -229,44 +229,53 @@ describe("alta de personal", () => {
     },
   );
 
-  it("registra el rango y módulos elegidos y muestra el código solo en la respuesta privada", async () => {
-    const response = await staffPost(post(register), "qa");
-    expect(response.status).toBe(200);
-    expect(response.headers.get("cache-control")).toContain("private");
-    expect(response.headers.get("cache-control")).toContain("no-store");
-    const html = await response.text();
-    const code = html.match(/<code>([\w-]{43})<\/code>/)?.[1];
-    expect(code).toBeDefined();
-    expect(mocks.privilegedRpc).toHaveBeenCalledWith(
-      "reserve_staff_registration",
-      {
-        p_org: org,
-        p_actor: profile,
-        p_aal: "aal2",
-        p_identifier: identifier,
-        p_first_name: "Nombre",
-        p_last_name: "Apellidos",
-        p_rank: "teacher",
-        p_modules: ["attendance"],
-      },
-    );
-    expect(mocks.createUser).toHaveBeenCalledWith({
-      email: identifier,
-      email_confirm: true,
-      password: expect.stringMatching(/^[\w-]{48}$/),
-      app_metadata: { staff_registration_id: registration },
-    });
-    const initialPassword = mocks.createUser.mock.calls[0]![0]
-      .password as string;
-    expect(html).not.toContain(initialPassword);
-    expect(mocks.privilegedRpc).toHaveBeenCalledWith("issue_staff_activation", {
-      p_org: org,
-      p_registration: registration,
-      p_actor: profile,
-      p_digest: digest(code!),
-    });
-    expect(html).not.toContain("sb_secret_");
-  });
+  it.each([register.identifier, "TESTSTAFF"])(
+    "reserva el mismo identificador para el usuario corto o completo",
+    async (input) => {
+      const response = await staffPost(
+        post({ ...register, identifier: input }),
+        "qa",
+      );
+      expect(response.status).toBe(200);
+      expect(response.headers.get("cache-control")).toContain("private");
+      expect(response.headers.get("cache-control")).toContain("no-store");
+      const html = await response.text();
+      const code = html.match(/<code>([\w-]{43})<\/code>/)?.[1];
+      expect(code).toBeDefined();
+      expect(mocks.privilegedRpc).toHaveBeenCalledWith(
+        "reserve_staff_registration",
+        {
+          p_org: org,
+          p_actor: profile,
+          p_aal: "aal2",
+          p_identifier: identifier,
+          p_first_name: "Nombre",
+          p_last_name: "Apellidos",
+          p_rank: "teacher",
+          p_modules: ["attendance"],
+        },
+      );
+      expect(mocks.createUser).toHaveBeenCalledWith({
+        email: identifier,
+        email_confirm: true,
+        password: expect.stringMatching(/^[\w-]{48}$/),
+        app_metadata: { staff_registration_id: registration },
+      });
+      const initialPassword = mocks.createUser.mock.calls[0]![0]
+        .password as string;
+      expect(html).not.toContain(initialPassword);
+      expect(mocks.privilegedRpc).toHaveBeenCalledWith(
+        "issue_staff_activation",
+        {
+          p_org: org,
+          p_registration: registration,
+          p_actor: profile,
+          p_digest: digest(code!),
+        },
+      );
+      expect(html).not.toContain("sb_secret_");
+    },
+  );
 
   it("rechaza un duplicado sin crear ni adoptar la identidad", async () => {
     mocks.privilegedRpc.mockResolvedValueOnce({
@@ -393,40 +402,45 @@ describe("activación de personal", () => {
     },
   );
 
-  it("reserva el hash antes de enviar a Auth la contraseña elegida por el titular", async () => {
-    const response = await activate(post(activation));
-    const claim = mocks.privilegedRpc.mock.calls[0]![1].p_claim;
-    expect(mocks.privilegedRpc).toHaveBeenNthCalledWith(
-      1,
-      "claim_staff_activation",
-      {
-        p_identifier: identifier,
-        p_digest: digest(sampleCode),
-        p_claim: claim,
-        p_network: "",
-      },
-    );
-    expect(mocks.updateUser).toHaveBeenCalledWith(authUser, {
-      password: chosenPassword,
-      app_metadata: { staff_activation_claim: claim },
-    });
-    expect(mocks.privilegedRpc).toHaveBeenNthCalledWith(
-      2,
-      "finish_staff_activation",
-      {
-        p_registration: registration,
-        p_claim: claim,
-        p_rejected: false,
-      },
-    );
-    expect(response.headers.get("location")).toBe(
-      origin + "/login?notice=password_updated",
-    );
-    expect(response.headers.get("cache-control")).toContain("no-store");
-    expect(await response.text()).not.toMatch(
-      new RegExp(sampleCode + "|" + chosenPassword),
-    );
-  });
+  it.each([activation.identifier, " TESTSTAFF "])(
+    "reclama el código para la misma identidad con usuario corto o completo",
+    async (input) => {
+      const response = await activate(
+        post({ ...activation, identifier: input }),
+      );
+      const claim = mocks.privilegedRpc.mock.calls[0]![1].p_claim;
+      expect(mocks.privilegedRpc).toHaveBeenNthCalledWith(
+        1,
+        "claim_staff_activation",
+        {
+          p_identifier: identifier,
+          p_digest: digest(sampleCode),
+          p_claim: claim,
+          p_network: "",
+        },
+      );
+      expect(mocks.updateUser).toHaveBeenCalledWith(authUser, {
+        password: chosenPassword,
+        app_metadata: { staff_activation_claim: claim },
+      });
+      expect(mocks.privilegedRpc).toHaveBeenNthCalledWith(
+        2,
+        "finish_staff_activation",
+        {
+          p_registration: registration,
+          p_claim: claim,
+          p_rejected: false,
+        },
+      );
+      expect(response.headers.get("location")).toBe(
+        origin + "/login?notice=password_updated",
+      );
+      expect(response.headers.get("cache-control")).toContain("no-store");
+      expect(await response.text()).not.toMatch(
+        new RegExp(sampleCode + "|" + chosenPassword),
+      );
+    },
+  );
 
   it.each([
     { confirmation: "distinta" },
@@ -435,6 +449,22 @@ describe("activación de personal", () => {
     const result = await activate(post({ ...activation, ...patch }));
     expect(result.headers.get("location")).toContain("notice=invalid");
     expect(mocks.privilegedRpc).not.toHaveBeenCalled();
+  });
+
+  it("un alias ajeno no activa la identidad asociada al código", async () => {
+    mocks.privilegedRpc.mockResolvedValueOnce({ data: null });
+    const response = await activate(
+      post({ ...activation, identifier: "otrodocente" }),
+    );
+    expect(mocks.privilegedRpc).toHaveBeenCalledWith(
+      "claim_staff_activation",
+      expect.objectContaining({
+        p_identifier: "u-otrodocente@cuentas.sistema-alumnos.invalid",
+        p_digest: digest(sampleCode),
+      }),
+    );
+    expect(response.headers.get("location")).toContain("notice=invalid");
+    expect(mocks.updateUser).not.toHaveBeenCalled();
   });
 
   it.each(["vencido", "consumido", "desconocido", "limitado"])(

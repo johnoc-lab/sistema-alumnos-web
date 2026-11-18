@@ -18,6 +18,19 @@
 
 .form p {
   margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.accessValue {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: start;
+  margin: 0.75rem 0;
+  overflow-wrap: anywhere;
+}
+
+.accessValue [role="status"]:empty {
+  position: absolute;
 }
 
 .filters label,

@@ -1,9 +1,6 @@
 import type { ReactNode } from "react";
-import {
-  staffIdentifierExample,
-  staffIdentifierHelp,
-  staffIdentifierPattern,
-} from "@/features/staff/identifier";
+import { staffIdentifierHelp } from "./identifier";
+import { StaffIdentityFields } from "./staff-identity-fields";
 import { AcademicShell } from "@/features/academic/shell";
 import { ProtectedModule } from "@/features/auth/components/protected-module";
 import { PageHeading } from "@/components/ui/primitives";
@@ -192,41 +189,7 @@ function StaffDirectory({
         {registrationEnabled && (
           <form className={css.form} method="post" action={post}>
             <input type="hidden" name="action" value="register" />
-            <label className={academic.field}>
-              Nombre
-              <input
-                name="first_name"
-                autoComplete="off"
-                required
-                maxLength={100}
-              />
-            </label>
-            <label className={academic.field}>
-              Apellidos
-              <input
-                name="last_name"
-                autoComplete="off"
-                required
-                maxLength={100}
-              />
-            </label>
-            <label className={academic.field}>
-              Identificador institucional
-              <input
-                name="identifier"
-                type="email"
-                autoComplete="off"
-                required
-                maxLength={254}
-                pattern={staffIdentifierPattern}
-                title={staffIdentifierHelp}
-                aria-describedby="staff-identifier-help"
-                placeholder={staffIdentifierExample}
-              />
-            </label>
-            <p id="staff-identifier-help" className={academic.hint}>
-              {staffIdentifierHelp}
-            </p>
+            <StaffIdentityFields />
             <StaffPermissionFields registering />
             <p className={academic.hint}>
               Estado inicial: pendiente de activación.
