@@ -33,6 +33,7 @@ import { staffUsernameFromIdentifier } from "@/features/staff/identifier";
 import { AnnouncementImage } from "./announcement-image";
 import { AnnouncementMediaPicker } from "./announcement-media-picker";
 import { MaterialSourceFields } from "./material-source-fields";
+import { DeleteRecordForm } from "./delete-record-form";
 import {
   loadAcademic,
   loadNextStudentSession,
@@ -661,10 +662,20 @@ function Materials({
             )}
           </div>
           {admin && (
-            <details>
-              <summary>Editar material</summary>
-              <MaterialForm slug={slug} data={data} item={m} />
-            </details>
+            <div className={css.recordActions}>
+              <details>
+                <summary>Editar material</summary>
+                <MaterialForm slug={slug} data={data} item={m} />
+              </details>
+              <DeleteRecordForm
+                slug={slug}
+                kind="delete-material"
+                id={m.id}
+                version={m.row_version}
+                title={m.title}
+                label="Material"
+              />
+            </div>
           )}
         </article>
       ))}
@@ -779,10 +790,20 @@ function Announcements({
             title={a.title}
           />
           {admin && (
-            <details>
-              <summary>Editar aviso</summary>
-              <AnnouncementForm slug={slug} data={data} item={a} />
-            </details>
+            <div className={css.recordActions}>
+              <details>
+                <summary>Editar aviso</summary>
+                <AnnouncementForm slug={slug} data={data} item={a} />
+              </details>
+              <DeleteRecordForm
+                slug={slug}
+                kind="delete-announcement"
+                id={a.id}
+                version={a.row_version}
+                title={a.title}
+                label="Aviso"
+              />
+            </div>
           )}
         </article>
       ))}

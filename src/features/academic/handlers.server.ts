@@ -41,6 +41,8 @@ export async function academicPost(request: Request, slug: string) {
       enrollment: "matriculas",
       material: "materiales",
       announcement: "avisos",
+      "delete-material": "materiales",
+      "delete-announcement": "avisos",
       event: "horario",
       "event-attendees": "horario",
       attendance: "asistencia",
@@ -79,6 +81,11 @@ export async function academicPost(request: Request, slug: string) {
         encodeURIComponent(command.id);
     const client = await createServerSupabaseClient(true);
     await mutateAcademic(client, access.membership.organizationId, command);
+    if (
+      command.kind === "delete-material" ||
+      command.kind === "delete-announcement"
+    )
+      notice = "deleted";
   } catch (error) {
     notice = errorNotice(error);
   }

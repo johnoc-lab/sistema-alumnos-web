@@ -1402,6 +1402,22 @@ export type Database = {
         Args: { p_org: string; p_registration: string };
         Returns: Json;
       };
+      delete_announcement: {
+        Args: {
+          p_organization_id: string;
+          p_id: string;
+          p_expected_version: number;
+        };
+        Returns: undefined;
+      };
+      delete_material: {
+        Args: {
+          p_organization_id: string;
+          p_id: string;
+          p_expected_version: number;
+        };
+        Returns: undefined;
+      };
       update_announcement: {
         Args: {
           p_organization_id: string;
