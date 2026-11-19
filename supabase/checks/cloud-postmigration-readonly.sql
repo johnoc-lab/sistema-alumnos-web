@@ -13,7 +13,7 @@ SELECT p.proname,pg_get_userbyid(p.proowner) AS owner,p.prosecdef,p.proconfig,
  has_function_privilege('anon',p.oid,'EXECUTE') AS anon_can_execute,
  has_function_privilege('authenticated',p.oid,'EXECUTE') AS authenticated_can_execute
 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-WHERE n.nspname='public' AND p.proname=ANY(ARRAY['update_course','update_course_module','update_lesson','update_enrollment','update_announcement','update_material','update_calendar_event','update_file_asset','update_certificate_issue','update_student_contact','set_student_status','create_scheduled_event','replace_event_attendees'])
+WHERE n.nspname='public' AND p.proname=ANY(ARRAY['update_course','update_course_module','update_lesson','update_enrollment','update_announcement','update_material','delete_announcement','delete_material','update_calendar_event','update_file_asset','update_certificate_issue','update_student_contact','set_student_status','create_scheduled_event','replace_event_attendees'])
 ORDER BY p.proname;
 SELECT schemaname,tablename FROM pg_tables
 WHERE schemaname='private' AND

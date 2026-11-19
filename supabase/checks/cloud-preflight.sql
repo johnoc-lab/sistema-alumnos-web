@@ -34,7 +34,7 @@ SELECT jsonb_build_object(
  'public_relation_conflicts',(SELECT coalesce(jsonb_agg(c.relname),'[]') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
    WHERE n.nspname='public' AND c.relname=ANY(ARRAY['organizations','profiles','organization_memberships','courses','file_assets','course_modules','lessons','enrollments','announcements','materials','calendar_events','calendar_event_attendees','certificate_issues','audit_events'])),
  'public_function_conflicts',(SELECT coalesce(jsonb_agg(p.proname),'[]') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-   WHERE n.nspname='public' AND p.proname=ANY(ARRAY['update_course','update_course_module','update_lesson','update_enrollment','update_announcement','update_material','update_calendar_event','update_file_asset','update_certificate_issue','update_student_contact','set_student_status','create_scheduled_event','replace_event_attendees'])),
+   WHERE n.nspname='public' AND p.proname=ANY(ARRAY['update_course','update_course_module','update_lesson','update_enrollment','update_announcement','update_material','delete_announcement','delete_material','update_calendar_event','update_file_asset','update_certificate_issue','update_student_contact','set_student_status','create_scheduled_event','replace_event_attendees'])),
  'migration_history_table',to_regclass('supabase_migrations.schema_migrations')::text,
  'storage_policies',(SELECT coalesce(jsonb_agg(jsonb_build_object('name',policyname,'command',cmd,'roles',roles,'permissive',permissive)),'[]')
    FROM pg_policies WHERE schemaname='storage' AND tablename='objects'),

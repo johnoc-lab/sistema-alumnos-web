@@ -131,6 +131,8 @@ export type AcademicCommand =
       image_asset_id: string | null;
       video_asset_id: string | null;
     }
+  | { kind: "delete-material"; id: string; version: number }
+  | { kind: "delete-announcement"; id: string; version: number }
   | {
       kind: "event";
       id: string | null;
@@ -277,6 +279,17 @@ export function parseAcademicForm(form: URLSearchParams): AcademicCommand {
         video_asset_id,
       };
     }
+    case "delete-material":
+    case "delete-announcement": {
+      const kind = text("action");
+      if (kind !== "delete-material" && kind !== "delete-announcement")
+        throw new AcademicError("invalid");
+      return {
+        kind,
+        id: existing(),
+        version,
+      };
+    }
     case "event": {
       const starts = limaInstant(text("starts_at")),
         ends = limaInstant(text("ends_at"));
@@ -349,6 +362,9 @@ export const noticeText: Record<string, string> = {
   url: "Utiliza un enlace HTTPS de YouTube, Vimeo, Drive, Docs, Meet o Zoom.",
   "media-url": "La imagen y el video deben usar enlaces HTTPS válidos.",
   "media-migration": "Para guardar imágenes o videos, primero aplica la migración de medios de avisos en Supabase.",
+  deleted: "Se eliminó correctamente.",
+  linked: "No se puede eliminar porque este registro tiene referencias vinculadas.",
+  "delete-migration": "Para eliminar avisos y materiales, primero aplica la migración de eliminación en Supabase.",
   attendees:
     "El taller necesita alumnos activos matriculados para programar el evento.",
   pdf: "Selecciona un PDF privado listo del mismo taller. La subida de archivos todavía no está habilitada.",
@@ -366,8 +382,10 @@ export function errorNotice(error: unknown): string {
         ? "unavailable"
         : code === "22023"
           ? "closed"
-          : code === "23503" || code === "23514"
-          ? "invalid"
+          : code === "23503"
+            ? "linked"
+            : code === "23514"
+              ? "invalid"
           : "failed";
 }
 export function sectionFor(kind: AcademicCommand["kind"]) {
@@ -376,6 +394,8 @@ export function sectionFor(kind: AcademicCommand["kind"]) {
   if (kind === "enrollment") return "matriculas";
   if (kind === "material") return "materiales";
   if (kind === "announcement") return "avisos";
+  if (kind === "delete-material") return "materiales";
+  if (kind === "delete-announcement") return "avisos";
   if (kind === "attendance" || kind === "attendance-batch")
     return "asistencia";
   return "calendario";

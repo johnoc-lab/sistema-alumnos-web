@@ -550,6 +550,24 @@ export async function mutateAcademic(
         }
       break;
     }
+    case "delete-announcement": {
+      const result = await client.rpc("delete_announcement", {
+        ...rpcArgs(c.id, c.version),
+      });
+      if (result.error?.code === "PGRST202")
+        throw new AcademicError("delete-migration");
+      checked(result);
+      break;
+    }
+    case "delete-material": {
+      const result = await client.rpc("delete_material", {
+        ...rpcArgs(c.id, c.version),
+      });
+      if (result.error?.code === "PGRST202")
+        throw new AcademicError("delete-migration");
+      checked(result);
+      break;
+    }
     case "event": {
       const patch = {
         title: c.title,
