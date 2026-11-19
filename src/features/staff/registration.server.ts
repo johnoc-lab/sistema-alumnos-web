@@ -22,7 +22,7 @@ const activationPage = "/auth/activar-personal";
 const digest = (code: string) =>
   createHash("sha256").update(code).digest("hex");
 
-function activationNetwork(request: Request, secret: string) {
+export function staffActivationNetwork(request: Request, secret: string) {
   // Vercel escribe este encabezado en el perímetro. En local y otros hosts no hay una IP confiable.
   if (
     process.env.VERCEL !== "1" ||
@@ -249,7 +249,7 @@ export async function activateStaff(request: Request) {
       p_identifier: identifier,
       p_digest: digest(code),
       p_claim: claim,
-      p_network: activationNetwork(request, config.secret),
+      p_network: staffActivationNetwork(request, config.secret),
     });
     const target = result.data;
     if (

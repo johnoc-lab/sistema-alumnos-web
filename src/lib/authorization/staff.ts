@@ -21,6 +21,7 @@ export const staffModules = {
   schedule: { path: "admin/horario", label: "Horario" },
   attendance: { path: "admin/asistencia", label: "Asistencia" },
   certificates: { path: "admin/certificados", label: "Certificados" },
+  student_access: { path: "admin/autorizaciones-alumnos", label: "Autorizaciones de alumnos" },
 } as const;
 export type StaffModule = keyof typeof staffModules;
 export const certificatePermissions = [
@@ -53,6 +54,7 @@ export function validStaffPermissions(
   return (
     permissions.length === new Set(permissions).size &&
     (rank !== "principal" || permissions.length === 0) &&
+    (!permissions.includes("student_access") || rank === "secretary") &&
     (!permissions.includes("certificates.recommend") ||
       (rank === "teacher" && permissions.includes("certificates"))) &&
     (!permissions.includes("certificates.approve") ||

@@ -49,7 +49,7 @@ export function StaffPermissionFields({
         <fieldset className={css.permissions}>
           <legend>Módulos autorizados</legend>
           {staffModuleKeys
-            .filter((key) => !registering || key !== "certificates")
+            .filter((key) => (!registering || key !== "certificates") && (key !== "student_access" || rank === "secretary"))
             .map((key) => (
               <label className={css.checkbox} key={key}>
                 {key === "certificates" ? (

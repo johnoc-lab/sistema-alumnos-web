@@ -82,6 +82,11 @@ export function LoginScreen({
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
           )}
+          {studentRegistrationConfig() && (
+            <Link className={styles.preview} href="/auth/recuperar-alumno">
+              Recuperar cuenta institucional de alumno
+            </Link>
+          )}
           <div className={styles.divider}>EXPLORAR SIN CUENTA</div>
           <Link className={styles.preview} href="/demo">
             <Eye size={17} aria-hidden="true" />

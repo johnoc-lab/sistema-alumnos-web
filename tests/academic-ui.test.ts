@@ -233,6 +233,40 @@ describe("vistas académicas", () => {
 });
 
 describe("portada del alumno", () => {
+  it.each([
+    ["alumna@example.test", "Correo de acceso", false],
+    ["u-000001@cuentas.sistema-alumnos.invalid", "Identificador de acceso", true],
+  ] as const)("muestra solo el identificador propio y sus instituciones: %s", (email, label, technical) => {
+    const html = renderToStaticMarkup(createElement(AcademicView, {
+      slug: "impulso-cero",
+      section: "dashboard/perfil",
+      data: empty(),
+      profileId: "profile-a",
+      studentProfile: {
+        user: { id: "user-a", email, displayName: "María Flores" },
+        memberships: [{
+          organizationId: "org-a",
+          profileId: "profile-a",
+          slug: "impulso-cero",
+          name: "Impulso Cero",
+          status: "active",
+          organizationStatus: "active",
+          role: "student",
+          staffRank: null,
+          allowedModules: [],
+        }],
+      },
+    }));
+    expect(html).toContain("María Flores");
+    expect(html).toContain(label);
+    expect(html).toContain("<code>" + email + "</code>");
+    expect(html).toContain("Instituciones autorizadas");
+    expect(html).toContain("Impulso Cero");
+    expect(html).not.toContain("Incubadora");
+    expect(html.includes("<code>000001</code>")).toBe(technical);
+    expect(html.includes("no recibe mensajes")).toBe(technical);
+  });
+
   it.each([true, false])(
     "muestra una tarjeta independiente de MFA con estado %s",
     (totpEnabled) => {

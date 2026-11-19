@@ -1,54 +1,36 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
-import type { User } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { readFields, sameOriginPost } from "@/lib/auth/security";
 import { authConfig, noStoreHeaders } from "@/lib/supabase/config";
+import {
+  resolveStaffIdentifier,
+  staffUsernameFromIdentifier,
+} from "@/features/staff/identifier";
+import { uuid } from "@/features/academic/forms";
 import type { Database } from "@/types/database.generated";
+import { staffActivationNetwork } from "@/features/staff/registration.server";
 
 export const studentInstitutions = {
   "impulso-cero": "Impulso Cero",
   incubadora: "Incubadora",
 } as const;
-type Institution = keyof typeof studentInstitutions;
-const validInstitution = (value: unknown): value is Institution =>
-  typeof value === "string" && Object.hasOwn(studentInstitutions, value);
-const validEmail = (value: string) =>
-  value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-const validName = (value: string) =>
-  value.length > 0 && value.length <= 100 && !/\p{Cc}/u.test(value);
+
+export const studentAccessDigest = (value: string) =>
+  createHash("sha256").update(value).digest("hex");
 
 export function studentRegistrationConfig() {
   const auth = authConfig();
-  const key = process.env.SUPABASE_STUDENT_SECRET_KEY;
+  const adminKey = process.env.SUPABASE_STUDENT_SECRET_KEY;
   if (
     process.env.STUDENT_REGISTRATION_ENABLED !== "true" ||
     !auth ||
-    !key ||
-    !/^sb_secret_[A-Za-z0-9_-]{20,}$/.test(key)
+    !adminKey ||
+    !/^sb_secret_[A-Za-z0-9_-]{20,}$/.test(adminKey)
   )
     return null;
-
-  try {
-    const list: unknown = JSON.parse(
-      process.env.STUDENT_REGISTRATION_ALLOWLIST ?? "[]",
-    );
-    if (!Array.isArray(list) || !list.length) return null;
-    const allowed = new Map<Institution, Set<string>>();
-    for (const pair of list) {
-      if (!Array.isArray(pair) || pair.length !== 2) return null;
-      const [input, slug] = pair;
-      if (typeof input !== "string" || !validInstitution(slug)) return null;
-      const email = input.trim().toLowerCase();
-      if (!validEmail(email)) return null;
-      const addresses = allowed.get(slug) ?? new Set<string>();
-      addresses.add(email);
-      allowed.set(slug, addresses);
-    }
-    return { ...auth, adminKey: key, allowed };
-  } catch {
-    return null;
-  }
+  return { ...auth, adminKey };
 }
 
 const clientOptions = {
@@ -59,15 +41,53 @@ const clientOptions = {
   },
   global: {
     fetch: (input: RequestInfo | URL, init?: RequestInit) =>
-      fetch(input, { ...init, cache: "no-store" }),
+      fetch(input, {
+        ...init,
+        cache: "no-store",
+        signal: AbortSignal.timeout(10000),
+      }),
   },
 };
 
-export async function registerStudent(request: Request) {
+function validName(name: string) {
+  return name.length > 0 && name.length <= 100 && !/\p{Cc}/u.test(name);
+}
+
+function confirmation(username: string) {
+  // The interpolated username comes only from the ASCII institutional identifier parser.
+  return new NextResponse(
+    '<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+      "<title>Cuenta creada</title><main><h1>Tu cuenta está lista</h1><p>Tu usuario de acceso es <strong>" +
+      username +
+      "</strong>.</p><p>Úsalo para iniciar sesión. Puedes consultar tu identificador completo en Mi perfil.</p>" +
+      '<a href="/login">Iniciar sesión</a></main></html>',
+    {
+      headers: {
+        ...noStoreHeaders,
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Security-Policy":
+          "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+        "Referrer-Policy": "no-referrer",
+      },
+    },
+  );
+}
+
+export function registerStudent(request: Request) {
+  return studentAccessPost(request, "enroll");
+}
+export function recoverStudent(request: Request) {
+  return studentAccessPost(request, "recover");
+}
+
+async function studentAccessPost(
+  request: Request,
+  purpose: "enroll" | "recover",
+) {
   const config = studentRegistrationConfig();
   if (!config)
     return NextResponse.json(
-      { error: "Registro no disponible." },
+      { error: "Operación no disponible." },
       { status: 503, headers: noStoreHeaders },
     );
   if (!sameOriginPost(request, config.origin))
@@ -76,104 +96,172 @@ export async function registerStudent(request: Request) {
       { status: 403, headers: noStoreHeaders },
     );
 
-  const go = (path: string) =>
-    NextResponse.redirect(new URL(path, config.origin), {
+  const path =
+    purpose === "enroll" ? "/auth/crear-cuenta" : "/auth/recuperar-alumno";
+  const go = (destination: string) =>
+    NextResponse.redirect(new URL(destination, config.origin), {
       status: 303,
       headers: noStoreHeaders,
     });
-  const rejected = () => go("/auth/crear-cuenta?notice=unavailable");
+  let failureNotice = "unavailable";
+  const rejected = () => go(path + "?notice=" + failureNotice);
 
   try {
     const fields = await readFields(request);
-    const known = [
-      "first_name",
-      "last_name",
-      "email",
-      "password",
-      "organization",
-    ];
+    const known = ["organization", "code", "proof", "password", "confirmation"];
+    if (purpose === "enroll") known.push("first_name", "last_name", "username");
     if (
       [...fields.keys()].some((field) => !known.includes(field)) ||
       known.some((field) => fields.getAll(field).length !== 1)
     )
-      return go("/auth/crear-cuenta?notice=invalid");
+      return go(path + "?notice=invalid");
 
-    const firstName = (fields.get("first_name") ?? "").trim();
-    const lastName = (fields.get("last_name") ?? "").trim();
-    const email = (fields.get("email") ?? "").trim().toLowerCase();
+    const slug = fields.get("organization") ?? "";
     const password = fields.get("password") ?? "";
-    const slug = fields.get("organization");
+    const code = fields.get("code")?.trim() ?? "";
+    const proof = fields.get("proof")?.trim() ?? "";
+    const [id, value, extra] = code.split(".");
+    const first = fields.get("first_name")?.trim() ?? "";
+    const last = fields.get("last_name")?.trim() ?? "";
+    const rawUsername = fields.get("username")?.trim() ?? "";
+    const identifier = /^[A-Za-z0-9]+$/.test(rawUsername)
+      ? resolveStaffIdentifier(rawUsername)
+      : null;
     if (
-      !validInstitution(slug) ||
-      !validEmail(email) ||
-      !validName(firstName) ||
-      !validName(lastName) ||
+      !Object.hasOwn(studentInstitutions, slug) ||
+      !uuid(id ?? "") ||
+      extra !== undefined ||
+      !/^[A-Za-z0-9_-]{32}$/.test(value ?? "") ||
+      !/^[A-Za-z0-9_-]{32}$/.test(proof) ||
       password.length < 12 ||
       Buffer.byteLength(password, "utf8") > 72 ||
-      password.includes("\0")
+      password.includes("\0") ||
+      password !== fields.get("confirmation") ||
+      (purpose === "enroll" &&
+        (!identifier || !validName(first) || !validName(last)))
     )
-      return go("/auth/crear-cuenta?notice=invalid");
-    if (!config.allowed.get(slug)?.has(email)) return rejected();
+      return go(path + "?notice=invalid");
 
     const admin = createClient<Database>(
       config.url,
       config.adminKey,
       clientOptions,
     );
-    const organization = await admin
-      .from("organizations")
-      .select("id")
-      .eq("slug", slug)
-      .eq("status", "active")
-      .maybeSingle();
-    if (organization.error || !organization.data) return rejected();
-
-    const created = await admin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      app_metadata: { student_registration_organization: slug },
+    const claim = await admin.rpc("claim_student_access", {
+      p_id: id!,
+      p_slug: slug,
+      p_purpose: purpose,
+      p_code: studentAccessDigest(value!),
+      p_proof: studentAccessDigest(proof),
+      p_identifier: identifier ?? "",
+      p_network: staffActivationNetwork(request, config.secret),
     });
-    let identity: User | null = created.data.user;
-    if (created.error) {
-      if (
-        !["email_exists", "user_already_exists"].includes(
-          created.error.code ?? "",
-        )
-      )
-        return rejected();
-      // El reintento exige conocer la contraseña y solo recupera altas de esta ruta.
-      const retry = await createClient(
-        config.url,
-        config.key,
-        clientOptions,
-      ).auth.signInWithPassword({ email, password });
-      if (retry.error) return rejected();
-      identity = retry.data.user;
-    }
+    const target = claim.data;
     if (
-      !identity ||
-      identity.email?.toLowerCase() !== email ||
-      identity.app_metadata.student_registration_organization !== slug
+      claim.error ||
+      !target ||
+      typeof target !== "object" ||
+      Array.isArray(target) ||
+      target.id !== id ||
+      typeof target.attemptId !== "string" ||
+      !uuid(target.attemptId) ||
+      typeof target.identifier !== "string"
     )
       return rejected();
+    const email = target.identifier;
+    const username = staffUsernameFromIdentifier(email);
+    if (!username || (purpose === "enroll" && email !== identifier))
+      return rejected();
+    let authUserId =
+      typeof target.authUserId === "string" ? target.authUserId : null;
 
-    const result = await admin.rpc("provision_registered_student", {
-      p_auth_user_id: identity.id,
-      p_organization_slug: slug,
-      p_email: email,
-      p_first_name: firstName,
-      p_last_name: lastName,
+    const attempt = target.attemptId;
+    let phase = target.phase;
+    if (phase === "password_pending") {
+      failureNotice = "password_pending";
+      return rejected();
+    }
+    if (phase === "create_account") {
+      if (purpose !== "enroll" || authUserId) return rejected();
+      const { data, error } = await admin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        app_metadata: { student_access_authorization: id },
+      });
+      if (error || !data.user) return rejected();
+      authUserId = data.user.id;
+    } else {
+      if (!authUserId || !uuid(authUserId)) return rejected();
+      const actorId = authUserId;
+      const record = async (stage: string) => {
+        const result = await admin.rpc("record_student_access_progress", {
+          p_id: id!,
+          p_attempt: attempt,
+          p_auth: actorId,
+          p_stage: stage,
+        });
+        return !result.error && result.data === true;
+      };
+      if (phase === "update_password") {
+        failureNotice = "password_pending";
+        const updated = await admin.auth.admin.updateUserById(actorId, {
+          password,
+          app_metadata: { student_access_password_attempt: attempt },
+        });
+        if (updated.error) {
+          if (
+            updated.error.code === "weak_password" &&
+            (updated.error.status === 400 || updated.error.status === 422) &&
+            (await record("password_rejected"))
+          ) {
+            failureNotice = "password_rejected";
+          }
+          return rejected();
+        }
+        failureNotice = "revocation_pending";
+        if (!(await record("password_changed"))) return rejected();
+        phase = "revoke_sessions";
+      }
+      if (phase === "revoke_sessions") {
+        failureNotice = "revocation_pending";
+        // Auth needs a fresh JWT for the same identity, so the retry uses the
+        // password already set. It never sends another password update.
+        const session = await createClient(
+          config.url,
+          config.key,
+          clientOptions,
+        ).auth.signInWithPassword({ email, password });
+        if (
+          session.error ||
+          session.data.user?.id !== actorId ||
+          !session.data.session
+        )
+          return rejected();
+        const revoked = await admin.auth.admin.signOut(
+          session.data.session.access_token,
+          "global",
+        );
+        if (revoked.error || !(await record("sessions_revoked")))
+          return rejected();
+        phase = "finalize";
+      }
+      if (phase !== "finalize") return rejected();
+      failureNotice = "completion_pending";
+    }
+    if (!authUserId || !uuid(authUserId)) return rejected();
+    const result = await admin.rpc("finalize_student_access", {
+      p_id: id!,
+      p_attempt: attempt,
+      p_auth: authUserId,
+      p_first: first,
+      p_last: last,
     });
     if (result.error || result.data !== true) return rejected();
-
-    const query = new URLSearchParams({
-      notice: "student_registered",
-      next: "/o/" + slug + "/dashboard",
-    });
-    return go("/login?" + query.toString());
+    return purpose === "enroll"
+      ? confirmation(username)
+      : go("/login?notice=password_updated");
   } catch {
-    // Los mensajes del proveedor pueden contener datos del alumno.
     return rejected();
   }
 }
