@@ -84,12 +84,16 @@ export async function studentAccessManagementPost(
     return new NextResponse(
       '<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
         "<title>Autorización emitida</title><main><h1>Autorización emitida</h1>" +
-        "<p>Entrega el código solo al titular según el padrón. Entrega la segunda prueba por el canal privado que ya verificaste, por separado. Se muestran una sola vez.</p>" +
-        "<p>Código: <code>" +
+        "<p>El código y la prueba se muestran una sola vez. Cada autorización es temporal y sirve para completar una única operación.</p>" +
+        "<ol><li>Entrega el código únicamente al alumno cuya identidad comprobaste en el padrón institucional.</li>" +
+        "<li>Envía la prueba por separado, a través del canal privado que ya confirmaste con ese alumno.</li>" +
+        "<li>Indícale que seleccione su institución e introduzca ambos en el formulario de inscripción o recuperación correspondiente.</li></ol>" +
+        "<p>La inscripción caduca en 24 horas y la recuperación, en 15 minutos.</p>" +
+        "<h2>Código para el alumno</h2><p><code>" +
         id +
         "." +
         code +
-        "</code></p><p>Prueba: <code>" +
+        "</code></p><h2>Prueba del canal verificado</h2><p><code>" +
         proof +
         "</code></p>" +
         '<a href="' +

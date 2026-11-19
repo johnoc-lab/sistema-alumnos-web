@@ -1,0 +1,98 @@
+.introduction {
+  max-inline-size: 65ch;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 1.25rem;
+  max-inline-size: 48rem;
+  margin-block-start: 1.5rem;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.fieldHelp {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.verification {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-raised);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.verification input {
+  flex: 0 0 1.125rem;
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  min-block-size: 0;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  accent-color: var(--action);
+}
+
+.verification input:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.delivery {
+  padding-inline-start: 1rem;
+  border-inline-start: 3px solid var(--accent);
+}
+
+.delivery h3 {
+  margin-block: 0 0.5rem;
+  font-size: 1rem;
+}
+
+.delivery p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.form > button {
+  justify-self: start;
+  max-inline-size: 100%;
+  white-space: normal;
+}
+
+.reissueForm {
+  display: grid;
+  gap: 0.75rem;
+  min-inline-size: 14rem;
+}
+
+.reissueForm button {
+  justify-self: start;
+}
+
+@media (max-width: 620px) {
+  .form {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .verification {
+    padding: 0.875rem;
+  }
+}
