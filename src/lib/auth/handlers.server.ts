@@ -11,7 +11,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { authConfig, authOrigin, noStoreHeaders } from "@/lib/supabase/config";
 import { mfaUrl, readFields, safeNext, sameOriginPost } from "./security";
 import { readSessionForClient } from "./session.server";
-import { resolveStaffIdentifier } from "@/features/staff/identifier";
+import { resolveStaffIdentifier, staffUsernameFromIdentifier } from "@/features/staff/identifier";
 import { clearSupabaseSessionCookies } from "./session-cookies.server";
 import {
   readRecoveryProof,
@@ -114,6 +114,7 @@ export async function authPost(request: Request, action: Action) {
       clearProof();
       if (action === "recover") {
         // La plantilla debe dirigir a /auth/confirm?token_hash={{ .TokenHash }}&type=recovery.
+        if (staffUsernameFromIdentifier(email)) return go("/auth/recuperar?notice=sent");
         await client.auth.resetPasswordForEmail(email, {
           redirectTo: config.origin + "/auth/callback",
         });

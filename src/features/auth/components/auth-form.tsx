@@ -23,7 +23,14 @@ export const notices: Record<string, string> = {
 };
 export function Notice({ code }: { code?: string | undefined }) {
   return typeof code === "string" && Object.hasOwn(notices, code) ? (
-    <p role="status" className={styles.feedback}>
+    <p
+      role="status"
+      className={
+        code === "student_registered"
+          ? styles.feedback + " " + styles.success
+          : styles.feedback
+      }
+    >
       {notices[code]}
     </p>
   ) : null;
@@ -56,7 +63,9 @@ export function AuthForm({
       <fieldset className={styles.fields} disabled={!enabled}>
         {mode !== "password" && (
           <label>
-            {mode === "login" ? "Usuario o correo de acceso" : "Correo de acceso"}
+            {mode === "login"
+              ? "Usuario o correo de acceso"
+              : "Correo de acceso"}
             <input
               name="email"
               type={mode === "login" ? "text" : "email"}

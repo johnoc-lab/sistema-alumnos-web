@@ -27,6 +27,9 @@ import { ProtectedModule } from "@/features/auth/components/protected-module";
 import { PageHeading, Badge } from "@/components/ui/primitives";
 import { normalizeSearch } from "@/features/preview/presentation";
 import { AcademicShell, academicNavIcons } from "./shell";
+import type { AuthenticatedSession } from "@/lib/auth/resolve";
+import { CopyAccessValue } from "@/features/staff/copy-access-value";
+import { staffUsernameFromIdentifier } from "@/features/staff/identifier";
 import { AnnouncementImage } from "./announcement-image";
 import { AnnouncementMediaPicker } from "./announcement-media-picker";
 import { MaterialSourceFields } from "./material-source-fields";
@@ -1089,6 +1092,7 @@ export function AcademicView({
   canOpenEnrollments = false,
   nextSession,
   totpEnabled = false,
+  studentProfile,
 }: {
   slug: string;
   section: string;
@@ -1100,6 +1104,7 @@ export function AcademicView({
   canOpenEnrollments?: boolean;
   nextSession?: NextStudentSession | null | undefined;
   totpEnabled?: boolean;
+  studentProfile?: Pick<AuthenticatedSession, "user" | "memberships"> | undefined;
 }) {
   const admin = section.startsWith("admin"),
     isImpulso = usesImpulsoBrand(slug),
@@ -1141,16 +1146,35 @@ export function AcademicView({
     return <Materials slug={slug} data={data} admin={admin} />;
   if (section.endsWith("/avisos"))
     return <Announcements slug={slug} data={data} admin={admin} />;
-  if (section === "dashboard/perfil")
+  if (section === "dashboard/perfil") {
+    const email = studentProfile?.user.email;
+    const username = email ? staffUsernameFromIdentifier(email) : null;
+    const contact = own?.contact_email;
     return (
       <>
         <section className={css.section} aria-labelledby="profile-title">
           <div className={css.row}>
             <UserRound size={30} aria-hidden="true" />
-            <h2 id="profile-title">{own ? name(own) : "Mi perfil"}</h2>
+            <h2 id="profile-title">{own ? name(own) : studentProfile?.user.displayName ?? "Mi perfil"}</h2>
           </div>
-          <p>Contacto: {own?.contact_email ?? "Sin correo de contacto"}</p>
-          <p>Organización: {slug}</p>
+          {username && <CopyAccessValue label="Usuario de acceso" value={username} />}
+          {email && (
+            <CopyAccessValue label={username ? "Identificador de acceso" : "Correo de acceso"} value={email} />
+          )}
+          {username && <p>Este identificador de acceso no recibe mensajes.</p>}
+          {contact && contact.toLowerCase() !== email?.toLowerCase() && !staffUsernameFromIdentifier(contact) && (
+            <p>Correo de contacto: {contact}</p>
+          )}
+          {!!studentProfile?.memberships.length && (
+            <>
+              <h3>Instituciones autorizadas</h3>
+              <ul>
+                {studentProfile.memberships.map((membership) => (
+                  <li key={membership.organizationId}>{membership.name}</li>
+                ))}
+              </ul>
+            </>
+          )}
           <p>Estado: {own ? labels[own.status] : ""}</p>
           <p className={css.hint}>
             Si necesitas corregir tus datos, solicita el cambio al administrador.
@@ -1171,6 +1195,7 @@ export function AcademicView({
         </section>
       </>
     );
+  }
   if (section === "dashboard/cursos") {
     if (courseId) {
       const c = data.courses.find((c) => c.id === courseId);
@@ -1570,6 +1595,7 @@ export async function AcademicPage({
         data={data}
         profileId={access.session.identity.profileId}
         totpEnabled={access.session.identity.totpEnabled ?? false}
+        studentProfile={section === "dashboard/perfil" ? access.session : undefined}
         canOpenSchedule={admin && hasStaffPermission(membership, "schedule")}
         canOpenEnrollments={
           admin && hasStaffPermission(membership, "enrollments")

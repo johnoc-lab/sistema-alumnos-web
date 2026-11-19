@@ -1196,6 +1196,18 @@ export type Database = {
         };
         Returns: Json;
       };
+      claim_student_access: {
+        Args: {
+          p_id: string;
+          p_slug: string;
+          p_purpose: string;
+          p_code: string;
+          p_proof: string;
+          p_identifier: string;
+          p_network: string;
+        };
+        Returns: Json;
+      };
       create_schedule_sessions: {
         Args: {
           p_org: string;
@@ -1229,6 +1241,16 @@ export type Database = {
         };
         Returns: undefined;
       };
+      finalize_student_access: {
+        Args: {
+          p_id: string;
+          p_attempt: string;
+          p_auth: string;
+          p_first: string;
+          p_last: string;
+        };
+        Returns: boolean;
+      };
       finish_staff_activation: {
         Args: { p_registration: string; p_claim: string; p_rejected: boolean };
         Returns: boolean;
@@ -1239,6 +1261,18 @@ export type Database = {
           p_registration: string;
           p_actor: string;
           p_digest: string;
+        };
+        Returns: boolean;
+      };
+      issue_student_access: {
+        Args: {
+          p_org: string;
+          p_id: string;
+          p_purpose: string;
+          p_recipient: string;
+          p_evidence: string;
+          p_code: string;
+          p_proof: string;
         };
         Returns: boolean;
       };
@@ -1263,6 +1297,7 @@ export type Database = {
         Returns: Json;
       };
       list_staff: { Args: { p_org: string }; Returns: Json };
+      list_student_access: { Args: { p_org: string }; Returns: Json };
       prepare_announcement_media: {
         Args: {
           p_organization_id: string;
@@ -1288,6 +1323,25 @@ export type Database = {
         Args: { p_org: string; p_enrollment: string };
         Returns: string;
       };
+      record_student_access_progress: {
+        Args: {
+          p_id: string;
+          p_attempt: string;
+          p_auth: string;
+          p_stage: string;
+        };
+        Returns: boolean;
+      };
+      reissue_student_access: {
+        Args: {
+          p_org: string;
+          p_id: string;
+          p_evidence: string;
+          p_code: string;
+          p_proof: string;
+        };
+        Returns: boolean;
+      };
       replace_event_attendees: {
         Args: {
           p_organization_id: string;
@@ -1309,6 +1363,10 @@ export type Database = {
           p_modules: string[];
         };
         Returns: string;
+      };
+      revoke_student_access: {
+        Args: { p_org: string; p_id: string };
+        Returns: boolean;
       };
       set_attendance: {
         Args: {
