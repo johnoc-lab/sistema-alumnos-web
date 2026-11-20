@@ -17,7 +17,6 @@ export function AccessPending({
       <h1>Acceso no disponible</h1>
       <p>{message}</p>
       <Link href="/login">Volver al login</Link>
-      <Link href="/demo">Ver demostración pública</Link>
     </main>
   );
 }

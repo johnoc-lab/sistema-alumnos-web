@@ -7,7 +7,6 @@ import {
   BookOpen,
   FolderOpen,
   CalendarDays,
-  Eye,
 } from "lucide-react";
 import { Badge } from "@/components/ui/primitives";
 import {
@@ -87,15 +86,6 @@ export function LoginScreen({
               Recuperar cuenta institucional de alumno
             </Link>
           )}
-          <div className={styles.divider}>EXPLORAR SIN CUENTA</div>
-          <Link className={styles.preview} href="/demo">
-            <Eye size={17} aria-hidden="true" />
-            Ver demostración
-            <ArrowRight size={16} aria-hidden="true" />
-          </Link>
-          <p className={styles.note}>
-            La demo usa datos ficticios y no concede acceso académico.
-          </p>
         </section>
       </main>
       <footer className={styles.footer}>
