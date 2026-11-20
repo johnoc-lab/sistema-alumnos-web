@@ -30,7 +30,8 @@ import { MaterialSourceFields } from "./material-source-fields";
 import { DeleteRecordForm } from "./delete-record-form";
 import {
   loadAcademic,
-  loadNextStudentSession,
+  loadAdminOverview,
+  loadStudentAcademic,
   loadStaffAcademic,
   type AcademicData,
   type NextStudentSession,
@@ -1512,30 +1513,27 @@ export async function AcademicPage({
   try {
     const client = await createServerSupabaseClient();
     const selectedCourse = value(search, "course");
-    data =
-      limited && academicModule
-        ? await loadStaffAcademic(
+    if (admin && section === "admin") {
+      data = await loadAdminOverview(client, membership.organizationId);
+    } else if (admin && academicModule) {
+      data = await loadStaffAcademic(
             client,
             membership.organizationId,
             academicModule,
             uuid(selectedCourse) ? selectedCourse : null,
-          )
-        : await loadAcademic(client, membership.organizationId);
-    if (section === "dashboard") {
-      const student = data.memberships.find(
-        (item) => item.profile_id === membership.profileId && item.role === "student",
       );
-      if (student) {
-        try {
-          nextSession = await loadNextStudentSession(
-            client,
-            membership.organizationId,
-            student.id,
-          );
-        } catch {
-          nextSession = undefined;
-        }
-      }
+    } else if (admin) {
+      data = await loadAcademic(client, membership.organizationId);
+    } else {
+      const studentData = await loadStudentAcademic(
+        client,
+        membership.organizationId,
+        membership.profileId,
+        section,
+        courseId ?? null,
+      );
+      data = studentData.data;
+      nextSession = studentData.nextSession;
     }
   } catch {
     return (
