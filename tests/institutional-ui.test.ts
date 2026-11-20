@@ -86,6 +86,39 @@ describe("identidad institucional y presentación segura", () => {
     expect(html).not.toContain("/auth/mfa");
     expect(html).toContain('action="/auth/logout"');
   });
+  it("oculta autorizaciones de alumnos fuera de las instituciones habilitadas", () => {
+    const membership = {
+      organizationId: "org-qa",
+      profileId: "profile-qa",
+      organizationStatus: "active" as const,
+      status: "active" as const,
+      role: "admin" as const,
+      staffRank: "principal" as const,
+      allowedModules: [],
+    };
+    const qa = render(
+      createElement(AcademicShell, {
+        slug: "qa-sistema-alumnos-01",
+        name: "QA Sistema Alumnos",
+        admin: true,
+        section: "admin",
+        membership,
+        children: "contenido",
+      }),
+    );
+    const impulso = render(
+      createElement(AcademicShell, {
+        slug: "impulso-cero",
+        name: "Impulso Cero",
+        admin: true,
+        section: "admin",
+        membership,
+        children: "contenido",
+      }),
+    );
+    expect(qa).not.toContain("Autorizaciones de alumnos");
+    expect(impulso).toContain("Autorizaciones de alumnos");
+  });
   it("MFA HTML conserva POST, campos y escaping sin scripts ni semilla textual", () => {
     const enroll = enrollmentHtml(
       "data:image/svg+xml;base64,SYNTHETIC_ONLY",

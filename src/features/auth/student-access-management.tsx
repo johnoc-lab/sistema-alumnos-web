@@ -37,7 +37,7 @@ export async function StudentAccessManagement({ slug }: { slug: string }) {
     return (
       <AccessPending
         state="forbidden"
-        message="Esta institución no está habilitada para el autorregistro."
+        message="Las autorizaciones de alumnos están disponibles en Impulso Cero e Incubadora. Cambia de organización para gestionarlas."
       />
     );
 

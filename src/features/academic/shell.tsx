@@ -68,11 +68,21 @@ export function AcademicShell({
   membership?: VerifiedMembership;
   children: ReactNode;
 }) {
+  // El autorregistro institucional está disponible solamente para las
+  // organizaciones reales. La ruta conserva su propia comprobación para
+  // impedir accesos directos fuera de esta lista.
+  const supportsStudentAccess =
+    slug === "impulso-cero" || slug === "incubadora";
   const links: [string, string][] = admin
     ? [
         ["admin", "Resumen"],
         ...staffModuleKeys
-          .filter((key) => membership && hasStaffPermission(membership, key))
+          .filter(
+            (key) =>
+              membership &&
+              hasStaffPermission(membership, key) &&
+              (key !== "student_access" || supportsStudentAccess),
+          )
           .map(
             (key): [string, string] => [
               staffModules[key].path,
