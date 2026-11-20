@@ -187,6 +187,123 @@ export async function loadAcademic(client: AcademicClient, org: string) {
     attendanceAvailable,
   };
 }
+
+export async function loadStudentAcademic(
+  client: AcademicClient,
+  org: string,
+  profileId: string,
+  section: string,
+  courseId: string | null,
+): Promise<{
+  data: Awaited<ReturnType<typeof loadAcademic>>;
+  nextSession: NextStudentSession | null | undefined;
+}> {
+  const membership = checked(
+    await client
+      .from("organization_memberships")
+      .select("*")
+      .eq("organization_id", org)
+      .eq("profile_id", profileId)
+      .eq("role", "student")
+      .maybeSingle(),
+  );
+  if (!membership) {
+    return { data: {
+      courses: [], memberships: [], enrollments: [], materials: [],
+      announcements: [], events: [], files: [], attendance: [], attendanceAvailable: true,
+    }, nextSession: null };
+  }
+
+  const nextSessionPromise = section === "dashboard"
+    ? loadNextStudentSession(client, org, membership.id).catch(() => undefined)
+    : Promise.resolve(null);
+
+  const needsEnrollments = section !== "dashboard/perfil";
+  const enrollments = needsEnrollments
+    ? checked(
+        await client
+          .from("enrollments")
+          .select("*")
+          .eq("organization_id", org)
+          .eq("membership_id", membership.id)
+          .order("created_at", { ascending: false }),
+      ) ?? []
+    : [];
+  const courseIds = [...new Set(enrollments.map((item) => item.course_id))];
+  const requestedCourseId = courseId && courseIds.includes(courseId) ? courseId : null;
+  const visibleCourseIds = requestedCourseId ? [requestedCourseId] : courseIds;
+  const needsCourses = needsEnrollments;
+  const [courses, materials, announcements] = await Promise.all([
+    needsCourses && visibleCourseIds.length
+      ? client.from("courses").select("*").eq("organization_id", org).in("id", visibleCourseIds).order("sort_order").order("title")
+      : Promise.resolve({ data: [], error: null }),
+    ["dashboard", "dashboard/materiales", "dashboard/cursos"].includes(section) && visibleCourseIds.length
+      ? orgMaterialsForCourses(client, org, visibleCourseIds)
+      : Promise.resolve({ data: [], error: null }),
+    ["dashboard", "dashboard/avisos", "dashboard/cursos"].includes(section) && visibleCourseIds.length
+      ? client.from("announcements").select("*").eq("organization_id", org).in("course_id", visibleCourseIds).order("published_at", { ascending: false }).limit(500)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  let events: Awaited<ReturnType<typeof loadAcademic>>["events"] = [];
+  let attendance: AttendanceRecord[] = [];
+  let attendanceAvailable = true;
+  if (section === "dashboard/asistencia") {
+    const attendanceResult = await client
+      .from("attendance_records")
+      .select("*")
+      .eq("organization_id", org)
+      .eq("membership_id", membership.id)
+      .limit(2000);
+    const error = attendanceResult.error as { code?: string } | null;
+    if (error && error.code !== "PGRST205" && error.code !== "42P01") throw error;
+    attendanceAvailable = !error;
+    attendance = error
+      ? ((checked(await client.from("calendar_event_attendees").select("id,event_id,membership_id,status").eq("organization_id", org).eq("membership_id", membership.id).eq("status", "active").limit(2000)) ?? []).map((row) => ({ ...row, organization_id: org, status: "pending" as const })))
+      : ((attendanceResult.data ?? []) as AttendanceRecord[]);
+    const eventIds = [...new Set(attendance.map((row) => row.event_id))];
+    if (eventIds.length) {
+      events = checked(await client.from("calendar_events").select("*").eq("organization_id", org).in("id", eventIds)) ?? [];
+      const attendanceCourseIds = [...new Set(events.map((event) => event.course_id))];
+      const existing = new Set((courses.data ?? []).map((course) => course.id));
+      const missingIds = attendanceCourseIds.filter((id) => !existing.has(id));
+      if (missingIds.length) {
+        const extra = checked(await client.from("courses").select("*").eq("organization_id", org).in("id", missingIds)) ?? [];
+        courses.data = [...(courses.data ?? []), ...extra];
+      }
+    }
+  }
+
+  return { data: {
+    courses: checked(courses) ?? [],
+    memberships: [membership],
+    enrollments,
+    materials: checked(materials) ?? [],
+    announcements: (checked(announcements) ?? []) as unknown as AnnouncementRow[],
+    events,
+    files: [],
+    attendance,
+    attendanceAvailable,
+  }, nextSession: await nextSessionPromise };
+}
+
+async function orgMaterialsForCourses(client: AcademicClient, org: string, courseIds: string[]) {
+  const result = await client
+    .from("materials")
+    .select("*")
+    .eq("organization_id", org)
+    .in("course_id", courseIds)
+    .order("sort_order")
+    .order("title")
+    .limit(500);
+  return {
+    ...result,
+    data: result.data?.map((item) => ({
+      ...item,
+      external_url: item.external_url ?? ("class_url" in item && typeof item.class_url === "string" ? item.class_url : null) ?? ("recording_url" in item && typeof item.recording_url === "string" ? item.recording_url : null) ?? ("help_url" in item && typeof item.help_url === "string" ? item.help_url : null),
+    })) ?? null,
+  };
+}
 type LoadedAcademicData = Awaited<ReturnType<typeof loadAcademic>>;
 type CourseRow = LoadedAcademicData["courses"][number];
 type MemberRow = LoadedAcademicData["memberships"][number];
@@ -230,6 +347,28 @@ export type AcademicData = Omit<
     "id" | "course_id" | "title" | "starts_at" | "ends_at" | "status"
   >[];
 };
+
+export async function loadAdminOverview(
+  client: AcademicClient,
+  org: string,
+): Promise<AcademicData> {
+  const [courses, memberships, enrollments] = await Promise.all([
+    client.from("courses").select("id,title,status").eq("organization_id", org).order("sort_order").order("title").limit(500),
+    client.from("organization_memberships").select("id,first_name,last_name,role,status").eq("organization_id", org).order("first_name").limit(500),
+    client.from("enrollments").select("id,course_id,membership_id,status").eq("organization_id", org).order("created_at", { ascending: false }).limit(500),
+  ]);
+  return {
+    courses: checked(courses) ?? [],
+    memberships: checked(memberships) ?? [],
+    enrollments: checked(enrollments) ?? [],
+    materials: [],
+    announcements: [],
+    events: [],
+    files: [],
+    attendance: [],
+    attendanceAvailable: true,
+  };
+}
 
 type ModuleContext = Pick<
   AcademicData,
